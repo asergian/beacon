@@ -60,6 +60,7 @@ header {
 
 .filters-row label {
     margin-right: 10px; /* Reduced margin for tighter layout */
+    margin-left: 15px; /* Reduced margin for tighter layout */
     font-size: 1.1em;
     font-weight: 600;
 }
@@ -118,7 +119,7 @@ header {
     margin: 5px 0;
 }
 
-.email-item .email-priority {
+.email-item .email-priority_level {
     color: #ffffff;
     font-weight: 600;
     padding: 6px 12px;
@@ -130,15 +131,15 @@ header {
     text-transform: uppercase;
 }
 
-.email-item .email-priority.high {
+.email-item .email-priority_level.High {
     background-color: #d9534f; /* Red */
 }
 
-.email-item .email-priority.medium {
+.email-item .email-priority_level.Medium {
     background-color: #f0ad4e; /* Orange */
 }
 
-.email-item .email-priority.low {
+.email-item .email-priority_level.Low {
     background-color: #5bc0de; /* Light Blue */
 }
 
@@ -147,12 +148,12 @@ header {
     flex-grow: 1;
     min-width: 500px;
     padding: 20px;
-    overflow-y: auto;
     background-color: #f9f9f9;  /* Soft background color for the right pane */
     border-left: 1px solid #ddd; /* Light border for separation */
     box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1);  /* Consistent box shadow on the left side */
     border-radius: 8px;
     margin-bottom: 16px;
+    overflow-y: auto; /* Ensures content scrolls if it's too long */
 }
 
 /* Header for Email Details */
@@ -226,6 +227,15 @@ header {
     transition: background-color 0.3s ease;
 }
 
+.key-info-section li:hover {
+    background-color: #f1f1f1;  /* Light gray hover effect */
+}
+
+.key-info-section li span {
+    font-weight: 600;
+    color: #006F6A; /* Teal color for emphasis */
+}
+
 /* Email Body */
 #email-body {
     white-space: pre-wrap;
@@ -264,7 +274,7 @@ header {
 
 #response-draft:focus {
     border-color: #006F6A;  /* Teal border on focus for better emphasis */
-    outline: none;
+    outline: none;  
     box-shadow: 0 0 5px rgba(0, 111, 106, 0.5);
 }
 
@@ -333,38 +343,37 @@ footer {
     text-decoration: underline;
 }
 
-/* Responsive Styles */
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
     }
 
-    .email-list-column {
-        width: 100%;
-        min-width: 100%;
-        border-right: none;
-        margin-bottom: 20px;
-    }
-
+    .email-list-column,
     .email-details-column {
         width: 100%;
+        min-width: 100%;
     }
 
-    .footer-container {
+    .filters-row {
         flex-direction: column;
-        align-items: center;
+        align-items: flex-start;
     }
 
-    .footer-right ul {
-        justify-content: center;
+    .filters-row select {
+        margin-top: 10px;
     }
 
-    .key-info-section {
-        padding: 15px;  /* Reduced padding for smaller screens */
+    .key-info-section ul {
+        padding-left: 0;
     }
 
     .key-info-section li {
-        font-size: 1em;  /* Adjust font size for better readability */
-        padding: 8px 12px;
+        font-size: 0.9em;
+        padding: 6px;
+    }
+
+    #send-button {
+        width: 100%;
     }
 }
+

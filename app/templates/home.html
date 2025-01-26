@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Email Summary Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/home-styles.css') }}">
-    <script>
-        let emailSummaries = {{ emails|tojson|safe | default('[]') }};
+    {# <script>
+        //let emailSummaries = {{ emails|tojson|safe | default('[]') }};
     </script>
-    <script src="{{ url_for('static', filename='js/home.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/home.js') }}" defer></script> #}
 </head>
 <body>
     <!-- Header Section -->

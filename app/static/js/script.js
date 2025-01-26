@@ -15,29 +15,31 @@ function initializePage() {
 function loadEmailDetails(email) {
     console.log('loading email on right pane...');
     // Update right pane details
+    console.log(email);
     document.getElementById('details-sender').textContent = email.sender;
     document.getElementById('details-subject').textContent = email.subject;
-    document.getElementById('details-priority').textContent = email.priority.capitalize();
+    document.getElementById('details-priority').textContent = email.priority;
+    document.getElementById('details-category').textContent = email.category;  // Updated for category
     document.getElementById('details-summary').textContent = email.summary;
 
     // Populate Key Dates
     const keyDatesList = document.getElementById('key-dates-list');
-    keyDatesList.innerHTML = '';
+    keyDatesList.innerHTML = '';  // Clear previous dates
     if (email.key_dates_info) {
         email.key_dates_info.forEach(date => {
             const li = document.createElement('li');
-            li.textContent = date;
+            li.textContent = `${date.date}: ${date.info}`;  // Adjusted to match date-info format
             keyDatesList.appendChild(li);
         });
     }
 
     // Populate Action Items
     const actionItemsList = document.getElementById('action-items-list');
-    actionItemsList.innerHTML = '';
+    actionItemsList.innerHTML = '';  // Clear previous actions
     if (email.key_action_items) {
         email.key_action_items.forEach(action => {
             const li = document.createElement('li');
-            li.textContent = action;
+            li.textContent = `${action.action} (Responsible: ${action.responsible_party})`;  // Updated to match action and responsible party
             actionItemsList.appendChild(li);
         });
     }
@@ -48,7 +50,7 @@ function loadEmailDetails(email) {
     // Clear and focus the response draft area
     const responseDraft = document.getElementById('response-draft');
     responseDraft.value = '';
-    //responseDraft.focus();
+    //responseDraft.focus();  // Focus the textarea after clearing
 }
 
 // Send an email response

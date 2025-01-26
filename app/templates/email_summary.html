@@ -6,7 +6,8 @@
     <title>Email Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script>
-        let emails = {{ emails|tojson|safe | default('[]') }};
+        var emails = {{ emails|tojson|safe|e | default('[]') }};
+        console.log(emails); // Debugging line to check the value of emails
     </script>
     <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
 </head>
@@ -16,11 +17,12 @@
         <div class="header-container">
             <div class="logo-container">
                 <h1>Email Detailed View</h1>
+                <p class="subtitle">Your email assistant, organized.</p>
             </div>
             <nav class="header-nav">
                 <ul>
                     <li><a href="/">Home</a></li>
-                    <li><a href="/emails">Detailed View</a></li>
+                    <li><a href="/emails">Email Overview</a></li>
                     <li><a href="#">Settings</a></li>
                     <li><a href="#">Log Out</a></li>
                 </ul>
@@ -37,20 +39,30 @@
             <option value="medium">Medium</option>
             <option value="low">Low</option>
         </select>
+
+        <label for="category-filter">Filter by Category:</label>
+        <select id="category-filter" onchange="filterEmails()">
+            <option value="all">All</option>
+            <option value="work">High Priority</option>
+            <option value="work">Work</option>
+            <option value="personal">Personal</option>
+            <option value="promotions">Promotions</option>
+        </select>
     </div>
 
+    <!-- Updated Content Section -->
     <div class="container">
         <!-- Left Column: Email List -->
         <div class="email-list-column">
             <ul class="email-list">
                 {% for email in emails %}
-                <li class="email-item" data-priority="{{ email.priority }}" data-email='{{ email|tojson }}' onclick='loadEmailDetails({{ email|tojson }})'>
-                    <p class="email-sender">
+                <li class="email-item" data-priority='{{ email.priority }}' data-email='{{ email|tojson|safe|e }}' onclick='loadEmailDetails({{ email|tojson|safe|e }})'>
+                    <div class="email-header">
                         <strong>{{ email.sender }}</strong>
-                        <span class="email-priority {{ email.priority }}">{{ email.priority|capitalize }}</span>
-                    </p>
+                        <span class="email-priority_level {{ email.priority_level }}">{{ email.priority }}</span>
+                    </div>
                     <p class="email-subject">{{ email.subject }}</p>
-                    <p class="email-summary-preview" style="color: gray; font-style: italic;">{{ email.summary }}</p>
+                    <p class="email-summary-preview">{{ email.summary }}</p>
                 </li>
                 {% endfor %}
             </ul>
@@ -60,19 +72,20 @@
         <div class="email-details-column">
             <div id="email-details">
                 <h2>Email Details</h2>
-                <p><strong>Sender:</strong> <span id="details-sender"></span></p>
-                <p><strong>Subject:</strong> <span id="details-subject"></span></p>
-                <p><strong>Priority:</strong> <span id="details-priority"></span></p>
-                <p><strong>Summary:</strong> <span id="details-summary"></span></p>
-
-                <div id="details-key-dates" class="key-info-section">
-                    <h3>Key Dates:</h3>
-                    <ul id="key-dates-list"></ul>
+                <div class="email-meta">
+                    <p><strong>Sender:</strong> <span id="details-sender"></span></p>
+                    <p><strong>Subject:</strong> <span id="details-subject"></span></p>
+                    <p><strong>Priority Score:</strong> <span id="details-priority"></span></p>
+                    <p><strong>Category:</strong> <span id="details-category"></span></p>
+                    <p><strong>Summary:</strong> <span id="details-summary"></span></p>
                 </div>
 
-                <div id="details-action-items" class="key-info-section">
-                    <h3>Action Items:</h3>
-                    <ul id="action-items-list"></ul>
+                <div id="details-key-info" class="key-info-section">
+                    <h3>Actions & Dates:</h3>
+                    <div class="actions-and-dates">
+                        <ul id="key-dates-list"></ul>
+                        <ul id="action-items-list"></ul>
+                    </div>
                 </div>
 
                 <div id="details-body">
@@ -80,7 +93,7 @@
                     <p id="email-body"></p>
                 </div>
 
-                <!-- Email Response Draft -->
+                <!-- Response Section -->
                 <div id="email-response">
                     <h3>Draft a Response:</h3>
                     <textarea id="response-draft" rows="6" placeholder="Write your response here..."></textarea>
@@ -94,7 +107,7 @@
     <footer>
         <div class="footer-container">
             <div class="footer-left">
-                <p>&copy; 2025 Email Dashboard. All rights reserved.</p>
+                <p>&copy; 2025 Beacon by Shronas. All rights reserved.</p>
             </div>
             <div class="footer-right">
                 <ul>
