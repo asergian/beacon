@@ -8,7 +8,7 @@ and spaCy for natural language processing.
 import asyncio
 import json
 import logging
-from typing import List, Dict, Optional, Set
+from typing import List, Dict, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from abc import ABC, abstractmethod
@@ -23,6 +23,7 @@ from .email_parsing import EmailParser, EmailMetadata, EmailParsingError
 @dataclass
 class AnalyzedEmail:
     """Represents a fully analyzed email with all extracted information."""
+    id: str
     subject: str
     sender: str
     body: str
@@ -32,6 +33,27 @@ class AnalyzedEmail:
     action_items: List[Dict[str, Optional[str]]]
     summary: str
     priority: int
+    priority_level: str
+
+    def dict(self) -> Dict:
+        """Convert the AnalyzedEmail to a dictionary.
+        
+        Returns:
+            Dict: Dictionary representation of the email.
+        """
+        return {
+            'id': self.id,
+            'subject': self.subject,
+            'sender': self.sender,
+            'body': self.body,
+            'date': self.date,
+            'needs_action': self.needs_action,
+            'category': self.category,
+            'action_items': self.action_items,
+            'summary': self.summary,
+            'priority': self.priority,
+            'priority_level': self.priority_level
+        }
 
 @dataclass
 class AnalyzerConfig:
@@ -68,7 +90,7 @@ class OpenAIAnalyzer:
         Raises:
             LLMAnalysisError: If the analysis fails.
         """
-        self.logger.info("Starting analysis of email.")
+        self.logger.info("Starting analysis of email: %s", metadata.subject[:50])
         try:
             client = g.get('async_openai_client')
             if not client:
@@ -76,16 +98,15 @@ class OpenAIAnalyzer:
                 raise LLMAnalysisError("OpenAI client not available")
 
             prompt = self._create_analysis_prompt(metadata, nlp_results)
-            self.logger.debug(f"Generated prompt: {prompt}")
             response = await client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3
             )
-            self.logger.info("Received response from OpenAI.")
+            self.logger.info("Received OpenAI response")
             return self._parse_response(response.choices[0].message.content)
         except Exception as e:
-            self.logger.error(f"LLM analysis failed: {e}")
+            self.logger.error("LLM analysis failed: %s", str(e)[:100])
             raise LLMAnalysisError(str(e))
 
     def _create_analysis_prompt(self, metadata: EmailMetadata, nlp_results: Dict) -> str:
@@ -98,19 +119,24 @@ class OpenAIAnalyzer:
         Returns:
             str: The generated prompt for LLM analysis.
         """
-        return (
-            f"Analyze the following email and provide a structured JSON response:\n\n"
-            f"Subject: {metadata.subject}\n"
-            f"Sender: {metadata.sender}\n"
-            f"Body: {metadata.body}\n"
-            f"NLP Results: {nlp_results}\n\n"
-            f"Please extract the following information:\n"
-            f"- needs_action (boolean)\n"
-            f"- category (string)\n"
-            f"- action_items (list of objects with keys: 'description' and 'due_date')\n"
-            f"- summary (string)\n"
-            f"- priority (integer)\n"
-            f"Return the response in JSON format."
+        return """Analyze the following email to help the user prioritize their inbox effectively:
+
+        Subject: {subject}
+        Sender: {sender}
+        Body: {body}
+        NLP Results: {nlp_results}
+
+        Please extract the following information:
+        - needs_action: boolean
+        - category: string (one of Work, Personal, Promotions, Informational)
+        - action_items: list of objects with keys: 'description' and 'due_date' (YYYY-MM-DD)
+        - summary: string, up to 3 lines
+        - priority: integer 0-100
+        Return the response in JSON format.""".format(
+            subject=metadata.subject,
+            sender=metadata.sender,
+            body=metadata.body,
+            nlp_results=nlp_results
         )
 
     def _parse_response(self, response_content: str) -> Dict:
@@ -130,19 +156,32 @@ class OpenAIAnalyzer:
             raise LLMAnalysisError("Received empty response from OpenAI.")
         
         try:
-            response_data = response_content.strip().lstrip('```json').rstrip('```').strip()
-            response_data = json.loads(response_data)
+            # Log only first 100 chars of response
+            self.logger.debug("Raw response preview: %s...", response_content[:100])
+            
+            # Clean up the response content
+            cleaned_content = response_content.strip()
+            if cleaned_content.startswith('```json'):
+                cleaned_content = cleaned_content.replace('```json', '', 1)
+            if cleaned_content.endswith('```'):
+                cleaned_content = cleaned_content.rsplit('```', 1)[0]
+            cleaned_content = cleaned_content.strip()
+            
+            # Try to parse the JSON
+            response_data = json.loads(cleaned_content)
+            
+            # Ensure required fields exist with defaults
+            return {
+                'needs_action': bool(response_data.get('needs_action', False)),
+                'category': str(response_data.get('category', 'general')),
+                'action_items': list(response_data.get('action_items', [])),
+                'summary': str(response_data.get('summary', '')),
+                'priority': int(response_data.get('priority', 0))
+            }
         except json.JSONDecodeError as e:
             self.logger.error(f"Failed to decode JSON response: {e}")
+            self.logger.error(f"Attempted to parse content: {cleaned_content}")
             raise LLMAnalysisError("Invalid JSON response from OpenAI.")
-        
-        return {
-            'needs_action': response_data.get('needs_action', False),
-            'category': response_data.get('category', 'general'),
-            'action_items': response_data.get('action_items', []),
-            'summary': response_data.get('summary', ''),
-            'priority': response_data.get('priority', 0)
-        }
 
 class TextAnalyzer:
     """Analyzes text using spaCy for entities and urgency."""
@@ -195,8 +234,8 @@ class PriorityCalculator:
         self.vip_senders = vip_senders
         self.config = config
         
-    def calculate(self, sender: str, nlp_results: Dict, llm_results: Dict) -> int:
-        """Calculates the priority score for an email.
+    def calculate(self, sender: str, nlp_results: Dict, llm_results: Dict) -> Tuple[int, str]:
+        """Calculates the priority score and level for an email.
 
         Args:
             sender (str): The sender of the email.
@@ -204,7 +243,7 @@ class PriorityCalculator:
             llm_results (Dict): Results from LLM analysis.
 
         Returns:
-            int: The calculated priority score.
+            Tuple[int, str]: The calculated priority score (0-100) and level ("Low", "Medium", "High").
         """
         score = self.config.BASE_PRIORITY_SCORE
         
@@ -215,7 +254,17 @@ class PriorityCalculator:
         if llm_results['needs_action']:
             score += self.config.ACTION_SCORE_BOOST
             
-        return min(score, self.config.MAX_PRIORITY)
+        score = min(score, self.config.MAX_PRIORITY)
+
+        # Determine priority level based on score
+        if score < 60:
+            priority_level = "Low"
+        elif score < 80:
+            priority_level = "Medium"
+        else:
+            priority_level = "High"
+
+        return score, priority_level
 
 class EmailAnalyzer:
     """Analyzes emails using NLP and LLM to extract key information and priorities."""
@@ -274,22 +323,23 @@ class EmailAnalyzer:
             EmailAnalysisError: If the analysis fails.
         """
         try:
-            self.logger.info("Starting analysis for email: %s", raw_email.get('subject', 'No Subject'))
+            self.logger.info("Analyzing email: %s", raw_email.get('subject', 'No Subject')[:50])
             metadata = self.parser.extract_metadata(raw_email)
-            self.logger.info("Extracted metadata")
 
             nlp_results = self.text_analyzer.analyze(metadata.body)
-            self.logger.info("NLP analysis results: %s", nlp_results)
+            self.logger.info("NLP analysis complete: %d entities found", len(nlp_results.get('entities', {})))
 
             llm_results = await self.llm_analyzer.analyze(metadata, nlp_results)
-            self.logger.info("LLM analysis results: %s", llm_results)
+            self.logger.info("LLM analysis complete: category=%s, priority=%s", 
+                           llm_results.get('category'), llm_results.get('priority'))
 
-            priority = self.priority_calculator.calculate(
+            priority_score, priority_level = self.priority_calculator.calculate(
                 metadata.sender, nlp_results, llm_results
             )
-            self.logger.info("Calculated priority for email from %s: %d", metadata.sender, priority)
+            self.logger.info("Priority: %s (%d)", priority_level, priority_score)
 
             return AnalyzedEmail(
+                id=raw_email.get('id', 'unknown'),
                 subject=metadata.subject,
                 sender=metadata.sender,
                 body=metadata.body,
@@ -298,7 +348,73 @@ class EmailAnalyzer:
                 category=llm_results['category'],
                 action_items=llm_results['action_items'],
                 summary=llm_results['summary'],
-                priority=priority
+                priority=priority_score,
+                priority_level=priority_level
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to analyze email: {e}")
+            raise EmailAnalysisError(f"Analysis failed: {str(e)}")
+
+    async def analyze_parsed_emails(self, parsed_emails: List[EmailMetadata]) -> List[AnalyzedEmail]:
+        """Analyzes a list of already parsed emails.
+
+        Args:
+            parsed_emails (List[EmailMetadata]): List of parsed email metadata objects.
+
+        Returns:
+            List[AnalyzedEmail]: A list of analyzed email objects.
+        """
+        results = await asyncio.gather(
+            *[self._analyze_parsed_email(email) for email in parsed_emails],
+            return_exceptions=True
+        )
+        return [r for r in results if isinstance(r, AnalyzedEmail)]
+
+    async def _analyze_parsed_email(self, metadata: EmailMetadata) -> AnalyzedEmail:
+        """Analyzes a single parsed email and returns an AnalyzedEmail object.
+
+        Args:
+            metadata (EmailMetadata): The parsed email metadata.
+
+        Returns:
+            AnalyzedEmail: The analyzed email object.
+
+        Raises:
+            EmailAnalysisError: If the analysis fails.
+        """
+        try:
+            self.logger.info("Starting analysis for email: %s", metadata.subject[:50])
+
+            nlp_results = self.text_analyzer.analyze(metadata.body)
+            # Truncate NLP results to essential info
+            self.logger.info("NLP analysis - entities: %d, urgent: %s", 
+                           len(nlp_results.get('entities', {})), 
+                           nlp_results.get('is_urgent', False))
+
+            llm_results = await self.llm_analyzer.analyze(metadata, nlp_results)
+            # Log only key LLM results
+            self.logger.info("LLM analysis - category: %s, needs_action: %s", 
+                           llm_results.get('category'), 
+                           llm_results.get('needs_action'))
+
+            priority_score, priority_level = self.priority_calculator.calculate(
+                metadata.sender, nlp_results, llm_results
+            )
+            self.logger.info("Priority calculated - sender: %s, score: %d, level: %s", 
+                           metadata.sender[:30], priority_score, priority_level)
+
+            return AnalyzedEmail(
+                id=metadata.id,
+                subject=metadata.subject,
+                sender=metadata.sender,
+                body=metadata.body,
+                date=metadata.date,
+                needs_action=llm_results['needs_action'],
+                category=llm_results['category'],
+                action_items=llm_results['action_items'],
+                summary=llm_results['summary'],
+                priority=priority_score,
+                priority_level=priority_level
             )
         except Exception as e:
             self.logger.error(f"Failed to analyze email: {e}")

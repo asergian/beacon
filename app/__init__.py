@@ -19,7 +19,6 @@ Functions:
 from flask import Flask, g, current_app
 from flask.cli import load_dotenv
 import logging
-import openai
 from openai import AsyncOpenAI
 from typing import Optional
 import os
@@ -74,29 +73,33 @@ def init_openai_client(app):
         raise
 
 def create_app(config_class: Optional[object] = Config) -> Flask:
-    """Create and configure Flask application.
+    """Create and configure Flask application."""
     
-    Args:
-        config_class: Configuration class (default: Config)
+    # Create logger before Flask app
+    logger = logging.getLogger(__name__)
+    logger.info("Starting create_app...")
     
-    Returns:
-        Configured Flask application
-    """
-    
-    load_dotenv()
-    
+    # Create Flask app
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    logger.info("Flask app instance created")
+    
+    # Initialize config
+    config = config_class()  # Create instance of config class
+    app.config.update({
+        key: getattr(config, key)
+        for key in dir(config)
+        if not key.startswith('_')
+    })
+    logger.info("Config loaded and updated")
 
-    # Configure logging
-    logging.basicConfig(
-        level=app.config['LOGGING_LEVEL'],
-        format="%(asctime)s - %(levelname)s - %(message)s"
-    )
-
-    # Verify environment setup
-    env_path = os.path.join(os.getcwd(), '.env')
-    app.logger.info(f"Loading environment from: {env_path} (exists: {os.path.exists(env_path)})")
+    # Log the actual configuration values being used
+    logger.info("Current configuration values:")
+    for key in ['IMAP_SERVER', 'EMAIL', 'IMAP_PASSWORD', 'OPENAI_API_KEY', 'LOGGING_LEVEL']:
+        # Mask sensitive values in logs
+        value = app.config.get(key, 'Not set')
+        if key in ['IMAP_PASSWORD', 'OPENAI_API_KEY']:
+            value = f"{value[:3]}..." if value else 'Not set'
+        logger.info(f"{key}: {value}")
 
     # Verify all required configurations
     required_configs = {
@@ -111,10 +114,10 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     email_config = {}
     for key in required_configs.keys():
         value = app.config.get(key)
-        if not value:
-            app.logger.error(f"Missing required configuration: {key}")
-            raise ValueError(f"Missing required configuration: {key}")
-        email_config[key.lower()] = value  # Ensure the keys are in lowercase
+        if not value or value in ['your-default-openai-key', 'your-email@example.com', 'your-email-password']:
+            app.logger.error(f"Missing or default required configuration: {key}")
+            raise ValueError(f"Missing or default required configuration: {key}")
+        email_config[key.lower()] = value
 
     # Now, explicitly set the email_config for IMAP
     email_config = {
@@ -136,7 +139,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         llm_analyzer = OpenAIAnalyzer()
         priority_calculator = PriorityCalculator(
             vip_senders=set(app.config.get('VIP_SENDERS', [])),
-            config=AnalyzerConfig()  # Use default config or from app.config
+            config=AnalyzerConfig()
         )
 
         # Unpack email_config when initializing IMAPEmailClient using **

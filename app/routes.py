@@ -8,10 +8,11 @@ Typical usage example:
     init_routes(app)
 """
 
-from flask import Blueprint, current_app, render_template, jsonify
-import asyncio
+from flask import Blueprint, current_app, render_template, jsonify, request
 import logging
+from quart_flask_patch import quart_flask_patch
 from .email_processor import EmailAnalyzer, TextAnalyzer
+from .email.pipeline import create_pipeline, AnalysisCommand
 
 try:
     email_bp = Blueprint('email', __name__)
@@ -29,25 +30,69 @@ def init_routes(app):
     """
     try:
         app.register_blueprint(email_bp)
-        logger.info("Email blueprint registered successfully")
+        # Create pipeline instance with app config
+        app.pipeline = create_pipeline(app.config)
+        logger.info("Email blueprint and pipeline registered successfully")
     except Exception as e:
         logger.error(f"Failed to register email blueprint: {str(e)}")
         raise
 
 @email_bp.route('/')
-def home():
-    """Renders the home page.
-
-    Returns:
-        str: Rendered HTML template for the home page.
-    """
-    try:
-        return render_template('home.html')
-    except Exception as e:
-        logger.error(f"Failed to render home template: {str(e)}")
-        return {"error": "Failed to load home page"}, 500
+async def home():
+    """Home page with recent emails"""
+    command = AnalysisCommand(
+        days_back=2,  # Show last 2 days' emails by default
+        priority_threshold=None,  # Show all priorities
+        categories=None  # Show all categories
+    )
+    result = await current_app.pipeline.get_analyzed_emails(command)
+    return render_template('email_summary.html', emails=result.emails)
 
 @email_bp.route('/emails')
+async def get_emails():
+    """Get emails with optional filtering"""
+    # Parse query parameters
+    days = int(request.args.get('days', 2))
+    priority = float(request.args.get('priority', 0))
+    categories = request.args.getlist('category')  # Can pass multiple categories
+    batch_size = int(request.args.get('batch_size', 100))
+
+    command = AnalysisCommand(
+        days_back=days,
+        batch_size=batch_size,
+        priority_threshold=priority if priority > 0 else None,
+        categories=categories if categories else None
+    )
+
+    result = await current_app.pipeline.get_analyzed_emails(command)
+    
+    # Return JSON for API requests
+    if request.headers.get('Accept') == 'application/json':
+        return jsonify({
+            'emails': [email.dict() for email in result.emails],
+            'stats': result.stats,
+            'errors': result.errors
+        })
+    
+    # Return HTML for browser requests
+    return render_template('email_summary.html', 
+                         emails=result.emails,
+                         stats=result.stats)
+
+@email_bp.route('/emails/refresh', methods=['POST'])
+async def refresh_emails():
+    """Force refresh of email cache"""
+    days = int(request.args.get('days', 1))
+    batch_size = int(request.args.get('batch_size', 100))
+    
+    await current_app.pipeline.refresh_cache(days=days, batch_size=batch_size)
+    
+    return jsonify({
+        'status': 'success',
+        'message': f'Refreshed emails for the past {days} days'
+    })
+
+@email_bp.route('/test-emails')
 async def show_emails():
     """Processes and displays email summaries."""
     try:
@@ -59,12 +104,8 @@ async def show_emails():
         return {"error": str(e)}, 500
 
 @email_bp.route('/test-connection')
-def test_email_connection():
-    """Test endpoint to verify email connection and fetch emails directly.
-    
-    Returns:
-        json: Connection status and email data if successful
-    """
+async def test_email_connection():
+    """Test endpoint to verify email connection and fetch emails directly."""
     try:
         from app.email_connection import IMAPEmailClient
         
@@ -78,32 +119,26 @@ def test_email_connection():
         if not all(email_config.values()):
             return jsonify({
                 "status": "error",
-                "message": "Missing email configuration. Check IMAP_SERVER, EMAIL, and IMAP_PASSWORD settings."
+                "message": "Missing email configuration."
             }), 500
             
-        try:
-            client = IMAPEmailClient(**email_config)
-            emails = asyncio.run(client.fetch_emails(days=1))
-            
-            # Convert bytes to string for JSON serialization
-            serializable_emails = []
-            for email in emails:
-                serializable_emails.append({
-                    'id': email['id'],
-                    'raw_message': email['raw_message'].decode('utf-8', errors='replace')
-                })
-            
-            return jsonify({
-                "status": "success",
-                "connection": "established",
-                "email_count": len(emails),
-                "emails": serializable_emails
+        client = IMAPEmailClient(**email_config)
+        emails = await client.fetch_emails(days=1)
+        
+        # Convert bytes to string for JSON serialization
+        serializable_emails = []
+        for email in emails:
+            serializable_emails.append({
+                'id': email['id'],
+                'raw_message': email['raw_message'].decode('utf-8', errors='replace')
             })
-        except Exception as e:
-            return jsonify({
-                "status": "error",
-                "message": str(e)
-            }), 500
+        
+        return jsonify({
+            "status": "success",
+            "connection": "established",
+            "email_count": len(emails),
+            "emails": serializable_emails
+        })
             
     except Exception as e:
         logger.error(f"Test connection failed: {e}")
@@ -201,13 +236,14 @@ async def test_fetch_parse_analyze():
             try:
                 parsed_email = email_analyzer.parser.extract_metadata(raw_email)
                 if parsed_email is not None:
-                    parsed_emails.append({
-                        'id': raw_email.get('id', 'unknown'),
-                        'subject': getattr(parsed_email, 'subject', ''),
-                        'sender': getattr(parsed_email, 'sender', ''),
-                        'body': getattr(parsed_email, 'body', '')[:200],  # Limit body length
-                        'date': parsed_email.date.isoformat() if getattr(parsed_email, 'date', None) else None,
-                    })
+                    parsed_emails.append(parsed_email)
+                    # parsed_emails.append({
+                    #     'id': raw_email.get('id', 'unknown'),
+                    #     'subject': getattr(parsed_email, 'subject', ''),
+                    #     'sender': getattr(parsed_email, 'sender', ''),
+                    #     'body': getattr(parsed_email, 'body', '')[:200],  # Limit body length
+                    #     'date': parsed_email.date.isoformat() if getattr(parsed_email, 'date', None) else None,
+                    # })
                     logger.debug(f"Parsed email ID: {raw_email.get('id', 'unknown')}")
                 else:
                     logger.warning(f"Parsed email returned None for email ID: {raw_email.get('id', 'unknown')}")
@@ -220,15 +256,15 @@ async def test_fetch_parse_analyze():
         analysis_results = []
         
         for parsed_email in parsed_emails:
-            nlp_results = text_analyzer.analyze(parsed_email.get('body', ''))  # Analyze the body of the parsed email
+            nlp_results = text_analyzer.analyze(parsed_email.body)  # Analyze the body of the parsed email
             llm_results = await llm_analyzer.analyze(parsed_email, nlp_results)  # Analyze with LLM using both parsed_email and nlp_results
             
             analysis_results.append({
-                'id': parsed_email.get('id', 'unknown'),
+                'id': parsed_email.id,
                 'analysis': nlp_results,
                 'llm_analysis': llm_results  # Include LLM analysis results
             })
-            logger.debug(f"Analysis result for email ID {parsed_email.get('id', 'unknown')}: {nlp_results}")
+            logger.debug(f"Analysis result for email ID {parsed_email.id}: {nlp_results}")
 
         return jsonify({
             "status": "success",

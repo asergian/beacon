@@ -41,6 +41,7 @@ class EmailMetadata:
         body (str): Email body text
         date (datetime): Email received/sent date
     """
+    id: str = ''
     subject: str = ''
     sender: str = ''
     body: str = ''
@@ -178,12 +179,14 @@ class EmailParser:
                 return None
 
             # Extract metadata with robust error handling
+            id = self._safe_extract_header(msg, 'id')
             subject = self._safe_extract_header(msg, 'Subject')
             sender = self._safe_extract_header(msg, 'From')
             body = self._extract_body(msg)
             parsed_date = self._parse_date(msg)
 
             metadata = EmailMetadata(
+                id=id,
                 subject=subject,
                 sender=sender,
                 body=body,

@@ -11,20 +11,38 @@ Raises:
     Exception: Any unexpected errors during application startup.
 """
 from app import create_app
+import asyncio
+from hypercorn.config import Config
+from hypercorn.asyncio import serve
+import logging
+from asgiref.wsgi import WsgiToAsgi
+
+# Set up basic logging before app creation
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 try:
-    app = create_app()
+    logger.info("Starting application creation...")
+    flask_app = create_app()
+    # Convert WSGI app to ASGI
+    app = WsgiToAsgi(flask_app)
+    logger.info("Application created successfully")
 except ImportError as e:
-    print(f"Failed to import application factory: {e}")
+    logger.error(f"Failed to import application factory: {e}")
     raise
 except Exception as e:
-    print(f"Failed to create application instance: {e}")
+    logger.error(f"Failed to create application instance: {e}")
     raise
 
 if __name__ == "__main__":
     try:
-        print('App starting...')
-        app.run(debug=True)
+        logger.info('App starting with Hypercorn...')
+        config = Config()
+        config.bind = ["localhost:5000"]
+        asyncio.run(serve(app, config))
     except Exception as e:
-        print(f"Failed to start application: {e}")
+        logger.error(f"Failed to start application: {e}")
         raise

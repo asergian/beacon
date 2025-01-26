@@ -140,8 +140,8 @@ class IMAPEmailClient:
         """Close the IMAP connection safely."""
         try:
             if self._client:
-                # Use await directly if logout is an async method
-                await self._client.logout()
+                await asyncio.to_thread(self._client.logout)
+                self._client = None
                 self.logger.info("IMAP connection closed")
         except Exception as e:
             self.logger.warning(f"Error closing IMAP connection: {e}")

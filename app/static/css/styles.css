@@ -9,10 +9,15 @@ body {
 
 /* Header Styles */
 header {
+    position: fixed; /* Make header fixed */
+    top: 0; /* Position at the top */
+    left: 0; /* Align to the left */
+    right: 0; /* Align to the right */
     background-color: #006F6A; /* Darker Teal */
-    padding: 16px 0;
+    padding: 8px 0; /* Reduced padding for a smaller header */
     color: white;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000; /* Ensure it stays above other content */
 }
 
 .header-container {
@@ -51,11 +56,16 @@ header {
 
 /* Filters Row */
 .filters-row {
+    position: fixed; /* Make filters fixed */
+    top: 95px; /* Adjusted position to be directly below the header */
+    left: 0; /* Align to the left */
+    right: 0; /* Align to the right */
     background-color: #F1F3F5; /* Light Gray */
     padding: 10px 20px;
     display: flex;
     align-items: center;
     justify-content: flex-end; 
+    z-index: 999; /* Ensure it stays above other content */
 }
 
 .filters-row label {
@@ -80,6 +90,7 @@ header {
     display: flex;
     flex-grow: 1;
     overflow: hidden;
+    margin-top: 120px; /* Adjust margin to account for fixed header and filters */
 }
 
 /* Email List Column */
@@ -88,9 +99,10 @@ header {
     min-width: 300px;
     background-color: #ffffff;
     border-right: 1px solid #ddd; /* Keeping the border for separation */
-    overflow-y: auto;
+    overflow-y: auto; /* Allow scrolling */
     padding: 10px;
     box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1); /* Added consistent shadow */
+    height: calc(100vh - 80px); /* Adjust height to account for fixed header */
 }
 
 .email-list {
@@ -109,6 +121,7 @@ header {
     flex-direction: column;
     justify-content: space-between;
     position: relative; /* Added relative positioning for priority inside list item */
+    min-width: 400px; /* Set minimum width for email item */
 }
 
 .email-item:hover {
@@ -153,7 +166,8 @@ header {
     box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1);  /* Consistent box shadow on the left side */
     border-radius: 8px;
     margin-bottom: 16px;
-    overflow-y: auto; /* Ensures content scrolls if it's too long */
+    overflow-y: auto; /* Allow scrolling */
+    height: calc(100vh - 80px); /* Adjust height to account for fixed header */
 }
 
 /* Header for Email Details */

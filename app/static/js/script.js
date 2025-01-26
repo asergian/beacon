@@ -18,34 +18,28 @@ function loadEmailDetails(email) {
     console.log(email);
     document.getElementById('details-sender').textContent = email.sender;
     document.getElementById('details-subject').textContent = email.subject;
-    document.getElementById('details-priority').textContent = email.priority;
-    document.getElementById('details-category').textContent = email.category;  // Updated for category
+    document.getElementById('details-priority').textContent = email.priority_level;
+    document.getElementById('details-category').textContent = email.category;
     document.getElementById('details-summary').textContent = email.summary;
 
     // Populate Key Dates
     const keyDatesList = document.getElementById('key-dates-list');
     keyDatesList.innerHTML = '';  // Clear previous dates
-    if (email.key_dates_info) {
-        email.key_dates_info.forEach(date => {
+    if (email.action_items) {
+        email.action_items.forEach(item => {
             const li = document.createElement('li');
-            li.textContent = `${date.date}: ${date.info}`;  // Adjusted to match date-info format
+            li.textContent = `${item.description} (Due: ${item.due_date})`;  // Adjusted to match action and responsible party
             keyDatesList.appendChild(li);
         });
     }
 
-    // Populate Action Items
-    const actionItemsList = document.getElementById('action-items-list');
-    actionItemsList.innerHTML = '';  // Clear previous actions
-    if (email.key_action_items) {
-        email.key_action_items.forEach(action => {
-            const li = document.createElement('li');
-            li.textContent = `${action.action} (Responsible: ${action.responsible_party})`;  // Updated to match action and responsible party
-            actionItemsList.appendChild(li);
-        });
-    }
-
     // Populate Email Body
-    document.getElementById('email-body').textContent = email.body;
+    const emailBody = document.getElementById('email-body');
+    emailBody.innerHTML = ''; // Clear previous content
+    
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(email.body, 'text/html');
+    emailBody.innerHTML = doc.body.innerHTML; // Safely set the inner HTML
 
     // Clear and focus the response draft area
     const responseDraft = document.getElementById('response-draft');
