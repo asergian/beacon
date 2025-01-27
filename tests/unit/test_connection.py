@@ -25,9 +25,12 @@ import pytest
 import asyncio
 from unittest.mock import AsyncMock, patch, MagicMock, Mock
 from imapclient import IMAPClient
-from app.email.core.email_connection import IMAPEmailClient, IMAPConnectionError
 from datetime import date
 import socket
+
+# Updated imports to reflect new structure
+from app.email.core.email_connection import EmailConnection, IMAPConnectionError
+from app.email.core.email_parsing import EmailParser, EmailMetadata
 
 @pytest.mark.asyncio
 async def test_imap_client_initialization(imap_config):
@@ -49,7 +52,7 @@ async def test_imap_client_initialization(imap_config):
     Raises:
         AssertionError: If any initialization parameters don't match expected values.
     """
-    client = IMAPEmailClient(**imap_config)
+    client = EmailConnection(**imap_config)
     
     print(f"Server: {imap_config['server']}")
     print(f"Email: {imap_config['email']}")
@@ -76,7 +79,7 @@ async def test_imap_client_invalid_initialization():
         ValueError: Expected to be raised when invalid parameters are provided.
     """
     with pytest.raises(ValueError):
-        IMAPEmailClient(server='', email='', password='')
+        EmailConnection(server='', email='', password='')
 
 @pytest.mark.asyncio
 async def test_imap_client_connect(imap_config):
@@ -107,7 +110,7 @@ async def test_imap_client_connect(imap_config):
         mock_instance.login = AsyncMock()
         mock_instance.select_folder = AsyncMock()
 
-        client = IMAPEmailClient(**imap_config)
+        client = EmailConnection(**imap_config)
         await client.connect()
 
 @pytest.mark.asyncio
@@ -123,7 +126,7 @@ async def test_imap_client_connection_failure(imap_config):
     with patch('imapclient.IMAPClient') as mock_imap_client, \
          patch('asyncio.to_thread', side_effect=Exception("Connection failed")):
         
-        client = IMAPEmailClient(**imap_config)
+        client = EmailConnection(**imap_config)
         
         with pytest.raises(IMAPConnectionError):
             await client.connect()
@@ -148,7 +151,7 @@ async def test_fetch_emails_structure(imap_config):
     Raises:
         AssertionError: If email structure or content doesn't match expectations
     """
-    with patch('app.email_connection.IMAPClient') as mock_imap_client:
+    with patch('app.email.core.email_connection.IMAPClient') as mock_imap_client:
         # Setup mock instance with synchronous methods
         mock_instance = mock_imap_client.return_value
         
@@ -161,7 +164,7 @@ async def test_fetch_emails_structure(imap_config):
             2: {b'BODY[]': b'email content 2'}
         })
         
-        client = IMAPEmailClient(**imap_config)
+        client = EmailConnection(**imap_config)
         client._client = mock_instance
         emails = await client.fetch_emails(days=1)
         
@@ -191,19 +194,20 @@ async def test_close_connection(imap_config):
         AssertionError: If connection closure or cleanup fails
     """
     with patch('imapclient.IMAPClient') as mock_imap_client:
-        # Create an AsyncMock for logout that is a coroutine
-        mock_instance = AsyncMock()
+        # Create mock instance
+        mock_instance = Mock()  # Use regular Mock since logout is now synchronous
         mock_imap_client.return_value = mock_instance
         
-        client = IMAPEmailClient(**imap_config)
+        # Set up the logout mock
+        mock_instance.logout = Mock()
         
-        # Simulate connection by setting _client manually
+        client = EmailConnection(**imap_config)
         client._client = mock_instance
         
         await client.close()
         
-        # Verify logout was called and awaited
-        mock_instance.logout.assert_awaited_once()
+        # Verify logout was called
+        mock_instance.logout.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_fetch_emails_with_empty_result(imap_config):
@@ -225,7 +229,7 @@ async def test_fetch_emails_with_empty_result(imap_config):
     Raises:
         AssertionError: If empty result handling is incorrect
     """
-    with patch('app.email_connection.IMAPClient') as mock_imap_client, \
+    with patch('app.email.core.email_connection.IMAPClient') as mock_imap_client, \
          patch('asyncio.to_thread', new_callable=AsyncMock) as mock_to_thread:
         
         # Setup regular Mock for IMAPClient (since it's synchronous)
@@ -243,7 +247,7 @@ async def test_fetch_emails_with_empty_result(imap_config):
             
         mock_to_thread.side_effect = async_passthrough
         
-        client = IMAPEmailClient(**imap_config)
+        client = EmailConnection(**imap_config)
         emails = await client.fetch_emails(days=1)
         
         # Verify empty result handling
@@ -271,7 +275,7 @@ async def test_fetch_emails_with_fetch_error(imap_config):
         IMAPConnectionError: Expected when fetch operation fails
         AssertionError: If error handling is incorrect
     """
-    with patch('app.email_connection.IMAPClient') as mock_imap_client, \
+    with patch('app.email.core.email_connection.IMAPClient') as mock_imap_client, \
          patch('asyncio.to_thread', new_callable=AsyncMock) as mock_to_thread:
         
         mock_instance = Mock()
@@ -288,7 +292,7 @@ async def test_fetch_emails_with_fetch_error(imap_config):
             
         mock_to_thread.side_effect = async_passthrough
         
-        client = IMAPEmailClient(**imap_config)
+        client = EmailConnection(**imap_config)
         client._client = mock_instance
         
         with pytest.raises(IMAPConnectionError):
@@ -314,7 +318,7 @@ async def test_connection_timeout(imap_config):
     Raises:
         IMAPConnectionError: Expected when connection times out
     """
-    with patch('app.email_connection.IMAPClient') as mock_imap_client, \
+    with patch('app.email.core.email_connection.IMAPClient') as mock_imap_client, \
          patch('asyncio.to_thread', new_callable=AsyncMock) as mock_to_thread:
         
         mock_instance = Mock()
@@ -326,7 +330,7 @@ async def test_connection_timeout(imap_config):
             
         mock_to_thread.side_effect = async_passthrough
         
-        client = IMAPEmailClient(**imap_config)
+        client = EmailConnection(**imap_config)
         with pytest.raises(IMAPConnectionError):
             await client.connect()
 
@@ -350,7 +354,7 @@ async def test_concurrent_connections(imap_config):
     Raises:
         AssertionError: If concurrent connection handling is incorrect
     """
-    with patch('app.email_connection.IMAPClient') as mock_imap_client, \
+    with patch('app.email.core.email_connection.IMAPClient') as mock_imap_client, \
          patch('asyncio.to_thread', new_callable=AsyncMock) as mock_to_thread:
         
         mock_instance = Mock()
@@ -363,7 +367,7 @@ async def test_concurrent_connections(imap_config):
             
         mock_to_thread.side_effect = async_passthrough
         
-        client = IMAPEmailClient(**imap_config)
+        client = EmailConnection(**imap_config)
         await client.connect()
         
         # Verify connect was called
@@ -390,7 +394,7 @@ async def test_fetch_emails_different_days_range(imap_config):
     Raises:
         AssertionError: If email fetching with different day ranges fails
     """
-    with patch('app.email_connection.IMAPClient') as mock_imap_client, \
+    with patch('app.email.core.email_connection.IMAPClient') as mock_imap_client, \
          patch('asyncio.to_thread', new_callable=AsyncMock) as mock_to_thread:
         
         mock_instance = Mock()
@@ -413,7 +417,7 @@ async def test_fetch_emails_different_days_range(imap_config):
             
         mock_to_thread.side_effect = async_passthrough
         
-        client = IMAPEmailClient(**imap_config)
+        client = EmailConnection(**imap_config)
         client._client = mock_instance
         emails = await client.fetch_emails(days=7)
         
@@ -442,7 +446,7 @@ async def test_reconnection_after_failure(imap_config):
     Raises:
         IMAPConnectionError: On first connection attempt (expected)
     """
-    with patch('app.email_connection.IMAPClient') as mock_imap_client, \
+    with patch('app.email.core.email_connection.IMAPClient') as mock_imap_client, \
          patch('asyncio.to_thread', new_callable=AsyncMock) as mock_to_thread:
         
         mock_instance = Mock()
@@ -460,7 +464,7 @@ async def test_reconnection_after_failure(imap_config):
             
         mock_to_thread.side_effect = async_passthrough
         
-        client = IMAPEmailClient(**imap_config)
+        client = EmailConnection(**imap_config)
         with pytest.raises(IMAPConnectionError):
             await client.connect()
         

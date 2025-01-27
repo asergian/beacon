@@ -1,4 +1,5 @@
 import spacy
+import re
 from typing import Dict
 from ..models.analysis_settings import ProcessingConfig
 
@@ -24,4 +25,19 @@ class ContentAnalyzer:
         
     def _check_urgency(self, text: str) -> bool:
         """Checks if the text contains urgency keywords."""
-        return bool(ProcessingConfig.URGENCY_KEYWORDS & set(text.lower().split())) 
+        config = ProcessingConfig()
+        # Clean the text by replacing special characters with spaces
+        cleaned_text = re.sub(r'[^\w\s]', ' ', text.lower())
+        words = cleaned_text.split()
+        
+        # Check for exact matches first
+        if config.URGENCY_KEYWORDS & set(words):
+            return True
+            
+        # Check for words that start with urgency keywords
+        for word in words:
+            for keyword in config.URGENCY_KEYWORDS:
+                if word.startswith(keyword):
+                    return True
+        
+        return False 
