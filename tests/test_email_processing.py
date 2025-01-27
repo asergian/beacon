@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from app.email_processor import EmailOrchestrator, ProcessedEmail, ProcessingError
-from app.email_connection import IMAPEmailClient
+from app.email.core.email_processor import EmailOrchestrator, ProcessedEmail, ProcessingError
+from app.email.core.email_connection import IMAPEmailClient
 from datetime import datetime
 from flask import g
 from app import create_app, init_openai_client

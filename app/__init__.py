@@ -22,14 +22,16 @@ from openai import AsyncOpenAI
 from typing import Optional
 
 from .config import Config
-from .email_processor import (
-    EmailAnalyzer, TextAnalyzer, OpenAIAnalyzer, 
-    PriorityCalculator, AnalyzerConfig
-)
+from .email.core.email_processor import EmailProcessor
+from .email.core.email_connection import EmailConnection
+from .email.core.email_parsing import EmailParser
+from .email.models.analysis_settings import ProcessingConfig
+from .email.analyzers.semantic_analyzer import SemanticAnalyzer
+from .email.analyzers.content_analyzer import ContentAnalyzer
+from .email.utils.priority_scoring import PriorityScorer
+
 from .routes import init_routes
-from .nlp_setup import create_nlp_model
-from .email_parsing import EmailParser
-from .email_connection import IMAPEmailClient
+from .email.utils.nlp_setup import create_nlp_model
 
 def init_openai_client(app):
     """Initializes the AsyncOpenAI client with configuration from the Flask app.
@@ -133,19 +135,19 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     try:
         nlp_model = create_nlp_model()
         
-        text_analyzer = TextAnalyzer(nlp_model)
-        llm_analyzer = OpenAIAnalyzer()
-        priority_calculator = PriorityCalculator(
+        text_analyzer = ContentAnalyzer(nlp_model)
+        llm_analyzer = SemanticAnalyzer()
+        priority_calculator = PriorityScorer(
             vip_senders=set(app.config.get('VIP_SENDERS', [])),
-            config=AnalyzerConfig()
+            config=ProcessingConfig()
         )
 
-        # Unpack email_config when initializing IMAPEmailClient using **
-        email_client = IMAPEmailClient(**email_config)
+        # Unpack email_config when initializing EmailConnection using **
+        email_client = EmailConnection(**email_config)
         parser = EmailParser()
         
         # Create and store email analyzer
-        app.config['EMAIL_ANALYZER'] = EmailAnalyzer(
+        app.config['EMAIL_ANALYZER'] = EmailProcessor(
             email_client=email_client,
             text_analyzer=text_analyzer,
             llm_analyzer=llm_analyzer,

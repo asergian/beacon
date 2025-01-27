@@ -11,7 +11,7 @@ Typical usage:
 
 import logging
 import email
-from email.parser import BytesParser, Parser
+from email.parser import BytesParser
 from email.policy import default
 from email.utils import parseaddr
 from typing import Dict, Union, Optional
@@ -19,7 +19,7 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from dateutil.parser import parse
 import re
-from .email.utils import clean_message_id
+from ..utils.clean_message_id import clean_message_id
 
 # Constants
 MIN_EMAIL_LENGTH = 20

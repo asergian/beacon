@@ -6,14 +6,18 @@ from redis import asyncio as aioredis
 import spacy
 import logging
 
-from ..email_processor import EmailAnalyzer, AnalyzedEmail
-from .cache import EmailCache, RedisEmailCache
-from .rate_limiting import RateLimiter
-from .metrics import MetricsCollector
-from ..email_connection import IMAPEmailClient
-from ..email_parsing import EmailParser
-from ..email_processor import EmailAnalyzer, TextAnalyzer, OpenAIAnalyzer, PriorityCalculator, AnalyzerConfig
-from .utils import clean_message_id
+from ..core.email_processor import EmailProcessor
+from ..models.processed_email import ProcessedEmail
+from ..storage.cache import EmailCache, RedisEmailCache
+from ..utils.rate_limiting import RateLimiter
+from ..utils.metrics import MetricsCollector
+from ..core.email_connection import EmailConnection
+from ..core.email_parsing import EmailParser
+from ..analyzers.semantic_analyzer import SemanticAnalyzer
+from ..analyzers.content_analyzer import ContentAnalyzer
+from ..utils.priority_scoring import PriorityScorer
+from ..models.analysis_settings import ProcessingConfig
+from ..utils.clean_message_id import clean_message_id
 
 @dataclass
 class AnalysisCommand:
@@ -26,7 +30,7 @@ class AnalysisCommand:
 @dataclass
 class AnalysisResult:
     """Represents the result of email analysis"""
-    emails: List[AnalyzedEmail]
+    emails: List[ProcessedEmail]
     stats: Dict[str, any]  # processing stats
     errors: List[Dict]
 
@@ -35,9 +39,9 @@ class EmailPipeline:
     
     def __init__(
         self,
-        connection: IMAPEmailClient,
+        connection: EmailConnection,
         parser: EmailParser,
-        processor: EmailAnalyzer,
+        processor: EmailProcessor,
         cache: Optional[EmailCache] = None,
         rate_limiter: Optional[RateLimiter] = None,
         metrics: Optional[MetricsCollector] = None
@@ -131,7 +135,7 @@ class EmailPipeline:
             stats["errors"] += 1
             raise
 
-    def _apply_filters(self, emails: List[AnalyzedEmail], command: AnalysisCommand) -> List[AnalyzedEmail]:
+    def _apply_filters(self, emails: List[ProcessedEmail], command: AnalysisCommand) -> List[ProcessedEmail]:
         """Apply priority and category filters to email list"""
         filtered = emails
         if command.priority_threshold:
@@ -163,7 +167,7 @@ def create_pipeline(config: dict):
             logging.warning(f"Failed to initialize Redis cache: {e}. Continuing without caching.")
     
     # Initialize email connection
-    email_connection = IMAPEmailClient(
+    email_connection = EmailConnection(
         server=config['IMAP_SERVER'],
         email=config['EMAIL'],
         password=config['IMAP_PASSWORD']
@@ -171,20 +175,20 @@ def create_pipeline(config: dict):
     
     # Initialize NLP components
     nlp = spacy.load("en_core_web_sm")
-    text_analyzer = TextAnalyzer(nlp)
+    text_analyzer = ContentAnalyzer(nlp)
     
     # Initialize LLM analyzer
-    llm_analyzer = OpenAIAnalyzer(model=config.get('OPENAI_MODEL', 'gpt-4o-mini'))
+    llm_analyzer = SemanticAnalyzer()
     
     # Initialize priority calculator with VIP senders
     vip_senders = set(config.get('VIP_SENDERS', []))
-    priority_calculator = PriorityCalculator(vip_senders, AnalyzerConfig())
+    priority_calculator = PriorityScorer(vip_senders, ProcessingConfig())
     
     # Initialize parser
     email_parser = EmailParser()
     
     # Initialize the email analyzer that combines all components
-    email_processor = EmailAnalyzer(
+    email_processor = EmailProcessor(
         email_client=email_connection,
         text_analyzer=text_analyzer,
         llm_analyzer=llm_analyzer,

@@ -25,7 +25,7 @@ import pytest
 import asyncio
 from unittest.mock import AsyncMock, patch, MagicMock, Mock
 from imapclient import IMAPClient
-from app.email_connection import IMAPEmailClient, IMAPConnectionError
+from app.email.core.email_connection import IMAPEmailClient, IMAPConnectionError
 from datetime import date
 import socket
 

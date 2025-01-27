@@ -5,17 +5,17 @@ from datetime import datetime, timedelta, timezone
 import json
 import logging
 
-from ..email_processor import AnalyzedEmail
+from ..models.processed_email import ProcessedEmail
 
 class EmailCache(ABC):
     """Abstract base class for email caching"""
     
     @abstractmethod
-    async def get_recent(self, days: int) -> List[AnalyzedEmail]:
+    async def get_recent(self, days: int) -> List[ProcessedEmail]:
         pass
 
     @abstractmethod
-    async def store_many(self, emails: List[AnalyzedEmail]) -> None:
+    async def store_many(self, emails: List[ProcessedEmail]) -> None:
         pass
 
 class RedisEmailCache(EmailCache):
@@ -26,7 +26,7 @@ class RedisEmailCache(EmailCache):
         self.ttl = timedelta(days=ttl_days)
         self.key_prefix = "email:"
 
-    async def get_recent(self, days: int) -> List[AnalyzedEmail]:
+    async def get_recent(self, days: int) -> List[ProcessedEmail]:
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
         
         # Get all email keys
@@ -49,7 +49,7 @@ class RedisEmailCache(EmailCache):
                         
                         # Compare dates only if parsing succeeded
                         if parsed_date >= cutoff:
-                            emails.append(AnalyzedEmail(**email_dict))
+                            emails.append(ProcessedEmail(**email_dict))
                     except (ValueError, KeyError) as e:
                         # Log error but continue processing other emails
                         logging.warning(f"Error processing cached email {key}: {e}")
@@ -60,7 +60,7 @@ class RedisEmailCache(EmailCache):
             logging.error(f"Error fetching emails from Redis: {e}")
             return []
 
-    async def store_many(self, emails: List[AnalyzedEmail]) -> None:
+    async def store_many(self, emails: List[ProcessedEmail]) -> None:
         # Store each email with message_id as key
         print("Number of emails to store: ", len(emails))
         for email in emails:

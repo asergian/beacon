@@ -10,9 +10,12 @@ Typical usage example:
 
 from flask import Blueprint, current_app, render_template, jsonify, request
 import logging
-from quart_flask_patch import quart_flask_patch
-from .email_processor import EmailAnalyzer, TextAnalyzer
-from .email.pipeline import create_pipeline, AnalysisCommand
+#from quart_flask_patch import quart_flask_patch
+from .email.core.email_processor import EmailProcessor
+from .email.analyzers.semantic_analyzer import SemanticAnalyzer
+from .email.analyzers.content_analyzer import ContentAnalyzer
+from .email.pipeline.pipeline import create_pipeline, AnalysisCommand
+from .email.models.analysis_settings import ProcessingConfig
 
 try:
     email_bp = Blueprint('email', __name__)
@@ -53,7 +56,7 @@ async def get_emails():
     """Get emails with optional filtering"""
     # Parse query parameters
     days = int(request.args.get('days', 2))
-    priority = float(request.args.get('priority', 0))
+    priority = float(request.args.get('priority', ProcessingConfig.BASE_PRIORITY_SCORE))
     categories = request.args.getlist('category')  # Can pass multiple categories
     batch_size = int(request.args.get('batch_size', 100))
 

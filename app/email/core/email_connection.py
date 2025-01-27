@@ -12,7 +12,7 @@ Typical usage:
 
 import asyncio
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List
 from imapclient import IMAPClient
 from datetime import datetime, timedelta
 
@@ -20,7 +20,7 @@ class IMAPConnectionError(Exception):
     """Exception raised for IMAP connection-related errors."""
     pass
 
-class IMAPEmailClient:
+class EmailConnection:
     """
     A client for connecting to and fetching emails from an IMAP server.
 
