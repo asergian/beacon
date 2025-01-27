@@ -54,9 +54,8 @@ def test_email_orchestrator_initialization(app):
 
 def test_logging_configuration(app):
     """Ensure logging is configured correctly."""
-    expected_level = logging.getLevelName(app.config['LOGGING_LEVEL'])
-    actual_level = logging.getLogger().level
-    assert actual_level == logging.getLevelName(expected_level), f"Expected {expected_level}, got {actual_level}"
+    expected_level = app.config['LOGGING_LEVEL']
+    assert logging.getLogger().level == logging.getLevelName(expected_level)
 
 def test_route_registration(app):
     """Check that routes are registered."""
