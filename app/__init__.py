@@ -17,11 +17,9 @@ Functions:
 """
 
 from flask import Flask, g, current_app
-from flask.cli import load_dotenv
 import logging
 from openai import AsyncOpenAI
 from typing import Optional
-import os
 
 from .config import Config
 from .email_processor import (
@@ -98,7 +96,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         # Mask sensitive values in logs
         value = app.config.get(key, 'Not set')
         if key in ['IMAP_PASSWORD', 'OPENAI_API_KEY']:
-            value = f"{value[:3]}..." if value else 'Not set'
+            value = f"{value[:1]}..." if value else 'Not set'
         logger.info(f"{key}: {value}")
 
     # Verify all required configurations

@@ -19,6 +19,7 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from dateutil.parser import parse
 import re
+from .email.utils import clean_message_id
 
 # Constants
 MIN_EMAIL_LENGTH = 20
@@ -36,6 +37,7 @@ class EmailMetadata:
     Structured representation of email metadata.
 
     Attributes:
+        id (str): Unique email Message-ID (cleaned)
         subject (str): Email subject
         sender (str): Email sender
         body (str): Email body text
@@ -51,6 +53,8 @@ class EmailMetadata:
         """Validate metadata after initialization."""
         if not isinstance(self.date, datetime):
             raise ValueError("date must be a datetime object")
+        # Clean the Message-ID by removing angle brackets and whitespace
+        self.id = self.id.strip().strip('<>') if self.id else ''
 
 class EmailParser:
     """
@@ -126,6 +130,25 @@ class EmailParser:
         # print(f"DEBUG - Using regex pattern: {EMAIL_REGEX}")  # Print the pattern being used
         return match_result
 
+    def _extract_message_id(self, msg: email.message.Message) -> str:
+        """
+        Extract and clean the Message-ID.
+        
+        Args:
+            msg: Email message object
+            
+        Returns:
+            Cleaned Message-ID or generated fallback ID
+        """
+        message_id = self._safe_extract_header(msg, 'Message-ID')
+        if message_id:
+            return clean_message_id(message_id)
+        
+        # Fallback: Generate a unique ID using timestamp and content hash
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        content_hash = str(hash(str(msg)))[:8]
+        return f"generated-{timestamp}-{content_hash}"
+
     def extract_metadata(self, raw_email: Union[bytes, Dict]) -> Optional[EmailMetadata]:
         """
         Extract comprehensive email metadata.
@@ -179,7 +202,7 @@ class EmailParser:
                 return None
 
             # Extract metadata with robust error handling
-            id = self._safe_extract_header(msg, 'id')
+            id = self._extract_message_id(msg)
             subject = self._safe_extract_header(msg, 'Subject')
             sender = self._safe_extract_header(msg, 'From')
             body = self._extract_body(msg)

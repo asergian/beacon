@@ -383,6 +383,7 @@ class EmailAnalyzer:
             EmailAnalysisError: If the analysis fails.
         """
         try:
+            print(f"Starting analysis for email: {metadata.id}")
             self.logger.info("Starting analysis for email: %s", metadata.subject[:50])
 
             nlp_results = self.text_analyzer.analyze(metadata.body)
