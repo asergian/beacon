@@ -13,7 +13,7 @@ from .metrics import MetricsCollector
 from ..email_connection import IMAPEmailClient
 from ..email_parsing import EmailParser
 from ..email_processor import EmailAnalyzer, TextAnalyzer, OpenAIAnalyzer, PriorityCalculator, AnalyzerConfig
-from ..utils import clean_message_id
+from .utils import clean_message_id
 
 @dataclass
 class AnalysisCommand:
