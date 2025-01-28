@@ -11,6 +11,7 @@ import asyncio
 from redis import asyncio as aioredis
 import spacy
 import logging
+from flask import session
 
 from ..core.email_processor import EmailProcessor
 from ..models.processed_email import ProcessedEmail
@@ -62,16 +63,25 @@ class EmailPipeline:
 
     async def get_analyzed_emails(self, command: AnalysisCommand) -> AnalysisResult:
         """Main method to get and analyze emails with caching and metrics"""
-        start_time = datetime.now()
+        #start_time = datetime.now()
         errors = []
         stats = {"processed": 0, "cached": 0, "errors": 0, "new": 0}
 
         try:
+            # Ensure Gmail client is connected with current user's credentials
+            await self.connection.connect()
+            
             # Get cached emails first if cache is available
             cached_emails = []
             cached_ids = set()
             if self.cache:
-                cached_emails = await self.cache.get_recent(command.cache_duration_days)
+                # Set the user email from session
+                if 'user' in session and 'email' in session['user']:
+                    await self.cache.set_user(session['user']['email'])
+                else:
+                    raise ValueError("No user email found in session")
+                    
+                cached_emails = await self.cache.get_recent(command.cache_duration_days, command.days_back)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_emails)
 
@@ -151,6 +161,12 @@ class EmailPipeline:
         """Force refresh of cache with recent emails"""
         if not self.cache:
             return
+            
+        # Set the user email from session
+        if 'user' in session and 'email' in session['user']:
+            await self.cache.set_user(session['user']['email'])
+        else:
+            raise ValueError("No user email found in session")
             
         command = AnalysisCommand(days_back=days, batch_size=batch_size)
         await self.get_analyzed_emails(command)

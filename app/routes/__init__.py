@@ -1,0 +1,29 @@
+"""Main routes initialization module."""
+from flask import Flask, redirect, url_for
+from ..auth.routes import auth_bp
+from .email_routes import email_bp
+from .test_routes import test_bp
+from ..utils.logging_config import setup_logging
+
+logger = setup_logging()
+
+def init_routes(app: Flask):
+    """Initialize all application routes."""
+    try:
+        app.register_blueprint(auth_bp, url_prefix='/auth')
+        app.register_blueprint(email_bp, url_prefix='/email')
+        if app.debug:  # Only register test routes in debug mode
+            app.register_blueprint(test_bp, url_prefix='/test')
+    except Exception as e:
+        logger.error(f"Failed to register routes: {str(e)}")
+        raise
+    
+    # Add root route
+    @app.route('/')
+    def root():
+        return redirect(url_for('auth.show_login')) 
+    
+    @app.route('/logout')
+    def logout():
+        """Redirect to the auth logout route."""
+        return redirect(url_for('auth.logout'))  # Redirect to the auth/logout route

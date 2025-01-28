@@ -21,13 +21,27 @@ class EmailCache(ABC):
 class RedisEmailCache(EmailCache):
     """Redis implementation of email cache"""
     
-    def __init__(self, redis_client, ttl_days: int = 7):
+    def __init__(self, redis_client, ttl_days: int = 7, user_email: str = None):
         self.redis = redis_client
         self.ttl = timedelta(days=ttl_days)
-        self.key_prefix = "email:"
+        self.user_email = user_email
+        self._base_prefix = "email:"
+        
+    @property
+    def key_prefix(self) -> str:
+        """Get the cache key prefix for the current user"""
+        if not self.user_email:
+            raise ValueError("user_email must be set to access cache")
+        return f"{self._base_prefix}{self.user_email}:"
 
+    async def set_user(self, user_email: str) -> None:
+        """Set the current user for the cache"""
+        self.user_email = user_email
+        
     async def _ensure_redis_connection(self):
         """Ensure Redis connection is active and working"""
+        if not self.user_email:
+            raise ValueError("user_email must be set before accessing cache")
         try:
             if not self.redis.connection:
                 await self.redis.initialize()
@@ -42,14 +56,23 @@ class RedisEmailCache(EmailCache):
                 logging.error(f"Redis reconnection failed: {e}")
                 raise
 
-    async def get_recent(self, cache_duration_days: int) -> List[ProcessedEmail]:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=cache_duration_days)
+    async def get_recent(self, cache_duration_days: int, days_back: int) -> List[ProcessedEmail]:
+        # Calculate the cutoff time using local timezone
+        local_tz = datetime.now().astimezone().tzinfo  # Get local timezone info
+        cutoff = (datetime.now(local_tz) - timedelta(days=cache_duration_days)).replace(hour=0, minute=0, second=0, microsecond=0)
         
+        # Calculate the start date based on days_back
+        start_date = (datetime.now(local_tz) - timedelta(days=days_back)).replace(hour=0, minute=0, second=0, microsecond=0)
+
         try:
             await self._ensure_redis_connection()
             
+            # Ensure we are fetching keys specific to the current user
+            if not self.user_email:
+                raise ValueError("user_email must be set to fetch user-specific emails")
+                
             keys = await self.redis.keys(f"{self.key_prefix}*")
-            logging.info(f"Found {len(keys)} keys in Redis")
+            logging.info(f"Found {len(keys)} keys in Redis for user {self.user_email}")
             emails = []
             
             # Fetch and deserialize emails
@@ -64,7 +87,8 @@ class RedisEmailCache(EmailCache):
                         if parsed_date.tzinfo is None:
                             parsed_date = parsed_date.replace(tzinfo=timezone.utc)
                         
-                        if parsed_date >= cutoff:
+                        # Filter emails based on both cutoff and start_date
+                        if parsed_date >= start_date and parsed_date >= cutoff:
                             emails.append(ProcessedEmail(**email_dict))
                         else:
                             logging.info(f"Email {key} filtered out due to date")
@@ -82,7 +106,11 @@ class RedisEmailCache(EmailCache):
         try:
             await self._ensure_redis_connection()
             
-            logging.info(f"Number of emails to store: {len(emails)}")
+            # Ensure we are storing emails specific to the current user
+            if not self.user_email:
+                raise ValueError("user_email must be set to store user-specific emails")
+            
+            logging.info(f"Number of emails to store for user {self.user_email}: {len(emails)}")
             for email in emails:
                 try:
                     key = f"{self.key_prefix}{email.id}"
@@ -92,7 +120,7 @@ class RedisEmailCache(EmailCache):
                     email_dict['date'] = email_dict['date'].isoformat()
 
                     ttl_seconds = int(self.ttl.total_seconds())
-                    logging.info(f"Storing email {email.id} with TTL: {ttl_seconds} seconds")
+                    logging.info(f"Storing email {email.id} for user {self.user_email} with TTL: {ttl_seconds} seconds")
 
                     await self.redis.set(
                         key,
@@ -101,12 +129,12 @@ class RedisEmailCache(EmailCache):
                     )
                     
                     exists = await self.redis.exists(key)
-                    logging.info(f"Email {email.id} stored successfully. Key exists: {exists}")
+                    logging.info(f"Email {email.id} stored successfully for user {self.user_email}. Key exists: {exists}")
                 except Exception as e:
-                    logging.error(f"Error storing email {email.id} in Redis: {e}")
+                    logging.error(f"Error storing email {email.id} for user {self.user_email} in Redis: {e}")
                     continue
         except Exception as e:
-            logging.error(f"Error in store_many: {e}")
+            logging.error(f"Error in store_many for user {self.user_email}: {e}")
 
     async def clear_cache(self) -> None:
         """Flush the Redis cache"""
