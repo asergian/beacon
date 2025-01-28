@@ -20,6 +20,7 @@ from flask import Flask, g, current_app
 import logging
 from openai import AsyncOpenAI
 from typing import Optional
+import os
 
 from .config import Config
 from .email.core.email_processor import EmailProcessor
@@ -32,6 +33,7 @@ from .email.utils.priority_scoring import PriorityScorer
 
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
+from .auth import create_auth_blueprint
 
 def init_openai_client(app):
     """Initializes the AsyncOpenAI client with configuration from the Flask app.
@@ -91,6 +93,11 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         if not key.startswith('_')
     })
     logger.info("Config loaded and updated")
+
+    # Set up session configuration
+    app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
+    app.config['SESSION_TYPE'] = 'filesystem'
+    logger.info("Session configuration initialized")
 
     # Log the actual configuration values being used
     logger.info("Current configuration values:")
@@ -160,10 +167,12 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         app.logger.error(f"Failed to initialize email components: {str(e)}")
         raise
 
-    # Register routes
+    # Register blueprints
     try:
         init_routes(app)
-        app.logger.info("Routes initialized successfully")
+        auth_bp = create_auth_blueprint()
+        app.register_blueprint(auth_bp, url_prefix='/auth')
+        app.logger.info("Routes and auth blueprint initialized successfully")
     except Exception as e:
         app.logger.error(f"Failed to initialize routes: {str(e)}")
         raise

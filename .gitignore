@@ -1,7 +1,9 @@
 venv/*
+certs/
 .env
 playground/*
 .DS_Store
 .ipynb_checkpoints
 __pycache__/
 .coverage
+beacon-gmail-client.json

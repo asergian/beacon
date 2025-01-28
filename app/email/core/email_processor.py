@@ -1,13 +1,12 @@
-"""Email processing system that analyzes emails using NLP and LLM capabilities.
+"""Email processing module.
 
-This module provides classes and methods to analyze emails, extract key information,
-calculate priorities, and handle errors effectively. It utilizes OpenAI's language model
-and spaCy for natural language processing.
+This module handles the processing and analysis of emails, combining
+various analyzers and processors to extract meaningful information.
 """
 
-import asyncio
 import logging
-from typing import List
+from typing import List, Dict, Any, Optional
+from datetime import datetime
 
 from .email_connection import EmailConnection
 from .email_parsing import EmailParser, EmailMetadata
@@ -18,16 +17,17 @@ from ..models.processed_email import ProcessedEmail
 from ..models.exceptions import EmailProcessingError
 
 class EmailProcessor:
-    """Main coordinator for email analysis process."""
+    """Processes emails through various analyzers and combines results."""
     
     def __init__(
         self,
-        email_client: EmailConnection,
-        text_analyzer: SemanticAnalyzer,
-        llm_analyzer: ContentAnalyzer,
+        email_client: Any,  # Can be either EmailConnection or GmailClient
+        text_analyzer: ContentAnalyzer,
+        llm_analyzer: SemanticAnalyzer,
         priority_calculator: PriorityScorer,
-        parser: EmailParser
+        parser: Any  # EmailParser
     ):
+        """Initialize the email processor with its components."""
         self.email_client = email_client
         self.text_analyzer = text_analyzer
         self.llm_analyzer = llm_analyzer
@@ -35,62 +35,114 @@ class EmailProcessor:
         self.parser = parser
         self.logger = logging.getLogger(__name__)
 
-    # async def process_recent_emails(self, days_back: int = 1) -> List[ProcessedEmail]:
-    #     """Analyzes recent emails within the specified number of days."""
-    #     async with self:
-    #         raw_emails = await self.email_client.fetch_emails(days=days_back)
-    #         results = await asyncio.gather(
-    #             *[self._process_single_email(email) for email in raw_emails],
-    #             return_exceptions=True
-    #         )
-    #         return [r for r in results if isinstance(r, ProcessedEmail)]
-
-    async def process_parsed_emails(self, parsed_emails: List[EmailMetadata]) -> List[ProcessedEmail]:
-        """Analyzes a list of already parsed emails."""
-        results = await asyncio.gather(
-            *[self._process_single_email(email) for email in parsed_emails],
-            return_exceptions=True
-        )
-        return [r for r in results if isinstance(r, ProcessedEmail)]
-
-    async def _process_single_email(self, metadata: EmailMetadata) -> ProcessedEmail:
-        """Analyzes a single parsed email."""
+    async def analyze_recent_emails(self, days_back: int = 1) -> List[ProcessedEmail]:
+        """
+        Fetch and analyze recent emails.
+        
+        Args:
+            days_back: Number of days to look back
+            
+        Returns:
+            List of processed emails with analysis results
+        """
         try:
-            print(f"Starting processing for email: {metadata.id}")
-            self.logger.info("Starting processing for email: %s", metadata.subject[:50])
-
-            nlp_results = self.text_analyzer.analyze(metadata.body)
-            self.logger.info("NLP processing - entities: %d, urgent: %s", 
-                           len(nlp_results.get('entities', {})), 
-                           nlp_results.get('is_urgent', False))
-
-            llm_results = await self.llm_analyzer.analyze(metadata, nlp_results)
-            self.logger.info("LLM processing - category: %s, needs_action: %s", 
-                           llm_results.get('category'), 
-                           llm_results.get('needs_action'))
-
-            priority_score, priority_level = self.priority_calculator.score(
-                metadata.sender, nlp_results, llm_results
-            )
-            self.logger.info("Priority calculated - sender: %s, score: %d, level: %s", 
-                           metadata.sender[:30], priority_score, priority_level)
-
-            return ProcessedEmail(
-                id=metadata.id,
-                subject=metadata.subject,
-                sender=metadata.sender,
-                body=metadata.body,
-                date=metadata.date,
-                needs_action=llm_results['needs_action'],
-                category=llm_results['category'],
-                action_items=llm_results['action_items'],
-                summary=llm_results['summary'],
-                priority=priority_score,
-                priority_level=priority_level
-            )
+            raw_emails = await self.email_client.fetch_emails(days_back)
+            parsed_emails = []
+            
+            for email in raw_emails:
+                parsed = self.parser.extract_metadata(email)
+                if parsed:
+                    parsed_emails.append(parsed)
+            
+            return await self.analyze_parsed_emails(parsed_emails)
+            
         except Exception as e:
-            self.logger.error(f"Failed to process email: {e}")
-            raise EmailProcessingError(f"Processing failed: {str(e)}")
+            self.logger.error(f"Error analyzing recent emails: {e}")
+            raise
+
+    async def analyze_parsed_emails(self, parsed_emails: List[EmailMetadata]) -> List[ProcessedEmail]:
+        """
+        Analyze parsed emails using all available analyzers.
+        
+        Args:
+            parsed_emails: List of parsed EmailMetadata objects
+            
+        Returns:
+            List of ProcessedEmail objects with complete analysis
+        """
+        processed_emails = []
+        
+        for email_data in parsed_emails:
+            try:
+                # Debug logging
+                self.logger.info(f"Processing email: {email_data.sender}")
+                
+                # Extract text content and headers
+                text_content = email_data.body
+                #headers = email_data.headers
+                
+                # Debug logging for headers
+                #self.logger.info(f"Email headers: {headers.keys()}")
+                
+                # Run text analysis
+                text_analysis = self.text_analyzer.analyze(text_content)
+                print(f"Text analysis complete")
+                # Prepare data for LLM analysis
+                # llm_input = {
+                #     'subject': email_data.subject,
+                #     'body': text_content,
+                #     'from': email_data.sender
+                #     #'to': email_data.recipient
+                # }
+
+                #print(f"LLM input: {llm_input.get('subject')}")
+                
+                # Run LLM analysis
+                llm_analysis = await self.llm_analyzer.analyze(email_data, text_analysis)
+                print(f"LLM analysis complete")
+                
+                # Calculate priority
+                #sender = email_data.sender
+                priority_score, priority_level = self.priority_calculator.score(
+                    email_data.sender,
+                    text_analysis,
+                    llm_analysis
+                )
+                
+                # Create processed email object with safe dictionary access
+                processed_email = ProcessedEmail(
+                    id=email_data.id,
+                    subject=email_data.subject,
+                    sender=email_data.sender,
+                    #recipient=headers.get('to', ''),
+                    body=text_content,
+                    date=email_data.date or datetime.now(),
+
+                    urgency=text_analysis.get('urgency', False),
+                    entities=text_analysis.get('entities', {}),
+                    key_phrases=text_analysis.get('key_phrases', []),
+                    sentence_count=text_analysis.get('sentence_count', 0),
+                    sentiment_indicators=text_analysis.get('sentiment_indicators', {}),
+                    structural_elements=text_analysis.get('structural_elements', {}),
+
+                    needs_action=llm_analysis.get('needs_action', False),
+                    category=llm_analysis.get('category', 'uncategorized'),
+                    action_items=llm_analysis.get('action_items', []),
+                    summary=llm_analysis.get('summary', ''),
+                    
+                    #has_attachments=email_data.has_attachments
+                    priority=priority_score,
+                    priority_level=priority_level
+                )
+                
+                processed_emails.append(processed_email)
+                self.logger.info(f"Successfully processed email {email_data.id}")
+                
+            except Exception as e:
+                self.logger.error(f"Error processing email {email_data.id}: {e}")
+                continue
+        
+        return processed_emails
 
     async def __aenter__(self):
         """Enters the asynchronous context."""

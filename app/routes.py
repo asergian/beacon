@@ -8,7 +8,7 @@ Typical usage example:
     init_routes(app)
 """
 
-from flask import Blueprint, current_app, render_template, jsonify, request
+from flask import Blueprint, current_app, render_template, jsonify, request, redirect, url_for
 import logging
 #from quart_flask_patch import quart_flask_patch
 from .email.core.email_processor import EmailProcessor
@@ -16,6 +16,16 @@ from .email.analyzers.semantic_analyzer import SemanticAnalyzer
 from .email.analyzers.content_analyzer import ContentAnalyzer
 from .email.pipeline.pipeline import create_pipeline, AnalysisCommand
 from .email.models.analysis_settings import ProcessingConfig
+from .auth.decorators import login_required
+import asyncio
+from functools import wraps
+
+def async_route(f):
+    """Decorator to handle async routes."""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(f(*args, **kwargs))
+    return wrapper
 
 try:
     email_bp = Blueprint('email', __name__)
@@ -36,26 +46,37 @@ def init_routes(app):
         # Create pipeline instance with app config
         app.pipeline = create_pipeline(app.config)
         logger.info("Email blueprint and pipeline registered successfully")
+        
+        # Add root route
+        @app.route('/')
+        def root():
+            return redirect(url_for('auth.show_login'))
+            
     except Exception as e:
         logger.error(f"Failed to register email blueprint: {str(e)}")
         raise
 
 @email_bp.route('/')
+@login_required
+@async_route
 async def home():
     """Home page with recent emails"""
     command = AnalysisCommand(
-        days_back=2,  # Show last 2 days' emails by default
+        days_back=0,  # Show last 0 days' emails by default
         priority_threshold=None,  # Show all priorities
         categories=None  # Show all categories
     )
     result = await current_app.pipeline.get_analyzed_emails(command)
+    print(f"Result: {len(result.emails)}")
     return render_template('email_summary.html', emails=result.emails)
 
 @email_bp.route('/emails')
+@login_required
+@async_route
 async def get_emails():
     """Get emails with optional filtering"""
     # Parse query parameters
-    days = int(request.args.get('days', 2))
+    days = int(request.args.get('days', 0))
     priority = float(request.args.get('priority', ProcessingConfig.BASE_PRIORITY_SCORE))
     categories = request.args.getlist('category')  # Can pass multiple categories
     batch_size = int(request.args.get('batch_size', 100))
@@ -83,6 +104,8 @@ async def get_emails():
                          stats=result.stats)
 
 @email_bp.route('/emails/refresh', methods=['POST'])
+@login_required
+@async_route
 async def refresh_emails():
     """Force refresh of email cache"""
     days = int(request.args.get('days', 1))
@@ -96,6 +119,8 @@ async def refresh_emails():
     })
 
 @email_bp.route('/test-emails')
+@login_required
+@async_route
 async def show_emails():
     """Processes and displays email summaries."""
     try:
@@ -107,6 +132,8 @@ async def show_emails():
         return {"error": str(e)}, 500
 
 @email_bp.route('/test-connection')
+@login_required
+@async_route
 async def test_email_connection():
     """Test endpoint to verify email connection and fetch emails directly."""
     try:

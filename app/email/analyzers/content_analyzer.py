@@ -15,12 +15,27 @@ class ContentAnalyzer:
         self.nlp = nlp_model
         
     def analyze(self, text: str) -> Dict:
-        """Analyzes the text for entities and urgency."""
+        """Analyzes the text for entities, urgency, and additional linguistic features.
+        
+        Returns:
+            Dict containing analyzed features including entities, key phrases,
+            sentiment indicators, and structural elements useful for LLM processing.
+        """
         doc = self.nlp(text)
         return {
-            'entities': {ent.label_: ent.text for ent in doc.ents},
-            'key_phrases': [chunk.text for chunk in doc.noun_chunks],
-            'is_urgent': self._check_urgency(text)
+            'entities': dict(list((ent.label_, ent.text) for ent in doc.ents)[:5]),  # Top 5 entities
+            'key_phrases': [chunk.text for chunk in doc.noun_chunks][:3],  # Top 3 phrases
+            'urgency': self._check_urgency(text),
+            'sentence_count': len(list(doc.sents)),
+            'sentiment_indicators': {
+                'negations': [token.text for token in doc if token.dep_ == 'neg'][:2],  # Limit to 2 negations
+                'questions': any(sent.root.tag_ == 'VBZ' and sent[-1].text == '?' for sent in doc.sents)
+            },
+            'structural_elements': {
+                'verbs': [token.lemma_ for token in doc if token.pos_ == 'VERB'][:5],  # Top 5 verbs
+                'named_entities_categories': list(set(ent.label_ for ent in doc.ents))[:3],  # Top 3 entity types
+                'dependencies': [(token.text, token.dep_) for token in doc if token.dep_ in ('ROOT', 'dobj', 'iobj')][:3]  # Top 3 dependencies
+            }
         }
         
     def _check_urgency(self, text: str) -> bool:

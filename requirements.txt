@@ -29,3 +29,14 @@ typing_extensions==4.12.2
 
 # Development Dependencies
 rich==13.9.4
+
+# Google OAuth
+google-auth==2.27.0
+google-auth-oauthlib==1.2.0
+requests==2.31.0
+
+# SSL
+pyOpenSSL==24.0.0
+
+# Google API Client
+google-api-python-client==2.118.0
