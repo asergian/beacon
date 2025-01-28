@@ -29,6 +29,7 @@ from ..utils.clean_message_id import clean_message_id
 class AnalysisCommand:
     """Represents a request to analyze emails"""
     days_back: int
+    cache_duration_days: int
     batch_size: Optional[int] = None
     priority_threshold: Optional[int] = None
     categories: Optional[List[str]] = None
@@ -70,9 +71,12 @@ class EmailPipeline:
             cached_emails = []
             cached_ids = set()
             if self.cache:
-                cached_emails = await self.cache.get_recent(command.days_back)
+                cached_emails = await self.cache.get_recent(command.cache_duration_days)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_emails)
+
+            print("Number of cached emails: ", len(cached_emails))
+            print("IDs: ", cached_ids)
 
             # Fetch new emails
             # if self.rate_limiter:
@@ -83,10 +87,12 @@ class EmailPipeline:
             # Filter out already cached emails
             new_raw_emails = []
             for email in raw_emails:
-                message_id = email.get('Message-ID')
-                cleaned_id = clean_message_id(message_id)
-                if cleaned_id and cleaned_id not in cached_ids:
+                # Use Gmail API ID instead of Message-ID
+                gmail_id = email.get('id')  # This is the hex ID from Gmail API
+                if gmail_id and gmail_id not in cached_ids:
                     new_raw_emails.append(email)
+                else:
+                    print(f"Skipping cached email with ID: {gmail_id}")
             
             stats["new"] = len(new_raw_emails)
             print(f"New emails: {stats['new']}")

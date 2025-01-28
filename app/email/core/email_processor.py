@@ -5,11 +5,10 @@ various analyzers and processors to extract meaningful information.
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Any
 from datetime import datetime
 
-from .email_connection import EmailConnection
-from .email_parsing import EmailParser, EmailMetadata
+from .email_parsing import EmailMetadata
 from ..analyzers.semantic_analyzer import SemanticAnalyzer
 from ..analyzers.content_analyzer import ContentAnalyzer
 from ..utils.priority_scoring import PriorityScorer

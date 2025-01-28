@@ -63,6 +63,7 @@ async def home():
     """Home page with recent emails"""
     command = AnalysisCommand(
         days_back=0,  # Show last 0 days' emails by default
+        cache_duration_days = 7,  # Duration of the cache in days
         priority_threshold=None,  # Show all priorities
         categories=None  # Show all categories
     )
@@ -305,3 +306,20 @@ async def test_fetch_parse_analyze():
     except Exception as e:
         logger.error(f"Test fetch, parse, and analyze failed: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@email_bp.route('/cache/flush')
+@async_route
+async def flush_cache():
+    """Force flush of email cache"""
+    try:
+        await current_app.pipeline.cache.clear_cache()
+        return jsonify({
+            'status': 'success',
+            'message': 'Cache successfully cleared'
+        })
+    except Exception as e:
+        logger.error(f"Failed to clear cache: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to clear cache: {str(e)}'
+        }), 500

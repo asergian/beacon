@@ -153,14 +153,6 @@ class EmailParser:
     def extract_metadata(self, raw_email: Dict[str, Any]) -> Optional[EmailMetadata]:
         """
         Extract metadata from a raw email message.
-        
-        Supports both IMAP raw messages and Gmail API message format.
-        
-        Args:
-            raw_email: Dictionary containing raw email data
-            
-        Returns:
-            EmailMetadata object containing parsed email metadata or None if parsing fails
         """
         try:
             # Handle Gmail API format
@@ -171,8 +163,12 @@ class EmailParser:
                 return None
 
             # Extract basic headers
+            message_id = self._extract_message_id(email_msg)
+            
+            # Use the raw_email['id'] if available (Gmail API ID), otherwise use the message_id
+            email_id = raw_email.get('id', message_id)
+            
             headers = {
-                'message_id': email_msg.get('Message-ID'),
                 'subject': self._decode_header(email_msg.get('subject', '')),
                 'from': self._decode_header(email_msg.get('from', '')),
                 'to': self._decode_header(email_msg.get('to', '')),
@@ -183,12 +179,12 @@ class EmailParser:
             # Extract body
             body = self._extract_body(email_msg)
             if not body:
-                self.logger.warning(f"No readable body found for email {headers['message_id']}")
+                self.logger.warning(f"No readable body found for email {email_id}")
                 body = ""
 
             # Create and return EmailMetadata object
             return EmailMetadata(
-                id=raw_email.get('id') or headers['message_id'],
+                id=email_id,
                 subject=headers['subject'],
                 sender=headers['from'],
                 body=body,

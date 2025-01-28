@@ -26,12 +26,30 @@ class RedisEmailCache(EmailCache):
         self.ttl = timedelta(days=ttl_days)
         self.key_prefix = "email:"
 
-    async def get_recent(self, days: int) -> List[ProcessedEmail]:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-        
-        # Get all email keys
+    async def _ensure_redis_connection(self):
+        """Ensure Redis connection is active and working"""
         try:
+            if not self.redis.connection:
+                await self.redis.initialize()
+            # Test the connection with a ping
+            await self.redis.ping()
+        except Exception as e:
+            logging.warning(f"Redis connection check failed: {e}")
+            # Attempt to reconnect
+            try:
+                await self.redis.initialize()
+            except Exception as e:
+                logging.error(f"Redis reconnection failed: {e}")
+                raise
+
+    async def get_recent(self, cache_duration_days: int) -> List[ProcessedEmail]:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=cache_duration_days)
+        
+        try:
+            await self._ensure_redis_connection()
+            
             keys = await self.redis.keys(f"{self.key_prefix}*")
+            logging.info(f"Found {len(keys)} keys in Redis")
             emails = []
             
             # Fetch and deserialize emails
@@ -45,41 +63,57 @@ class RedisEmailCache(EmailCache):
                         parsed_date = datetime.fromisoformat(date_str)
                         if parsed_date.tzinfo is None:
                             parsed_date = parsed_date.replace(tzinfo=timezone.utc)
-                        email_dict['date'] = parsed_date
                         
-                        # Compare dates only if parsing succeeded
                         if parsed_date >= cutoff:
                             emails.append(ProcessedEmail(**email_dict))
+                        else:
+                            logging.info(f"Email {key} filtered out due to date")
                     except (ValueError, KeyError) as e:
-                        # Log error but continue processing other emails
                         logging.warning(f"Error processing cached email {key}: {e}")
                         continue
             
+            logging.info(f"Returning {len(emails)} emails after date filtering")
             return sorted(emails, key=lambda x: x.date, reverse=True)
         except Exception as e:
             logging.error(f"Error fetching emails from Redis: {e}")
             return []
 
     async def store_many(self, emails: List[ProcessedEmail]) -> None:
-        # Store each email with message_id as key
-        print("Number of emails to store: ", len(emails))
-        for email in emails:
-            try:
-                key = f"{self.key_prefix}{email.id}"
-                print("Storing email with key: ", email.id)
-                # Convert to dict and ensure datetime is JSON serializable
-                email_dict = email.dict()
-                # Ensure date is timezone-aware before converting to ISO format
-                if email_dict['date'].tzinfo is None:
-                    email_dict['date'] = email_dict['date'].replace(tzinfo=timezone.utc)
-                email_dict['date'] = email_dict['date'].isoformat()
+        try:
+            await self._ensure_redis_connection()
+            
+            logging.info(f"Number of emails to store: {len(emails)}")
+            for email in emails:
+                try:
+                    key = f"{self.key_prefix}{email.id}"
+                    email_dict = email.dict()
+                    if email_dict['date'].tzinfo is None:
+                        email_dict['date'] = email_dict['date'].replace(tzinfo=timezone.utc)
+                    email_dict['date'] = email_dict['date'].isoformat()
 
-                await self.redis.set(
-                    key,
-                    json.dumps(email_dict),
-                    ex=int(self.ttl.total_seconds())
-                )
-                print("Email stored successfully")
-            except Exception as e:
-                logging.error(f"Error storing email {email.id} in Redis: {e}")
-                continue 
+                    ttl_seconds = int(self.ttl.total_seconds())
+                    logging.info(f"Storing email {email.id} with TTL: {ttl_seconds} seconds")
+
+                    await self.redis.set(
+                        key,
+                        json.dumps(email_dict),
+                        ex=ttl_seconds
+                    )
+                    
+                    exists = await self.redis.exists(key)
+                    logging.info(f"Email {email.id} stored successfully. Key exists: {exists}")
+                except Exception as e:
+                    logging.error(f"Error storing email {email.id} in Redis: {e}")
+                    continue
+        except Exception as e:
+            logging.error(f"Error in store_many: {e}")
+
+    async def clear_cache(self) -> None:
+        """Flush the Redis cache"""
+        try:
+            await self._ensure_redis_connection()
+            
+            await self.redis.flushdb()
+            logging.info("Redis cache cleared successfully.")
+        except Exception as e:
+            logging.error(f"Error clearing Redis cache: {e}") 

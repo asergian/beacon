@@ -13,22 +13,22 @@ class ProcessedEmail:
     date: datetime
 
     # Content analysis
-    urgency: bool
-    entities: Dict[str, str]
-    key_phrases: List[str]
-    sentence_count: int
-    sentiment_indicators: Dict[str, List[str]]
-    structural_elements: Dict[str, List[str]]
+    urgency: Optional[bool]
+    entities: Optional[Dict[str, str]]
+    key_phrases: Optional[List[str]]
+    sentence_count: Optional[int]
+    sentiment_indicators: Optional[Dict[str, List[str]]]
+    structural_elements: Optional[Dict[str, List[str]]]
 
     # LLM analysis
-    needs_action: bool
-    category: str
-    action_items: List[Dict[str, Optional[str]]]
-    summary: str
+    needs_action: Optional[bool]
+    category: Optional[str]
+    action_items: Optional[List[Dict[str, Optional[str]]]]
+    summary: Optional[str]
 
     # Priority and classification
-    priority: int
-    priority_level: str
+    priority: Optional[int]
+    priority_level: Optional[str]
 
     def dict(self) -> Dict:
         """Convert the ProcessedEmail to a dictionary."""
