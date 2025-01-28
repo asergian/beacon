@@ -30,10 +30,10 @@ from .email.models.analysis_settings import ProcessingConfig
 from .email.analyzers.semantic_analyzer import SemanticAnalyzer
 from .email.analyzers.content_analyzer import ContentAnalyzer
 from .email.utils.priority_scoring import PriorityScorer
+from .email.pipeline.pipeline import create_pipeline
 
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
-from .auth import create_auth_blueprint
 
 def init_openai_client(app):
     """Initializes the AsyncOpenAI client with configuration from the Flask app.
@@ -161,6 +161,9 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
             priority_calculator=priority_calculator,
             parser=parser
         )
+
+        app.pipeline = create_pipeline(app.config)
+
         app.logger.info("Email analyzer initialized successfully")
         
     except Exception as e:
@@ -170,11 +173,8 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     # Register blueprints
     try:
         init_routes(app)
-        auth_bp = create_auth_blueprint()
-        app.register_blueprint(auth_bp, url_prefix='/auth')
-        app.logger.info("Routes and auth blueprint initialized successfully")
+        app.logger.info("Routes initialized successfully")
     except Exception as e:
         app.logger.error(f"Failed to initialize routes: {str(e)}")
-        raise
 
     return app

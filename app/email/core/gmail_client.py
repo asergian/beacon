@@ -6,7 +6,7 @@ the IMAP client but uses Google's Gmail API for better integration and performan
 
 import logging
 from typing import Dict, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import base64
 from email import message_from_bytes
 from googleapiclient.discovery import build
@@ -78,11 +78,24 @@ class GmailClient:
             await self.connect()
             
         try:
-            self.logger.info(f"Fetching emails for the past {days} days")
+            self.logger.info(f"Fetching emails from midnight {days} days ago until now")
             
-            # Calculate the time range
-            after_date = datetime.now() - timedelta(days=days)
-            query = f'after:{after_date.strftime("%Y/%m/%d")}'
+            # Calculate the time range using local timezone
+            local_tz = datetime.now().astimezone().tzinfo
+            self.logger.info(f"Local timezone: {local_tz}")
+            
+            # Set after_date to midnight of the specified day in local time
+            local_midnight = (datetime.now(local_tz) - timedelta(days=days)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            
+            # Subtract a day to include local midnight for the query
+            utc_date = (local_midnight - timedelta(days=1)).astimezone(timezone.utc)
+            query = f'after:{utc_date.strftime("%Y/%m/%d")}'
+            
+            self.logger.info(f"Local midnight: {local_midnight}")
+            self.logger.info(f"UTC date: {utc_date}")
+            self.logger.info(f"Query: {query}")
             
             # Get list of messages
             results = self._service.users().messages().list(
@@ -93,7 +106,7 @@ class GmailClient:
             messages = results.get('messages', [])
             emails = []
             
-            # Fetch full message data for each email
+            # Fetch full message data for each email and filter by local date
             for message in messages:
                 msg = self._service.users().messages().get(
                     userId='me',
@@ -105,17 +118,45 @@ class GmailClient:
                 raw_msg = base64.urlsafe_b64decode(msg['raw'])
                 email_msg = message_from_bytes(raw_msg)
                 
-                emails.append({
-                    'id': message['id'],
-                    'raw_message': raw_msg,
-                    'Message-ID': email_msg.get('Message-ID'),
-                    'subject': email_msg.get('subject'),
-                    'from': email_msg.get('from'),
-                    'to': email_msg.get('to'),
-                    'date': email_msg.get('date')
-                })
+                # Parse the email date and convert to local timezone
+                date_str = email_msg.get('date')
+                if date_str:
+                    try:
+                        # Remove the "(UTC)" part if it exists
+                        date_str = date_str.split(' (')[0].strip()
+                        
+                        # Try parsing with timezone offset format
+                        try:
+                            email_date = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
+                        except ValueError:
+                            # Try parsing GMT format
+                            try:
+                                email_date = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S GMT")
+                                # Convert GMT to UTC
+                                email_date = email_date.replace(tzinfo=timezone.utc)
+                            except ValueError:
+                                # If both fail, log and skip
+                                self.logger.warning(f"Could not parse date {date_str}")
+                                continue
+                                
+                        local_email_date = email_date.astimezone(local_tz)
+                        
+                        # Only include emails after local_midnight
+                        if local_email_date >= local_midnight:
+                            emails.append({
+                                'id': message['id'],
+                                'raw_message': raw_msg,
+                                'Message-ID': email_msg.get('Message-ID'),
+                                'subject': email_msg.get('subject'),
+                                'from': email_msg.get('from'),
+                                'to': email_msg.get('to'),
+                                'date': date_str
+                            })
+                    except ValueError as e:
+                        self.logger.warning(f"Could not parse date {date_str}: {e}")
+                        continue
             
-            self.logger.info(f"Fetched {len(emails)} emails")
+            self.logger.info(f"Fetched {len(emails)} emails after filtering by local timezone")
             return emails
             
         except Exception as e:
