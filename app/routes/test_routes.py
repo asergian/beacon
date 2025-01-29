@@ -31,7 +31,7 @@ async def test_emails():
 @async_route
 async def test_connection():
     try:
-        from app.email_connection import IMAPEmailClient
+        from app.email.core.email_connection import IMAPEmailClient
         
         email_config = {
             'server': current_app.config.get('IMAP_SERVER'),
@@ -70,8 +70,8 @@ async def test_connection():
 @login_required
 def test_parsing():
     try:
-        from app.email_connection import IMAPEmailClient
-        from app.email_parsing import EmailParser
+        from app.email.core.email_connection import IMAPEmailClient
+        from app.email.core.email_parsing import EmailParser
         
         email_config = {
             'server': current_app.config.get('IMAP_SERVER'),

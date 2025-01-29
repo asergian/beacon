@@ -21,6 +21,7 @@ from dateutil.parser import parse
 import re
 from ..utils.clean_message_id import clean_message_id
 import base64
+from html import escape
 
 # Constants
 MIN_EMAIL_LENGTH = 20
@@ -280,13 +281,38 @@ class EmailParser:
         
         Handles multipart messages and different content types.
         """
-        body = []
+        html_parts = []
+        text_parts = []
+        embedded_images = {}
+        
+        # Updated pattern to match both URLs and email addresses
+        url_pattern = r'(https?://[^\s<>"\'\]]+|www\.[^\s<>"\'\]]+|[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'
         
         if msg.is_multipart():
             for part in msg.walk():
                 if part.get_content_maintype() == 'multipart':
                     continue
-                if part.get_content_maintype() == 'text':
+                
+                # Handle embedded images
+                if part.get_content_type().startswith('image/'):
+                    try:
+                        content_id = part.get('Content-ID')
+                        if content_id:
+                            # Remove angle brackets from Content-ID
+                            content_id = content_id.strip('<>')
+                            image_data = part.get_payload(decode=True)
+                            image_type = part.get_content_type()
+                            image_b64 = base64.b64encode(image_data).decode()
+                            # Store both the data URI and the content type
+                            embedded_images[content_id] = {
+                                'data_uri': f"data:{image_type};base64,{image_b64}",
+                                'content_type': image_type
+                            }
+                    except Exception as e:
+                        self.logger.warning(f"Image processing error: {e}")
+                    continue
+                
+                if part.get_content_type() == 'text/html':
                     try:
                         payload = part.get_payload(decode=True)
                         charset = part.get_content_charset() or 'utf-8'
@@ -294,11 +320,24 @@ class EmailParser:
                             decoded = payload.decode(charset)
                         except (UnicodeDecodeError, LookupError):
                             decoded = payload.decode('utf-8', 'ignore')
-                        body.append(decoded)
+                        html_parts.append(decoded)
                     except Exception as e:
-                        self.logger.warning(f"Body part decode error: {e}")
+                        self.logger.warning(f"HTML part decode error: {e}")
+                        continue
+                elif part.get_content_type() == 'text/plain':
+                    try:
+                        payload = part.get_payload(decode=True)
+                        charset = part.get_content_charset() or 'utf-8'
+                        try:
+                            decoded = payload.decode(charset)
+                        except (UnicodeDecodeError, LookupError):
+                            decoded = payload.decode('utf-8', 'ignore')
+                        text_parts.append(decoded)
+                    except Exception as e:
+                        self.logger.warning(f"Text part decode error: {e}")
                         continue
         else:
+            # Handle non-multipart messages
             try:
                 payload = msg.get_payload(decode=True)
                 charset = msg.get_content_charset() or 'utf-8'
@@ -306,11 +345,94 @@ class EmailParser:
                     decoded = payload.decode(charset)
                 except (UnicodeDecodeError, LookupError):
                     decoded = payload.decode('utf-8', 'ignore')
-                body.append(decoded)
+                
+                if msg.get_content_type() == 'text/html':
+                    html_parts.append(decoded)
+                else:
+                    text_parts.append(decoded)
             except Exception as e:
                 self.logger.warning(f"Body decode error: {e}")
         
-        return "\n".join(body)
+        # Process the content
+        if html_parts:
+            html_content = "\n".join(html_parts)
+            
+            # Replace embedded image references while preserving links
+            for cid, image_info in embedded_images.items():
+                # Look for both simple img tags and linked img tags with various quote styles
+                patterns = [
+                    # <a> with <img> using cid: format
+                    (r'<a([^>]*)><img([^>]*)src=["\']?cid:' + re.escape(cid) + r'["\']?([^>]*)></a>',
+                     r'<a\1><img\2src="' + image_info['data_uri'] + r'"\3></a>'),
+                    # <a> with <img> using just cid format
+                    (r'<a([^>]*)><img([^>]*)src=["\']?' + re.escape(cid) + r'["\']?([^>]*)></a>',
+                     r'<a\1><img\2src="' + image_info['data_uri'] + r'"\3></a>'),
+                    # Standalone <img> using cid: format
+                    (r'<img([^>]*)src=["\']?cid:' + re.escape(cid) + r'["\']?([^>]*)>',
+                     r'<img\1src="' + image_info['data_uri'] + r'"\2>'),
+                    # Standalone <img> using just cid format
+                    (r'<img([^>]*)src=["\']?' + re.escape(cid) + r'["\']?([^>]*)>',
+                     r'<img\1src="' + image_info['data_uri'] + r'"\2>')
+                ]
+                
+                for pattern, replacement in patterns:
+                    html_content = re.sub(pattern, replacement, html_content)
+            
+            # Handle external images
+            html_content = re.sub(
+                r'<img([^>]*?)src=["\']?(https?://[^"\'\s>]+)["\']?([^>]*?)>',
+                r'<img\1src="\2"\3 loading="lazy" referrerpolicy="no-referrer">',
+                html_content
+            )
+            
+            return html_content
+        elif text_parts:
+            # Convert plain text to HTML with preserved formatting and clickable links
+            text_content = "\n".join(text_parts)
+            
+            # Remove extra blank lines while preserving paragraph structure
+            text_content = re.sub(r'\n{3,}', '\n\n', text_content)
+            
+            # Escape HTML special characters while preserving newlines
+            text_content = escape(text_content)
+            
+            # Convert URLs and email addresses to clickable links with appropriate href
+            text_content = re.sub(
+                url_pattern,
+                lambda m: (
+                    f'<a href="mailto:{m.group(0)}" target="_blank" rel="noopener noreferrer">{m.group(0)}</a>'
+                    if '@' in m.group(0)
+                    else (
+                        f'<a href="{"http://" if m.group(0).startswith("www.") else ""}{m.group(0)}" '
+                        f'target="_blank" rel="noopener noreferrer">{m.group(0)}</a>'
+                    )
+                ),
+                text_content
+            )
+            
+            # Convert newlines to <br> tags, preserving paragraphs
+            paragraphs = text_content.split('\n\n')
+            formatted_paragraphs = []
+            for para in paragraphs:
+                if para.strip():
+                    # Replace single newlines with <br> within paragraphs
+                    formatted_para = para.replace('\n', '<br>')
+                    formatted_paragraphs.append(f'<p>{formatted_para}</p>')
+            
+            text_content = '\n'.join(formatted_paragraphs)
+            
+            return f"""
+                <div style='
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                    line-height: 1.4;
+                    color: #2c3338;
+                    padding: 8px;
+                '>
+                    {text_content}
+                </div>
+            """
+        else:
+            return ""
 
     def _has_attachments(self, msg: email.message.Message) -> bool:
         """Check if the email has any attachments."""

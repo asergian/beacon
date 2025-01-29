@@ -37,14 +37,38 @@ function loadEmailDetails(email) {
     const emailBody = document.getElementById('email-body');
     emailBody.innerHTML = ''; // Clear previous content
     
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(email.body, 'text/html');
-    emailBody.innerHTML = doc.body.innerHTML; // Safely set the inner HTML
-
-    // Clear and focus the response draft area
-    const responseDraft = document.getElementById('response-draft');
-    responseDraft.value = '';
-    //responseDraft.focus();  // Focus the textarea after clearing
+    // Create an iframe to sandbox the email content
+    const iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.border = 'none';
+    iframe.style.minHeight = '300px'; // Set a minimum height
+    emailBody.appendChild(iframe);
+    
+    // Write the email content to the iframe
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(`
+        <html>
+            <head>
+                <base target="_blank">
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 16px;
+                        color: #333;
+                    }
+                </style>
+            </head>
+            <body>${email.body}</body>
+        </html>
+    `);
+    doc.close();
+    
+    // Adjust iframe height to content
+    iframe.onload = () => {
+        iframe.style.height = iframe.contentWindow.document.body.scrollHeight + 'px';
+    };
 }
 
 // Send an email response
