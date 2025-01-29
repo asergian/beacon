@@ -14,22 +14,43 @@ function initializePage() {
 // Load email details into the right column
 function loadEmailDetails(email) {
     console.log('loading email on right pane...');
-    // Update right pane details
-    console.log(email);
-    document.getElementById('details-sender').textContent = email.sender;
+    // Update details
     document.getElementById('details-subject').textContent = email.subject;
-    document.getElementById('details-priority').textContent = email.priority_level;
+    document.getElementById('details-sender').textContent = email.sender;
+    
+    // Format and set date
+    const date = new Date(email.date);
+    document.getElementById('details-date').textContent = date.toLocaleString();
+    
+    // Set priority tag with appropriate class
+    const priorityTag = document.getElementById('details-priority');
+    priorityTag.textContent = email.priority_level;
+    priorityTag.className = `tag priority-${email.priority_level.toLowerCase()}`;
+    
+    // Set category
     document.getElementById('details-category').textContent = email.category;
+    
     document.getElementById('details-summary').textContent = email.summary;
 
-    // Populate Key Dates
+    // Populate Action Items
     const keyDatesList = document.getElementById('key-dates-list');
     keyDatesList.innerHTML = '';  // Clear previous dates
     if (email.action_items) {
         email.action_items.forEach(item => {
-            const li = document.createElement('li');
-            li.textContent = `${item.description} (Due: ${item.due_date})`;  // Adjusted to match action and responsible party
-            keyDatesList.appendChild(li);
+            if (item.description) {
+                const li = document.createElement('li');
+                let itemText = item.description;
+                if (item.due_date && item.due_date.toLowerCase() !== 'null') {
+                    const dueDate = document.createElement('span');
+                    dueDate.className = 'due-date';
+                    dueDate.textContent = `Due: ${item.due_date}`;
+                    li.textContent = itemText;
+                    li.appendChild(dueDate);
+                } else {
+                    li.textContent = itemText;
+                }
+                keyDatesList.appendChild(li);
+            }
         });
     }
 

@@ -170,84 +170,120 @@ header {
     height: calc(100vh - 145px); /* Adjusted to account for header, filters, and some padding */
 }
 
-/* Header for Email Details */
+/* Email Details Header */
 .email-details-column h2 {
-    font-size: 1.5em;
-    font-weight: bold;
+    font-size: 1.8em;
+    font-weight: 600;
     color: #333;
-    margin-bottom: 12px;
-    text-transform: uppercase;
+    margin-bottom: 16px;
+    line-height: 1.3;
 }
 
-/* Section Headings */
-.email-details-column h3 {
+/* Email Meta Section */
+.email-meta {
+    margin-bottom: 24px;
+}
+
+.sender-date {
+    margin-bottom: 16px;
+}
+
+.sender-date .sender {
     font-size: 1.1em;
-    color: #444;
-    font-weight: 600;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #ddd; /* Simple bottom border for section separation */
-}
-
-/* Paragraphs and General Text */
-.email-details-column p {
-    font-size: 1.05em;
-    color: #555;
-    line-height: 1.6;
-    margin-bottom: 12px; /* Slightly larger margin for clear sectioning */
-}
-
-/* Highlighted Text */
-.email-details-column span {
-    font-weight: 600;
-    color: #008080;
-}
-
-/* Key Dates & Action Items Section */
-.key-info-section {
-    margin-top: 20px;
-    padding: 20px;
-    background-color: #ffffff;  /* White background for cleanliness */
-    border-radius: 8px;  /* Rounded corners for modern design */
-    border: 1px solid #ddd;  /* Subtle border to separate from other content */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);  /* Light shadow for depth */
-    margin-bottom: 24px;  /* Spacing below section */
-}
-
-/* Section Title */
-.key-info-section h3 {
-    font-size: 1.3em;  /* Slightly larger for better prominence */
-    font-weight: 600;
+    font-weight: 500;
     color: #333;
-    margin-bottom: 16px;  /* Space between title and content */
-    text-transform: uppercase;
+    margin-bottom: 4px;
 }
 
-/* Key Dates & Action Items List */
-.key-info-section ul {
-    padding-left: 20px;
-    list-style: none;  /* Removing the default list style */
-    margin-bottom: 12px;
+.sender-date .date {
+    font-size: 0.9em;
+    color: #666;
 }
 
-.key-info-section li {
+/* Tags Container */
+.tags-container {
     display: flex;
-    align-items: center;
-    font-size: 1.1em;
-    color: #555;
-    margin-bottom: 12px;  /* Spacing between items */
-    padding: 10px 15px;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.tag {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: white;
+}
+
+.tag.priority-high {
+    background-color: #d9534f;
+}
+
+.tag.priority-medium {
+    background-color: #f0ad4e;
+}
+
+.tag.priority-low {
+    background-color: #5bc0de;
+}
+
+.tag.category {
+    background-color: #006F6A;
+}
+
+/* Summary and Actions Box */
+.summary-actions-box {
+    background-color: #ffffff;
     border-radius: 8px;
-    transition: background-color 0.3s ease;
+    padding: 20px;
+    margin-bottom: 24px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.key-info-section li:hover {
-    background-color: #f1f1f1;  /* Light gray hover effect */
+.summary-section {
+    margin-bottom: 20px;
 }
 
-.key-info-section li span {
-    font-weight: 600;
-    color: #006F6A; /* Teal color for emphasis */
+.summary-section h3 {
+    font-size: 1.1em;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.summary-section p {
+    color: #333;
+    line-height: 1.5;
+    margin: 0;
+    margin-bottom: 16px;
+}
+
+.summary-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.summary-section li {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.summary-section li:before {
+    content: "•";
+    color: #006F6A;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.summary-section .due-date {
+    margin-left: 8px;
+    color: #666;
+    font-size: 0.9em;
 }
 
 /* Email Body */
