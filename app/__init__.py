@@ -21,6 +21,7 @@ import logging
 from openai import AsyncOpenAI
 from typing import Optional
 import os
+from datetime import timedelta
 
 from .config import Config
 from .email.core.email_processor import EmailProcessor
@@ -97,6 +98,8 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     # Set up session configuration
     app.secret_key = os.environ.get('FLASK_SECRET_KEY', os.urandom(24))
     app.config['SESSION_TYPE'] = 'filesystem'
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+    app.config['SESSION_PERMANENT'] = True
     logger.info("Session configuration initialized")
 
     # Log the actual configuration values being used

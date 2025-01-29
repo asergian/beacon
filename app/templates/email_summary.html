@@ -16,13 +16,12 @@
     <header>
         <div class="header-container">
             <div class="logo-container">
-                <h1>Email Detailed View</h1>
-                <p class="subtitle">Your email assistant, organized.</p>
+                <h1>Beacon</h1>
+                <!-- <p class="subtitle">Email Client</p> -->
             </div>
             <nav class="header-nav">
                 <ul>
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/emails">Email Overview</a></li>
+                    <li><a href="/" class="active">Home</a></li>
                     <li><a href="#">Settings</a></li>
                     <li><a href="/logout">Log Out</a></li>
                 </ul>
@@ -43,10 +42,10 @@
         <label for="category-filter">Filter by Category:</label>
         <select id="category-filter" onchange="filterEmails()">
             <option value="all">All</option>
-            <option value="work">High Priority</option>
             <option value="work">Work</option>
             <option value="personal">Personal</option>
             <option value="promotions">Promotions</option>
+            <option value="informational">Informational</option>
         </select>
     </div>
 
@@ -58,10 +57,13 @@
                 {% for email in emails %}
                 <li class="email-item" data-priority='{{ email.priority_level }}' data-email='{{ email|tojson|safe|e }}' onclick='loadEmailDetails({{ email|tojson|safe|e }})'>
                     <div class="email-header">
-                        <strong>{{ email.sender }}</strong>
-                        <span class="email-priority_level {{ email.priority_level }}">{{ email.priority_level }}</span>
+                        <span class="email-subject">{{ email.subject }}</span>
+                        <div class="tags-container">
+                            <span class="tag priority-{{ email.priority_level.lower() }}">{{ email.priority_level }}</span>
+                            <span class="tag category">{{ email.category }}</span>
+                        </div>
                     </div>
-                    <p class="email-subject">{{ email.subject }}</p>
+                    <span class="sender-name">{{ email.sender.split('<')[0].strip() }}</span>
                     <p class="email-summary-preview">{{ email.summary }}</p>
                 </li>
                 {% endfor %}
@@ -71,25 +73,36 @@
         <!-- Right Column: Email Details -->
         <div class="email-details-column">
             <div id="email-details">
-                <h2>Email Details</h2>
+                <h2 id="details-subject"></h2>
+                
                 <div class="email-meta">
-                    <p><strong>Sender:</strong> <span id="details-sender"></span></p>
-                    <p><strong>Subject:</strong> <span id="details-subject"></span></p>
-                    <p><strong>Priority Score:</strong> <span id="details-priority"></span></p>
-                    <p><strong>Category:</strong> <span id="details-category"></span></p>
-                    <p><strong>Summary:</strong> <span id="details-summary"></span></p>
-                </div>
-
-                <div id="details-key-info" class="key-info-section">
-                    <h3>Actions & Dates:</h3>
-                    <div class="actions-and-dates">
-                        <ul id="key-dates-list"></ul>
+                    <div class="summary-actions-box">
+                        <div class="sender-date">
+                            <div class="sender" id="details-sender"></div>
+                            <div class="date" id="details-date"></div>
+                        </div>
+                        
+                        <div class="tags-container">
+                            <div class="tag" id="details-priority"></div>
+                            <div class="tag category" id="details-category"></div>
+                        </div>
+                        <div class="summary-section">
+                            <h3>Summary</h3>
+                            <p id="details-summary"></p>
+                            <ul id="key-dates-list"></ul>
+                        </div>
+                        
+                        <!-- <div class="action-items">
+                            <h3>Action Items</h3>
+                            <ul id="key-dates-list"></ul>
+                        </div> -->
                     </div>
                 </div>
 
                 <div id="details-body">
-                    <h3>Email Body:</h3>
-                    <p id="email-body"></p>
+                    <div id="email-body" class="email-body-container">
+                        <!-- iframe will be inserted here by JavaScript -->
+                    </div>
                 </div>
 
                 <!-- Response Section -->

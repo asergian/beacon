@@ -1,23 +1,28 @@
-/* General Styles */
+:root {
+    --footer-height: 52px;  /* Adjust based on your footer's actual height */
+    --header-height: 60px;  /* Adjust based on your header's actual height */
+    --filters-height: 65px; /* Adjust based on your filters row's actual height */
+}
+
+/* General Layout */
 body {
-    font-family: 'Inter', Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
     margin: 0;
-    padding: 0;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     background-color: #F4F7F9;
     color: #333333;
 }
 
 /* Header Styles */
 header {
-    position: fixed; /* Make header fixed */
-    top: 0; /* Position at the top */
-    left: 0; /* Align to the left */
-    right: 0; /* Align to the right */
-    background-color: #006F6A; /* Darker Teal */
-    padding: 8px 0; /* Reduced padding for a smaller header */
+    flex-shrink: 0;
+    background-color: #006F6A;
+    padding: 12px 0;
     color: white;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    z-index: 1000; /* Ensure it stays above other content */
 }
 
 .header-container {
@@ -27,9 +32,21 @@ header {
     padding: 0 20px;
 }
 
+.logo-container {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
 .logo-container h1 {
     font-size: 1.8em;
     font-weight: bold;
+    margin: 0;
+}
+
+.logo-container .subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1em;
     margin: 0;
 }
 
@@ -38,38 +55,52 @@ header {
     list-style: none;
     margin: 0;
     padding: 0;
-}
-
-.header-nav li {
-    margin-right: 20px;
+    gap: 24px;
 }
 
 .header-nav a {
-    color: white;
+    color: rgba(255, 255, 255, 0.8);
     text-decoration: none;
     font-size: 1em;
+    transition: color 0.2s ease;
 }
 
 .header-nav a:hover {
-    text-decoration: underline;
+    color: white;
+}
+
+.header-nav a.active {
+    color: white;
+    font-weight: 700;
+    position: relative;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.header-nav a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: white;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 /* Filters Row */
 .filters-row {
-    position: fixed; /* Make filters fixed */
-    top: 95px; /* Adjusted position to be directly below the header */
-    left: 0; /* Align to the left */
-    right: 0; /* Align to the right */
-    background-color: #F1F3F5; /* Light Gray */
-    padding: 10px 20px;
+    flex-shrink: 0;
+    background-color: #F1F3F5;
+    padding: 16px 20px;
     display: flex;
     align-items: center;
-    justify-content: flex-end; 
-    z-index: 999; /* Ensure it stays above other content */
+    justify-content: flex-start;
+    gap: 24px;
+    border-bottom: 1px solid #ddd;
 }
 
 .filters-row label {
-    margin-right: 10px; /* Reduced margin for tighter layout */
+    margin-right: 0px; /* Reduced margin for tighter layout */
     margin-left: 15px; /* Reduced margin for tighter layout */
     font-size: 1.1em;
     font-weight: 600;
@@ -85,12 +116,11 @@ header {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* Content Section */
+/* Main Container */
 .container {
+    flex: 1; /* Allow the container to grow and fill available space */
     display: flex;
-    flex-grow: 1;
     overflow: hidden;
-    margin-top: 120px; /* Adjust margin to account for fixed header and filters */
 }
 
 /* Email List Column */
@@ -98,184 +128,258 @@ header {
     width: 35%;
     min-width: 300px;
     background-color: #ffffff;
-    border-right: 1px solid #ddd; /* Keeping the border for separation */
-    overflow-y: auto; /* Allow scrolling */
+    border-right: 1px solid #ddd;
+    overflow-y: auto;
     padding: 10px;
-    box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1); /* Added consistent shadow */
-    height: calc(100vh - 80px); /* Adjust height to account for fixed header */
+    height: calc(100vh - var(--footer-height) - var(--header-height) - var(--filters-height));
 }
 
 .email-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    margin-bottom: 16px; /* Ensure space above footer */
 }
 
-/* Email Item Priority Positioning */
 .email-item {
     padding: 16px;
     border-bottom: 1px solid #ddd;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.2s ease;
+}
+
+.email-item.active {
+    background-color: #E0F7F6;
+    border-left: 4px solid #006F6A;
+}
+
+.email-item .email-header {
     display: flex;
-    flex-direction: column;
     justify-content: space-between;
-    position: relative; /* Added relative positioning for priority inside list item */
-    min-width: 400px; /* Set minimum width for email item */
+    align-items: flex-start;
+    margin-bottom: 4px;
 }
 
-.email-item:hover {
-    background-color: #E0F7F6; /* Light Teal */
+.email-item .sender-name {
+    font-size: 1.1em;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+    display: block;
 }
 
-.email-item p {
-    margin: 5px 0;
-}
-
-.email-item .email-priority_level {
-    color: #ffffff;
+.email-item .email-subject {
     font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 5px;
-    position: absolute; /* Position inside list item */
-    top: 10px; /* Adjusted to top-right of the list item */
-    right: 10px;
-    font-size: 0.9em;
-    text-transform: uppercase;
+    color: #333;
+    margin: 0 0 6px 0;
+    font-size: 1.05em;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-.email-item .email-priority_level.High {
-    background-color: #d9534f; /* Red */
+.email-item .email-summary-preview {
+    display: -webkit-box;
+    display: box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    color: #666;
+    margin: 0;
+    font-style: italic;
+    line-height: 1.2;
+    font-size: 0.95em;
 }
 
-.email-item .email-priority_level.Medium {
-    background-color: #f0ad4e; /* Orange */
+.email-item .tags-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: nowrap;
+    white-space: nowrap; /* Prevent tag wrapping */
 }
 
-.email-item .email-priority_level.Low {
-    background-color: #5bc0de; /* Light Blue */
+.email-item .tag {
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-size: 0.8em;
+    font-weight: 500;
+    color: white;
+}
+
+.email-item .tag.priority-high {
+    background-color: #d9534f;
+}
+
+.email-item .tag.priority-medium {
+    background-color: #f0ad4e;
+}
+
+.email-item .tag.priority-low {
+    background-color: #5bc0de;
+}
+
+.email-item .tag.category {
+    background-color: #006F6A;
 }
 
 /* Right Pane Styles */
 .email-details-column {
-    flex-grow: 1;
+    flex: 1;
     min-width: 500px;
-    padding: 20px;
-    background-color: #f9f9f9;  /* Soft background color for the right pane */
-    border-left: 1px solid #ddd; /* Light border for separation */
-    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1);  /* Consistent box shadow on the left side */
+    padding: 16px;
+    background-color: #f9f9f9;
+    overflow-y: auto;
+    border-left: 1px solid #ddd;
+    box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
-    margin-bottom: 16px;
-    overflow-y: auto; /* Allow scrolling */
-    height: calc(100vh - 80px); /* Adjust height to account for fixed header */
+    height: calc(100vh - var(--footer-height) - var(--header-height) - var(--filters-height));
 }
 
-/* Header for Email Details */
+/* Email Details Header */
 .email-details-column h2 {
-    font-size: 1.5em;
-    font-weight: bold;
+    font-size: 1.8em;
+    font-weight: 600;
     color: #333;
-    margin-bottom: 12px;
-    text-transform: uppercase;
+    margin: 0 0 16px 0; /* Adjusted margin: top, right, bottom, left */
+    line-height: 1.3;
 }
 
-/* Section Headings */
-.email-details-column h3 {
+/* Email Meta Section */
+.email-meta {
+    margin-bottom: 16px;
+}
+
+.sender-date {
+    margin-bottom: 16px;
+}
+
+.sender-date .sender {
     font-size: 1.1em;
-    color: #444;
-    font-weight: 600;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #ddd; /* Simple bottom border for section separation */
-}
-
-/* Paragraphs and General Text */
-.email-details-column p {
-    font-size: 1.05em;
-    color: #555;
-    line-height: 1.6;
-    margin-bottom: 12px; /* Slightly larger margin for clear sectioning */
-}
-
-/* Highlighted Text */
-.email-details-column span {
-    font-weight: 600;
-    color: #008080;
-}
-
-/* Key Dates & Action Items Section */
-.key-info-section {
-    margin-top: 20px;
-    padding: 20px;
-    background-color: #ffffff;  /* White background for cleanliness */
-    border-radius: 8px;  /* Rounded corners for modern design */
-    border: 1px solid #ddd;  /* Subtle border to separate from other content */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);  /* Light shadow for depth */
-    margin-bottom: 24px;  /* Spacing below section */
-}
-
-/* Section Title */
-.key-info-section h3 {
-    font-size: 1.3em;  /* Slightly larger for better prominence */
-    font-weight: 600;
+    font-weight: 500;
     color: #333;
-    margin-bottom: 16px;  /* Space between title and content */
-    text-transform: uppercase;
+    margin-bottom: 4px;
 }
 
-/* Key Dates & Action Items List */
-.key-info-section ul {
-    padding-left: 20px;
-    list-style: none;  /* Removing the default list style */
-    margin-bottom: 12px;
+.sender-date .date {
+    font-size: 0.9em;
+    color: #666;
 }
 
-.key-info-section li {
+/* Tags Container */
+.tags-container {
     display: flex;
-    align-items: center;
-    font-size: 1.1em;
-    color: #555;
-    margin-bottom: 12px;  /* Spacing between items */
-    padding: 10px 15px;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.tag {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: white;
+}
+
+.tag.priority-high {
+    background-color: #d9534f;
+}
+
+.tag.priority-medium {
+    background-color: #f0ad4e;
+}
+
+.tag.priority-low {
+    background-color: #5bc0de;
+}
+
+.tag.category {
+    background-color: #006F6A;
+}
+
+/* Summary and Actions Box */
+.summary-actions-box {
+    background-color: #ffffff;
     border-radius: 8px;
-    transition: background-color 0.3s ease;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid #ddd;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.key-info-section li:hover {
-    background-color: #f1f1f1;  /* Light gray hover effect */
+.summary-section {
+    margin-bottom: 16px;
 }
 
-.key-info-section li span {
-    font-weight: 600;
-    color: #006F6A; /* Teal color for emphasis */
+.summary-section h3 {
+    font-size: 1.1em;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: 500;
 }
 
-/* Email Body */
-#email-body {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 1.05em;
+.summary-section p {
     color: #333;
-    padding: 10px;
+    line-height: 1.5;
+    margin: 0;
+    margin-bottom: 16px;
+}
+
+.summary-section ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.summary-section li {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.summary-section li:before {
+    content: "•";
+    color: #006F6A;
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+.summary-section .due-date {
+    margin-left: 8px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+/* Email Body Container */
+#email-body {
     background-color: #ffffff;
     border-radius: 6px;
     margin-bottom: 16px;
     border: 1px solid #ddd;
-    box-shadow: none;
+    overflow: hidden;
+}
+
+#email-body iframe {
+    width: 100%;
+    border: none;
+    background: #fff;
 }
 
 /* Email Response Section */
 #email-response {
-    margin-top: 20px;
+    margin-top: 16px;
     padding: 16px;
     background-color: #ffffff;
     border-radius: 6px;
     border: 1px solid #ddd;
     box-shadow: none;
+    margin-bottom: 25px; /* Ensure space above footer */
 }
 
 #response-draft {
-    width: 100%;
+    width: 100%; /* Account for padding */
     padding: 12px;
     font-size: 1.05em;
     border-radius: 6px;
@@ -284,6 +388,7 @@ header {
     resize: vertical;
     min-height: 120px;
     color: #333;
+    box-sizing: border-box;
 }
 
 #response-draft:focus {
@@ -314,8 +419,9 @@ header {
     box-shadow: 0 0 5px rgba(0, 111, 106, 0.5);
 }
 
-/* Footer Styles */
+/* Footer adjustments */
 footer {
+    flex-shrink: 0;
     background-color: #333333;
     color: white;
     padding: 16px 0;
@@ -369,13 +475,14 @@ footer {
     }
 
     .filters-row {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        justify-content: flex-start;
     }
 
-    .filters-row select {
+    /* .filters-row select {
         margin-top: 10px;
-    }
+    } */
 
     .key-info-section ul {
         padding-left: 0;
