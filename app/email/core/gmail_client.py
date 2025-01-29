@@ -41,9 +41,21 @@ class GmailClient:
             
             # Get credentials from session
             if 'credentials' not in session:
+                self.logger.error("No credentials found in session")
                 raise GmailAPIError("No credentials found. Please authenticate first.")
             
             creds_dict = session['credentials']
+            
+            # Verify all required fields are present
+            required_fields = ['token', 'refresh_token', 'token_uri', 'client_id', 'client_secret', 'scopes']
+            missing_fields = [field for field in required_fields if field not in creds_dict]
+            
+            if missing_fields:
+                self.logger.error(f"Missing required credential fields: {missing_fields}")
+                # Clear invalid session credentials
+                session.pop('credentials', None)
+                raise GmailAPIError("Session expired. Please authenticate again.")
+            
             credentials = Credentials(
                 token=creds_dict['token'],
                 refresh_token=creds_dict['refresh_token'],
@@ -59,6 +71,8 @@ class GmailClient:
             
         except Exception as e:
             self.logger.error(f"Gmail API connection failed: {e}")
+            # Clear invalid session credentials
+            session.pop('credentials', None)
             raise GmailAPIError(f"Connection error: {e}")
     
     async def fetch_emails(self, days: int = 1) -> List[Dict]:

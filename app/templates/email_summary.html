@@ -16,13 +16,12 @@
     <header>
         <div class="header-container">
             <div class="logo-container">
-                <h1>Email Detailed View</h1>
-                <p class="subtitle">Your email assistant, organized.</p>
+                <h1>Beacon</h1>
+                <!-- <p class="subtitle">Email Client</p> -->
             </div>
             <nav class="header-nav">
                 <ul>
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/emails">Email Overview</a></li>
+                    <li><a href="/" class="active">Home</a></li>
                     <li><a href="#">Settings</a></li>
                     <li><a href="/logout">Log Out</a></li>
                 </ul>
@@ -43,10 +42,10 @@
         <label for="category-filter">Filter by Category:</label>
         <select id="category-filter" onchange="filterEmails()">
             <option value="all">All</option>
-            <option value="work">High Priority</option>
             <option value="work">Work</option>
             <option value="personal">Personal</option>
             <option value="promotions">Promotions</option>
+            <option value="informational">Informational</option>
         </select>
     </div>
 
@@ -58,10 +57,13 @@
                 {% for email in emails %}
                 <li class="email-item" data-priority='{{ email.priority_level }}' data-email='{{ email|tojson|safe|e }}' onclick='loadEmailDetails({{ email|tojson|safe|e }})'>
                     <div class="email-header">
-                        <strong>{{ email.sender }}</strong>
-                        <span class="email-priority_level {{ email.priority_level }}">{{ email.priority_level }}</span>
+                        <span class="email-subject">{{ email.subject }}</span>
+                        <div class="tags-container">
+                            <span class="tag priority-{{ email.priority_level.lower() }}">{{ email.priority_level }}</span>
+                            <span class="tag category">{{ email.category }}</span>
+                        </div>
                     </div>
-                    <p class="email-subject">{{ email.subject }}</p>
+                    <span class="sender-name">{{ email.sender.split('<')[0].strip() }}</span>
                     <p class="email-summary-preview">{{ email.summary }}</p>
                 </li>
                 {% endfor %}
