@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="50" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Beacon Icon -->
+    <g transform="translate(5, 5) scale(1.1)">
+        <!-- Lighthouse Base -->
+        <path d="M15 35 L35 35 L33 32 L17 32 Z" fill="#006F6A"/>
+        <path d="M17 32 L33 32 L31 20 L19 20 Z" fill="#006F6A"/>
+        <!-- Platform -->
+        <path d="M13 35 L37 35 L39 38 L11 38 Z" fill="#006F6A"/>
+        <!-- Lighthouse Top -->
+        <path d="M19 20 L31 20 L25 5 Z" fill="#006F6A"/>
+        <!-- Window -->
+        <circle cx="25" cy="15" r="2" fill="white"/>
+        <!-- Light Beams -->
+        <path d="M25 12 L42 3 L40 6 L25 14 Z" fill="#006F6A" opacity="0.6"/>
+        <path d="M25 12 L8 3 L10 6 L25 14 Z" fill="#006F6A" opacity="0.6"/>
+        <!-- Railing Detail -->
+        <path d="M21 23 L29 23 L28 25 L22 25 Z" fill="#006F6A" opacity="0.8"/>
+    </g>
+    
+    <!-- Text "Beacon" -->
+    <text x="60" y="43" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="#006F6A">
+        Beacon
+    </text>
+</svg> 
