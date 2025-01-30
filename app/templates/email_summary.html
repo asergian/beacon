@@ -3,21 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Dashboard</title>
+    <title>Inbox - Beacon</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script>
-        var emails = {{ emails|tojson|safe }};
-        console.log(emails); // Debugging line to check the value of emails
+        // Initialize empty emails array and map
+        window.emails = [];
+        window.emailMap = new Map();
+        
+        // Load cached data if available (user-specific)
+        const userId = '{{ user_id }}'; // Get from Flask session
+        const cacheKey = `emailCache_${userId}`;
+        const cachedEmails = localStorage.getItem(cacheKey);
+        
+        if (cachedEmails) {
+            try {
+                const parsed = JSON.parse(cachedEmails);
+                if (parsed.timestamp > Date.now() - (30 * 60 * 1000)) { // 30 minutes cache
+                    window.emails = parsed.emails;
+                    parsed.emails.forEach(email => window.emailMap.set(email.id, email));
+                    console.log('Loaded cached emails for user:', userId);
+                }
+            } catch (e) {
+                console.warn('Failed to load cached emails:', e);
+                localStorage.removeItem(cacheKey); // Clear invalid cache
+            }
+        }
+        
+        // Initialize page immediately after DOM loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing page...');
+            initializePage(); // Start loading fresh data
+        });
     </script>
     <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
 </head>
 <body>
+    <!-- Loading Bar -->
+    <div id="loading-bar" class="loading-bar"></div>
+    <div id="loading-text" class="loading-text"></div>
+
+    <!-- Error Message -->
+    <div id="error-message" class="error-message">
+        <p id="error-text"></p>
+        <button onclick="retryLoading()">Retry</button>
+    </div>
+
     <!-- Header Section -->
     <header>
         <div class="header-container">
-            <div class="logo-container">
-                <h1>Beacon</h1>
-                <!-- <p class="subtitle">Email Client</p> -->
+            <div class="nav-logo">
+                <img src="{{ url_for('static', filename='images/beacon-logo-hero.svg') }}" alt="Beacon" height="40">
             </div>
             <nav class="header-nav">
                 <ul>
@@ -53,26 +89,24 @@
     <div class="container">
         <!-- Left Column: Email List -->
         <div class="email-list-column">
+            <div id="email-list-loading" class="column-loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Loading emails...</p>
+            </div>
             <ul class="email-list">
-                {% for email in emails %}
-                <li class="email-item" data-priority='{{ email.priority_level }}' data-email='{{ email|tojson|safe|e }}' onclick='loadEmailDetails({{ email|tojson|safe|e }})'>
-                    <div class="email-header">
-                        <span class="email-subject">{{ email.subject }}</span>
-                        <div class="tags-container">
-                            <span class="tag priority-{{ email.priority_level.lower() }}">{{ email.priority_level }}</span>
-                            <span class="tag category">{{ email.category }}</span>
-                        </div>
-                    </div>
-                    <span class="sender-name">{{ email.sender.split('<')[0].strip() }}</span>
-                    <p class="email-summary-preview">{{ email.summary }}</p>
-                </li>
-                {% endfor %}
+                <!-- Email items will be populated by JavaScript -->
             </ul>
         </div>
 
         <!-- Right Column: Email Details -->
         <div class="email-details-column">
             <div id="email-details">
+                <!-- Loading placeholder for email details -->
+                <div id="details-loading" class="details-loading" style="display: none;">
+                    <div class="loading-spinner"></div>
+                    <p>Select an email to view details...</p>
+                </div>
+                
                 <h2 id="details-subject"></h2>
                 
                 <div class="email-meta">

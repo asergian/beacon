@@ -67,6 +67,7 @@ class EmailPipeline:
         errors = []
         stats = {"processed": 0, "cached": 0, "errors": 0, "new": 0}
 
+        print("Getting analyzed emails")
         try:
             # Ensure Gmail client is connected with current user's credentials
             await self.connection.connect()
@@ -93,6 +94,7 @@ class EmailPipeline:
             #     await self.rate_limiter.acquire()
 
             raw_emails = await self.connection.fetch_emails(command.days_back)
+            print("Fetched # of emails: ", len(raw_emails))
             
             # Filter out already cached emails
             new_raw_emails = []
