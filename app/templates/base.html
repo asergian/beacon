@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Beacon | Email Assistant{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    {% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <header>
+        <div class="header-container">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='images/beacon-logo-hero.svg') }}" alt="Beacon" height="40">
+            </div>
+            {% if session.get('user') %}
+            <nav class="header-nav">
+                <ul>
+                    <li><a href="{{ url_for('email.home') }}" class="nav-link {{ 'active' if request.endpoint == 'email.home' }}">Home</a></li>
+                    {% if session.user.get('roles', []) and 'admin' in session.user.get('roles', []) %}
+                    <li><a href="{{ url_for('user.analytics_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'user.analytics_dashboard' }}">Analytics</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('user.get_settings') }}" class="nav-link {{ 'active' if request.endpoint == 'user.get_settings' }}">Settings</a></li>
+                    <li>
+                        <div class="user-menu">
+                            <img src="{{ session.user.picture }}" alt="{{ session.user.name }}" class="user-avatar">
+                            <div class="user-dropdown">
+                                <div class="user-info">
+                                    <strong>{{ session.user.name }}</strong>
+                                    <small>{{ session.user.email }}</small>
+                                </div>
+                                <a href="{{ url_for('auth.logout') }}" class="dropdown-item">Logout</a>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-left">
+                <p>&copy; 2024 Beacon. All rights reserved.</p>
+            </div>
+            <div class="footer-right">
+                <ul>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+
+    {% block scripts %}
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% endblock %}
+</body>
+</html> 

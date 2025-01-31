@@ -28,7 +28,9 @@ except Exception as e:
 @async_route
 async def home():
     """Home page that loads email UI without waiting for data."""
-    return render_template('email_summary.html', emails=[])
+    return render_template('email_summary.html', 
+                         emails=[],
+                         tiny_mce_api_key=current_app.config.get('TINYMCE_API_KEY', ''))
 
 @email_bp.route('/api/emails/metadata')
 @login_required
@@ -36,7 +38,8 @@ async def home():
 async def get_email_metadata():
     """Get basic email metadata without analysis."""
     try:
-        raw_emails = await current_app.pipeline.connection.fetch_emails(days=1)
+        days_back = int(request.args.get('days_back', 0))  # Get days_back from request params
+        raw_emails = await current_app.pipeline.connection.fetch_emails(days=days_back)
         basic_emails = []
         
         for email in raw_emails:
@@ -63,8 +66,9 @@ async def get_email_metadata():
 async def get_email_analysis():
     """Get analyzed emails in batches."""
     try:
+        days_back = int(request.args.get('days_back', 0))  # Get days_back from request params
         command = AnalysisCommand(
-            days_back=1,
+            days_back=days_back,
             cache_duration_days=7,
             batch_size=10  # Process in small batches
         )

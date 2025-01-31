@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .stats-container {
+        padding: 2rem;
+        height: calc(100vh - var(--header-height) - var(--footer-height));
+        overflow-y: auto;
+        background-color: #f4f7f9;
+        margin-bottom: 3rem;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stats-header {
+        color: #006F6A;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .stats-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-item {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+        transition: transform 0.2s ease;
+    }
+    
+    .stat-item:hover {
+        transform: translateY(-2px);
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #006F6A;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.5rem;
+    }
+    
+    .chart-container {
+        height: 300px;
+        margin-top: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .activity-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .activity-item {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        transition: background-color 0.2s ease;
+    }
+    
+    .activity-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .activity-time {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .refresh-button {
+        background: #006F6A;
+        color: white;
+        border: none;
+        padding: 0.5rem 1.2rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .refresh-button:hover {
+        background: #005753;
+        transform: translateY(-1px);
+    }
+    
+    .refresh-button:active {
+        transform: translateY(0);
+    }
+    
+    @media (max-width: 768px) {
+        .stats-container {
+            padding: 1rem;
+        }
+        
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .chart-container {
+            height: 250px;
+        }
+    }
+    
+    .error-message {
+        background-color: #fff3f3;
+        border: 1px solid #dc3545;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+    
+    .error-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .error-content strong {
+        color: #dc3545;
+    }
+    
+    .error-content p {
+        margin: 0;
+        color: #666;
+    }
+    
+    .error-content .refresh-button {
+        align-self: flex-start;
+        background-color: #dc3545;
+    }
+    
+    .error-content .refresh-button:hover {
+        background-color: #c82333;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stats-container">
+    <div class="stats-card">
+        <div class="stats-header">
+            <h2>LLM Usage Statistics</h2>
+            <button class="refresh-button" onclick="refreshStats()">Refresh</button>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="total-tokens">-</div>
+                <div class="stat-label">Total Tokens</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="total-prompts">-</div>
+                <div class="stat-label">Total Prompts</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-prompt-length">-</div>
+                <div class="stat-label">Avg. Prompt Length</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="total-cost">-</div>
+                <div class="stat-label">Total Cost ($)</div>
+            </div>
+        </div>
+        <div class="chart-container" id="llm-usage-chart"></div>
+    </div>
+    
+    <div class="stats-card">
+        <h2>Email Processing Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="total-fetched">-</div>
+                <div class="stat-label">Total Fetched</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="new-emails">-</div>
+                <div class="stat-label">New Emails</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="success-rate">-</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="failed-analysis">-</div>
+                <div class="stat-label">Failed Analysis</div>
+            </div>
+        </div>
+        <div class="chart-container" id="email-processing-chart"></div>
+    </div>
+    
+    <div class="stats-card">
+        <h2>NLP Analytics</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="entities-extracted">-</div>
+                <div class="stat-label">Entities Extracted</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="sentiment-analyses">-</div>
+                <div class="stat-label">Sentiment Analyses</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="keywords-extracted">-</div>
+                <div class="stat-label">Keywords Extracted</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-processing-time">-</div>
+                <div class="stat-label">Avg. Processing Time (ms)</div>
+            </div>
+        </div>
+        <div class="chart-container" id="nlp-analytics-chart"></div>
+    </div>
+    
+    <div class="stats-card">
+        <h2>Recent Activity</h2>
+        <ul class="activity-list" id="activity-list">
+            <!-- Activities will be populated by JavaScript -->
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+let currentStats = null;
+let isLoading = false;
+
+async function fetchAnalytics() {
+    if (isLoading) return;
+    
+    try {
+        isLoading = true;
+        updateLoadingState(true);
+        
+        const response = await fetch('/user/api/analytics');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        currentStats = data;
+        updateDashboard(data);
+        updateLoadingState(false);
+    } catch (error) {
+        console.error('Failed to fetch analytics:', error);
+        showError(error.message);
+        updateLoadingState(false);
+    } finally {
+        isLoading = false;
+    }
+}
+
+function updateLoadingState(loading) {
+    const button = document.querySelector('.refresh-button');
+    if (loading) {
+        button.innerHTML = '<span class="loading-spinner"></span> Loading...';
+        button.disabled = true;
+    } else {
+        button.innerHTML = 'Refresh';
+        button.disabled = false;
+    }
+}
+
+function showError(message) {
+    // Create error element if it doesn't exist
+    let errorEl = document.getElementById('error-message');
+    if (!errorEl) {
+        errorEl = document.createElement('div');
+        errorEl.id = 'error-message';
+        errorEl.className = 'error-message';
+        document.querySelector('.stats-container').prepend(errorEl);
+    }
+    
+    errorEl.innerHTML = `
+        <div class="error-content">
+            <strong>Error loading analytics:</strong>
+            <p>${message}</p>
+            <button onclick="fetchAnalytics()" class="refresh-button">Retry</button>
+        </div>
+    `;
+    errorEl.style.display = 'block';
+}
+
+function updateDashboard(data) {
+    // Hide any existing error message
+    const errorEl = document.getElementById('error-message');
+    if (errorEl) {
+        errorEl.style.display = 'none';
+    }
+    
+    // Update LLM stats
+    document.getElementById('total-tokens').textContent = data.llm_stats.total_tokens.toLocaleString();
+    document.getElementById('total-prompts').textContent = data.llm_stats.total_prompts.toLocaleString();
+    document.getElementById('avg-prompt-length').textContent = Math.round(data.llm_stats.avg_prompt_length).toLocaleString();
+    document.getElementById('total-cost').textContent = data.llm_stats.total_cost.toFixed(2);
+    
+    // Update email stats
+    document.getElementById('total-fetched').textContent = data.email_stats.total_fetched.toLocaleString();
+    document.getElementById('new-emails').textContent = data.email_stats.new_emails.toLocaleString();
+    const successRate = (data.email_stats.successfully_analyzed / data.email_stats.total_fetched * 100) || 0;
+    document.getElementById('success-rate').textContent = `${successRate.toFixed(1)}%`;
+    document.getElementById('failed-analysis').textContent = data.email_stats.failed_analysis.toLocaleString();
+    
+    // Update NLP stats
+    document.getElementById('entities-extracted').textContent = data.nlp_stats.entities_extracted.toLocaleString();
+    document.getElementById('sentiment-analyses').textContent = data.nlp_stats.sentiment_analyses.toLocaleString();
+    document.getElementById('keywords-extracted').textContent = data.nlp_stats.keywords_extracted.toLocaleString();
+    document.getElementById('avg-processing-time').textContent = Math.round(data.nlp_stats.avg_processing_time * 1000);
+    
+    // Update activity list with animation
+    const activityList = document.getElementById('activity-list');
+    const newActivities = data.recent_activities.map(activity => `
+        <li class="activity-item">
+            <div class="activity-time">${new Date(activity.created_at).toLocaleString()}</div>
+            <strong>${activity.type}</strong>: ${activity.description}
+        </li>
+    `).join('');
+    
+    if (activityList.innerHTML !== newActivities) {
+        activityList.style.opacity = '0';
+        setTimeout(() => {
+            activityList.innerHTML = newActivities;
+            activityList.style.opacity = '1';
+        }, 300);
+    }
+    
+    // Create charts with responsive layout
+    createLLMChart(data.llm_stats);
+    createEmailChart(data.email_stats);
+    createNLPChart(data.nlp_stats);
+}
+
+function createLLMChart(stats) {
+    const trace = {
+        x: ['Total Tokens', 'Prompt Tokens', 'Completion Tokens'],
+        y: [stats.total_tokens, stats.prompt_tokens || 0, stats.completion_tokens || 0],
+        type: 'bar',
+        marker: {
+            color: ['#006F6A', '#00918C', '#00B4AE']
+        }
+    };
+    
+    const layout = {
+        title: 'Token Usage Distribution',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { t: 40, r: 20, b: 40, l: 60 },
+        responsive: true
+    };
+    
+    const config = { responsive: true };
+    
+    Plotly.newPlot('llm-usage-chart', [trace], layout, config);
+}
+
+function createEmailChart(stats) {
+    const trace = {
+        labels: ['Successfully Analyzed', 'Failed Analysis', 'Failed Parsing'],
+        values: [
+            stats.successfully_analyzed,
+            stats.failed_analysis,
+            stats.failed_parsing
+        ],
+        type: 'pie',
+        marker: {
+            colors: ['#006F6A', '#DC3545', '#FFC107']
+        }
+    };
+    
+    const layout = {
+        title: 'Email Processing Results',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { t: 40, r: 20, b: 40, l: 20 },
+        responsive: true
+    };
+    
+    const config = { responsive: true };
+    
+    Plotly.newPlot('email-processing-chart', [trace], layout, config);
+}
+
+function createNLPChart(stats) {
+    const trace = {
+        x: ['Entities', 'Sentiments', 'Keywords'],
+        y: [
+            stats.entities_extracted,
+            stats.sentiment_analyses,
+            stats.keywords_extracted
+        ],
+        type: 'bar',
+        marker: {
+            color: '#006F6A'
+        }
+    };
+    
+    const layout = {
+        title: 'NLP Analysis Results',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { t: 40, r: 20, b: 40, l: 60 },
+        responsive: true
+    };
+    
+    const config = { responsive: true };
+    
+    Plotly.newPlot('nlp-analytics-chart', [trace], layout, config);
+}
+
+function refreshStats() {
+    fetchAnalytics();
+}
+
+// Initial load
+document.addEventListener('DOMContentLoaded', fetchAnalytics);
+
+// Add window resize handler for charts
+window.addEventListener('resize', () => {
+    if (currentStats) {
+        createLLMChart(currentStats.llm_stats);
+        createEmailChart(currentStats.email_stats);
+        createNLPChart(currentStats.nlp_stats);
+    }
+});
+
+// Refresh every 5 minutes
+setInterval(fetchAnalytics, 5 * 60 * 1000);
+</script>
+{% endblock %} 

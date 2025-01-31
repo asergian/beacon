@@ -60,6 +60,7 @@ class EmailPipeline:
         self.cache = cache
         #self.rate_limiter = rate_limiter
         #self.metrics = metrics
+        self.logger = logging.getLogger(__name__)
 
     async def get_analyzed_emails(self, command: AnalysisCommand) -> AnalysisResult:
         """Main method to get and analyze emails with caching and metrics"""
@@ -86,31 +87,30 @@ class EmailPipeline:
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_emails)
 
-            print("Number of cached emails: ", len(cached_emails))
-            print("IDs: ", cached_ids)
+            self.logger.info(f"Cached email IDs: {cached_ids}")
 
             # Fetch new emails
-            # if self.rate_limiter:
-            #     await self.rate_limiter.acquire()
-
             raw_emails = await self.connection.fetch_emails(command.days_back)
-            print("Fetched # of emails: ", len(raw_emails))
+            self.logger.info(f"Fetched {len(raw_emails)} raw emails")
             
             # Filter out already cached emails
             new_raw_emails = []
             for email in raw_emails:
                 # Use Gmail API ID instead of Message-ID
                 gmail_id = email.get('id')  # This is the hex ID from Gmail API
+                self.logger.info(f"Comparing Gmail ID: {gmail_id} against cached IDs")
                 if gmail_id and gmail_id not in cached_ids:
+                    self.logger.info(f"New email found with ID: {gmail_id}")
                     new_raw_emails.append(email)
                 else:
-                    print(f"Skipping cached email with ID: {gmail_id}")
+                    self.logger.info(f"Email already cached with ID: {gmail_id}")
             
             stats["new"] = len(new_raw_emails)
-            print(f"New emails: {stats['new']}")
+            self.logger.info(f"Found {len(new_raw_emails)} new emails out of {len(raw_emails)} total fetched emails")
+            
             # Only process new emails if there are any
             if new_raw_emails:
-                print("Processing new emails")
+                self.logger.info("Processing new emails")
                 parsed_emails = [self.parser.extract_metadata(email) for email in new_raw_emails]
                 # Filter out None values from parsing failures
                 parsed_emails = [email for email in parsed_emails if email is not None]
@@ -173,47 +173,26 @@ class EmailPipeline:
         command = AnalysisCommand(days_back=days, batch_size=batch_size)
         await self.get_analyzed_emails(command)
 
-def create_pipeline(config: dict):
-    """Create pipeline instance with configuration"""
-    # Initialize Redis cache if URL provided
-    email_cache = None
-    if redis_url := config.get('REDIS_URL', "redis://localhost:6379"):
-        try:
-            redis = aioredis.from_url(redis_url)
-            email_cache = RedisEmailCache(redis)
-            logging.info("Redis cache initialized successfully")
-        except Exception as e:
-            logging.warning(f"Failed to initialize Redis cache: {e}. Continuing without caching.")
+def create_pipeline(
+    connection: GmailClient,
+    parser: EmailParser,
+    processor: EmailProcessor,
+    cache: Optional[EmailCache] = None
+) -> EmailPipeline:
+    """Create pipeline instance with pre-initialized components.
     
-    # Initialize Gmail client
-    email_client = GmailClient()
-    
-    # Initialize NLP components
-    nlp = spacy.load("en_core_web_sm")
-    text_analyzer = ContentAnalyzer(nlp)
-    
-    # Initialize LLM analyzer
-    llm_analyzer = SemanticAnalyzer()
-    
-    # Initialize priority calculator with VIP senders
-    vip_senders = set(config.get('VIP_SENDERS', []))
-    priority_calculator = PriorityScorer(vip_senders, ProcessingConfig())
-    
-    # Initialize parser
-    email_parser = EmailParser()
-    
-    # Initialize the email processor that combines all components
-    email_processor = EmailProcessor(
-        email_client=email_client,
-        text_analyzer=text_analyzer,
-        llm_analyzer=llm_analyzer,
-        priority_calculator=priority_calculator,
-        parser=email_parser
-    )
-    
+    Args:
+        connection: Initialized Gmail client
+        parser: Initialized email parser
+        processor: Initialized email processor
+        cache: Optional initialized email cache
+        
+    Returns:
+        EmailPipeline: Configured pipeline instance
+    """
     return EmailPipeline(
-        connection=email_client,
-        parser=email_parser,
-        processor=email_processor,
-        cache=email_cache
+        connection=connection,
+        parser=parser,
+        processor=processor,
+        cache=cache
     ) 

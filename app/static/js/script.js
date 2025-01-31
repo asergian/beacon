@@ -4,6 +4,13 @@ let emailMap = window.emailMap || new Map();
 let isLoadingMetadata = false;
 let isLoadingAnalysis = false;
 
+// Configuration
+const config = {
+    days_back: 0,  // Number of days to fetch emails for
+    cache_duration_ms: 3600000,  // Cache duration in milliseconds (1 hour)
+    batch_size: 50  // Batch size for UI updates
+};
+
 // Track currently selected email
 let selectedEmailId = null;
 
@@ -141,7 +148,7 @@ async function loadCache() {
         if (cached) {
             const { timestamp, emails } = JSON.parse(cached);
             // Only use cache if it's less than 1 hour old
-            if (Date.now() - timestamp < 3600000) {
+            if (Date.now() - timestamp < config.cache_duration_ms) {
                 emailMap.clear();
                 emails.forEach(email => emailMap.set(email.id, email));
                 console.log(`Loaded ${emails.length} emails from cache for user ${userId}`);
@@ -160,10 +167,10 @@ async function loadEmailMetadata() {
     
     showLoadingBar('Loading email metadata...');
     updateLoadingText('parse');
-    console.log('Loading email metadata...');
+    console.log('Loading email metadata with days_back:', config.days_back);
     
     try {
-        const response = await fetch('/email/api/emails/metadata');
+        const response = await fetch(`/email/api/emails/metadata?days_back=${config.days_back}`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -171,20 +178,33 @@ async function loadEmailMetadata() {
         
         if (data.status === 'success') {
             console.log('Received metadata for', data.emails.length, 'emails');
+            console.log('Current emailMap size before clearing:', emailMap.size);
             
             // Clear existing emails before adding new ones
             emailMap.clear();
+            console.log('EmailMap size after clearing:', emailMap.size);
             
             // Add new emails
             data.emails.forEach(email => {
-                emailMap.set(email.id, {
-                    ...email,
-                    isAnalyzed: false,
-                    priority_level: 'pending',
-                    category: 'pending',
-                    summary: 'Analysis in progress...'
-                });
+                const emailDate = new Date(email.date);
+                const now = new Date();
+                const daysDiff = Math.floor((now - emailDate) / (1000 * 60 * 60 * 24));
+                console.log(`Email ${email.id} date: ${emailDate}, days old: ${daysDiff}`);
+                
+                if (daysDiff <= config.days_back) {
+                    emailMap.set(email.id, {
+                        ...email,
+                        isAnalyzed: false,
+                        priority_level: 'pending',
+                        category: 'pending',
+                        summary: 'Analysis in progress...'
+                    });
+                } else {
+                    console.log(`Skipping email ${email.id} as it's older than ${config.days_back} days`);
+                }
             });
+            
+            console.log('EmailMap size after adding new emails:', emailMap.size);
             
             // Update UI and cache
             updateEmailList();
@@ -209,10 +229,10 @@ async function loadEmailAnalysis() {
     isLoadingAnalysis = true;
     
     showLoadingBar('Analyzing emails...');
-    console.log('Loading email analysis...');
+    console.log('Loading email analysis with days_back:', config.days_back);
     
     try {
-        const response = await fetch('/email/api/emails/analysis');
+        const response = await fetch(`/email/api/emails/analysis?days_back=${config.days_back}`);
         console.log('Analysis response status:', response.status);
         
         if (!response.ok) {
@@ -226,6 +246,8 @@ async function loadEmailAnalysis() {
         
         if (data.status === 'success' && data.emails) {
             console.log('Received analysis for', data.emails.length, 'emails');
+            console.log('Current emailMap size before analysis:', emailMap.size);
+            
             // Update emails with analysis results
             data.emails.forEach(analyzedEmail => {
                 const existingEmail = emailMap.get(analyzedEmail.id);
@@ -236,8 +258,12 @@ async function loadEmailAnalysis() {
                         isAnalyzed: true
                     });
                     console.log('Updated email:', analyzedEmail.id);
+                } else {
+                    console.log('Skipping analyzed email not in metadata:', analyzedEmail.id);
                 }
             });
+            
+            console.log('EmailMap size after analysis:', emailMap.size);
             
             // Update UI and cache
             updateEmailList();
@@ -271,7 +297,6 @@ function batchUpdate(updates, batchSize = 50) {
 
 // Optimized email list update
 function updateEmailList() {
-    // Debounce the function calls
     if (updateEmailListTimeout) {
         console.log('Debouncing updateEmailList call');
         clearTimeout(updateEmailListTimeout);
@@ -280,74 +305,83 @@ function updateEmailList() {
     updateEmailListTimeout = setTimeout(() => {
         console.log('Updating email list UI');
         const emailList = document.querySelector('.email-list');
-        
-        // Clear the email list in the UI
         emailList.innerHTML = '';
         
-        // Cache DOM elements and computed values
         const fragment = document.createDocumentFragment();
-        const priorities = { high: 1, medium: 2, low: 3, pending: 4 };
-
-        // Get unique emails and sort them
         const uniqueEmails = new Map(Array.from(emailMap.entries()));
-        const sortedEmails = Array.from(uniqueEmails.values()).sort((a, b) => {
-            // Default priority if not analyzed
-            const aPriority = a.isAnalyzed ? priorities[a.priority_level.toLowerCase()] : priorities.pending;
-            const bPriority = b.isAnalyzed ? priorities[b.priority_level.toLowerCase()] : priorities.pending;
-
-            // First sort by priority
-            if (aPriority !== bPriority) {
-                return aPriority - bPriority;
-            }
-
-            // Then by date (most recent first)
-            return new Date(b.date) - new Date(a.date);
-        });
-
-        console.log(`Rendering ${sortedEmails.length} unique emails`);
+        console.log('Number of unique emails:', uniqueEmails.size);
         
-        // Create elements in batches
+        const sortedEmails = Array.from(uniqueEmails.values())
+            .filter(email => {
+                const emailDate = new Date(email.date);
+                const now = new Date();
+                const daysDiff = Math.floor((now - emailDate) / (1000 * 60 * 60 * 24));
+                const isWithinRange = daysDiff <= config.days_back;
+                if (!isWithinRange) {
+                    console.log(`Filtering out email ${email.id} as it's ${daysDiff} days old`);
+                }
+                return isWithinRange;
+            })
+            .sort((a, b) => {
+                if (a.needs_action !== b.needs_action) {
+                    return b.needs_action ? 1 : -1;
+                }
+                const aPriority = a.priority || 0;
+                const bPriority = b.priority || 0;
+                if (aPriority !== bPriority) {
+                    return bPriority - aPriority;
+                }
+                return new Date(b.date) - new Date(a.date);
+            });
+
+        console.log(`Rendering ${sortedEmails.length} filtered emails`);
+        
         const updates = sortedEmails.map(email => () => {
-            console.log('Creating sorted email item:', email.id);
             const li = document.createElement('li');
             li.className = `email-item ${!email.isAnalyzed ? 'analyzing' : ''}`;
             li.dataset.emailId = email.id;
             li.onclick = () => {
-                selectedEmailId = email.id; // Track selected email
+                selectedEmailId = email.id;
                 loadEmailDetails(email.id);
             };
 
-            // Add active class if this was the selected email
             if (email.id === selectedEmailId) {
                 li.classList.add('active');
             }
+
+            if (email.needs_action) {
+                li.classList.add('needs-action');
+            }
+
+            const formatTagText = (text) => {
+                if (!text) return '';
+                return text.toLowerCase().split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+            };
 
             li.innerHTML = `
                 <div class="email-header">
                     <span class="email-subject">${email.subject || 'No Subject'}</span>
                     <div class="tags-container">
-                        <span class="tag priority-${(email.priority_level || 'pending').toLowerCase()}">${email.priority_level || 'Pending'}</span>
-                        <span class="tag category">${email.category || 'Pending'}</span>
+                        <span class="tag priority-${(email.priority_level || 'pending').toLowerCase()}">${formatTagText(email.priority_level) || 'Pending'}</span>
+                        <span class="tag category">${formatTagText(email.category) || 'Pending'}</span>
+                        ${email.needs_action ? '<span class="tag action-required">Action Required</span>' : ''}
                     </div>
                 </div>
                 <span class="sender-name">${(email.sender || '').split('<')[0].trim() || 'Unknown Sender'}</span>
                 <p class="email-summary-preview">${email.summary || 'Analysis in progress...'}</p>
             `;
-
             fragment.appendChild(li);
+            return li;
         });
 
-        // Apply updates in batches
         batchUpdate(updates, 50).then(() => {
             emailList.appendChild(fragment);
-            
-            // Load first email only if none was previously selected
             if (sortedEmails.length > 0 && !selectedEmailId) {
                 selectedEmailId = sortedEmails[0].id;
                 loadEmailDetails(sortedEmails[0].id);
             }
         });
-    }, 100); // 100ms debounce delay
+    }, 100);
 }
 
 // Optimized email details loading with debounced resize observer
@@ -367,6 +401,7 @@ function loadEmailDetails(emailId) {
         date: document.getElementById('details-date'),
         priority: document.getElementById('details-priority'),
         category: document.getElementById('details-category'),
+        actionRequired: document.getElementById('details-action-required'),
         summary: document.getElementById('details-summary'),
         keyDates: document.getElementById('key-dates-list'),
         loading: document.getElementById('details-loading'),
@@ -379,15 +414,30 @@ function loadEmailDetails(emailId) {
     
     // Show/hide loading state
     detailsElements.loading.style.display = !email.isAnalyzed ? 'flex' : 'none';
+
+    // Helper function to format tag text
+    const formatTagText = (text) => {
+        if (!text) return '';
+        return text.toLowerCase().split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
     
     // Batch DOM updates
     requestAnimationFrame(() => {
         detailsElements.subject.textContent = email.subject;
         detailsElements.sender.textContent = email.sender;
         detailsElements.date.textContent = new Date(email.date).toLocaleString();
-        detailsElements.priority.textContent = email.priority_level;
-        detailsElements.priority.className = `tag priority-${email.priority_level.toLowerCase()}`;
-        detailsElements.category.textContent = email.category;
+        detailsElements.priority.textContent = formatTagText(email.priority_level);
+        detailsElements.priority.className = `tag priority-${(email.priority_level || 'pending').toLowerCase()}`;
+        detailsElements.category.textContent = formatTagText(email.category);
+        
+        // Only show action required tag if needed
+        if (email.needs_action) {
+            detailsElements.actionRequired.textContent = 'Action Required';
+            detailsElements.actionRequired.style.display = 'inline-flex';
+        } else {
+            detailsElements.actionRequired.style.display = 'none';
+        }
+        
         detailsElements.summary.textContent = email.summary;
         
         // Optimize action items update
@@ -471,6 +521,7 @@ function loadEmailDetails(emailId) {
 function filterEmails() {
     const priorityFilter = document.getElementById('priority-filter').value;
     const categoryFilter = document.getElementById('category-filter').value;
+    const actionFilter = document.getElementById('action-filter').value;
     
     document.querySelectorAll('.email-item').forEach(item => {
         const email = emailMap.get(item.dataset.emailId);
@@ -480,13 +531,21 @@ function filterEmails() {
                               email.priority_level.toLowerCase() === priorityFilter.toLowerCase();
         const matchesCategory = categoryFilter === 'all' || 
                               email.category.toLowerCase() === categoryFilter.toLowerCase();
+        const matchesAction = actionFilter === 'all' || 
+                            (actionFilter === 'required' && email.needs_action) ||
+                            (actionFilter === 'none' && !email.needs_action);
         
-        item.style.display = matchesPriority && matchesCategory ? 'block' : 'none';
+        item.style.display = matchesPriority && matchesCategory && matchesAction ? 'block' : 'none';
     });
 }
 
-// Initialize the page when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializePage);
+// Initialize the page when DOM is loaded, but only if we're on the email list page
+document.addEventListener('DOMContentLoaded', () => {
+    // Only initialize if we're on the page with the email list
+    if (document.querySelector('.email-list')) {
+        initializePage();
+    }
+});
 
 // Helper function to capitalize strings
 String.prototype.capitalize = function() {

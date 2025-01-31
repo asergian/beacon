@@ -40,3 +40,14 @@ pyOpenSSL==24.0.0
 
 # Google API Client
 google-api-python-client==2.118.0
+
+# Database
+SQLAlchemy==2.0.28
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.7
+alembic==1.13.1
+psycopg2-binary==2.9.9  # PostgreSQL adapter
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+psycopg2-binary

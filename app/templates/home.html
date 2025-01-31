@@ -19,10 +19,10 @@
             </div>
             <nav class="header-nav">
                 <ul>
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/emails">Detailed View</a></li>
-                    <li><a href="#">Settings</a></li>
-                    <li><a href="/logout">Log Out</a></li>
+                    <li><a href="{{ url_for('email.home') }}">Home</a></li>
+                    <li><a href="{{ url_for('email.home') }}">Detailed View</a></li>
+                    <li><a href="{{ url_for('user.get_settings') }}">Settings</a></li>
+                    <li><a href="{{ url_for('auth.logout') }}">Log Out</a></li>
                 </ul>
             </nav>
         </div>

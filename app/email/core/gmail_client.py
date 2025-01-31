@@ -67,6 +67,19 @@ class GmailClient:
             
             # Build the Gmail API service
             self._service = build('gmail', 'v1', credentials=credentials)
+            
+            # Check if token was refreshed and update session
+            if credentials.token != creds_dict['token']:
+                self.logger.info("Token was refreshed, updating session")
+                session['credentials'] = {
+                    'token': credentials.token,
+                    'refresh_token': credentials.refresh_token,
+                    'token_uri': credentials.token_uri,
+                    'client_id': credentials.client_id,
+                    'client_secret': credentials.client_secret,
+                    'scopes': credentials.scopes
+                }
+            
             self.logger.info("Successfully connected to Gmail API")
             
         except Exception as e:

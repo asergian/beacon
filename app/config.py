@@ -1,6 +1,7 @@
 # app/config.py
 import os
 from dotenv import load_dotenv
+from datetime import timedelta
 
 class Config:
     """Base configuration class."""
@@ -18,11 +19,20 @@ class Config:
         # OpenAI Configuration
         self.OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY') or 'your-default-openai-key'
         
+        # TinyMCE Configuration
+        self.TINYMCE_API_KEY = os.environ.get('TINYMCE_API_KEY') or 'your-default-tiny-mce-key'
+
+        self.FLASK_SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'your-default-flask-secret-key'
+        
         # Logging Configuration
         self.LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'ERROR').upper()
         
         # Redis Configuration (if used)
         self.REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+        
+        # Database Configuration
+        self.SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://localhost/beacon')
+        self.SQLALCHEMY_TRACK_MODIFICATIONS = os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS', False)
         
         # Debug flag
         self.DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
