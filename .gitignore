@@ -1,5 +1,8 @@
 venv/*
 certs/
+logs/
+cookies.txt
+
 .env
 playground/*
 .DS_Store

@@ -98,7 +98,8 @@ def log_activity(user_id: int, activity_type: str, description: str = None, meta
     if user_id is None:
         raise ValueError("user_id cannot be None")
     
-    try:    
+    try:
+        logging.info(f"Logging activity for user ID: {user_id} (type: {type(user_id)}) and activity type: {activity_type}")
         activity = UserActivity(
             user_id=user_id,
             activity_type=activity_type,

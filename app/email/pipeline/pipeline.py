@@ -76,12 +76,21 @@ class EmailPipeline:
             # Get cached emails first if cache is available
             cached_emails = []
             cached_ids = set()
+            user_id = None
+            user_email = None
+            
             if self.cache:
                 # Set the user email from session
-                if 'user' in session and 'email' in session['user']:
-                    await self.cache.set_user(session['user']['email'])
+                if 'user' in session:
+                    user_id = int(session['user'].get('id'))  # Convert to integer
+                    user_email = session['user'].get('email')
+                    self.logger.info(f"User ID from session: {user_id} (type: {type(user_id)})")
+                    if user_email:
+                        await self.cache.set_user(user_email)
+                    else:
+                        raise ValueError("No user email found in session")
                 else:
-                    raise ValueError("No user email found in session")
+                    raise ValueError("No user found in session")
                     
                 cached_emails = await self.cache.get_recent(command.cache_duration_days, command.days_back)
                 cached_ids = {email.id for email in cached_emails}
@@ -120,10 +129,10 @@ class EmailPipeline:
                     analyzed_emails = []
                     for i in range(0, len(parsed_emails), command.batch_size):
                         batch = parsed_emails[i:i + command.batch_size]
-                        analyzed_batch = await self.processor.analyze_parsed_emails(batch)
+                        analyzed_batch = await self.processor.analyze_parsed_emails(batch, user_id=user_id)
                         analyzed_emails.extend(analyzed_batch)
                 else:
-                    analyzed_emails = await self.processor.analyze_parsed_emails(parsed_emails)
+                    analyzed_emails = await self.processor.analyze_parsed_emails(parsed_emails, user_id=user_id)
 
                 stats["processed"] = len(analyzed_emails)
 

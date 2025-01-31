@@ -1,7 +1,7 @@
 """Email processing module with analytics tracking."""
 
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timezone
 import time
 from flask import session, current_app
@@ -39,11 +39,13 @@ class EmailProcessor:
             return date.replace(tzinfo=timezone.utc)
         return date.astimezone(timezone.utc)
 
-    async def analyze_recent_emails(self, days_back: int = 1) -> List[ProcessedEmail]:
+    async def analyze_recent_emails(self, days_back: int = 1, user_id: Optional[int] = None) -> List[ProcessedEmail]:
         """Analyze recent emails with detailed analytics tracking."""
         try:
             start_time = time.time()
-            user_id = session.get('user', {}).get('id')
+            
+            # Debug logging for session data
+            self.logger.info(f"Processing emails for user ID: {user_id} (type: {type(user_id)})")
             
             # Initialize analytics
             processing_stats = {
@@ -178,10 +180,10 @@ class EmailProcessor:
             self.logger.error(f"Email analysis failed: {e}")
             raise
 
-    async def analyze_parsed_emails(self, parsed_emails: List[EmailMetadata]) -> List[ProcessedEmail]:
+    async def analyze_parsed_emails(self, parsed_emails: List[EmailMetadata], user_id: Optional[int] = None) -> List[ProcessedEmail]:
         """Analyze a list of already parsed emails."""
+        self.logger.info(f"Analyzing parsed emails for user ID: {user_id} (type: {type(user_id)})")
         processed_emails = []
-        user_id = session.get('user', {}).get('id')
         
         for parsed_email in parsed_emails:
             try:
@@ -191,6 +193,7 @@ class EmailProcessor:
                 nlp_processing_time = time.time() - nlp_start_time
                 
                 if user_id:
+                    self.logger.info(f"Logging NLP activity for user ID: {user_id} (type: {type(user_id)})")
                     log_activity(
                         user_id=user_id,
                         activity_type='nlp_processing',
