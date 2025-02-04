@@ -55,7 +55,8 @@
 <div class="container">
     <!-- Left Column: Email List -->
     <div class="email-list-column">
-        <div id="email-list-loading" class="column-loading" style="display: none;">
+        <!-- Updated loading overlay -->
+        <div id="email-list-loading" class="loading-overlay">
             <div class="loading-spinner"></div>
             <p>Loading emails...</p>
         </div>
@@ -66,13 +67,12 @@
 
     <!-- Right Column: Email Details -->
     <div class="email-details-column">
+        <!-- Updated loading overlay -->
+        <div id="details-loading" class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <p>Select an email to view details...</p>
+        </div>
         <div id="email-details">
-            <!-- Loading placeholder for email details -->
-            <div id="details-loading" class="details-loading" style="display: none;">
-                <div class="loading-spinner"></div>
-                <p>Select an email to view details...</p>
-            </div>
-            
             <h2 id="details-subject"></h2>
             
             <div class="email-meta">

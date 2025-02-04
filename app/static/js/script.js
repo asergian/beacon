@@ -73,13 +73,41 @@ async function initializePage() {
     hasInitialized = true;  // Set again after clear
     
     // Show loading states initially
-    document.getElementById('email-list-loading').style.display = 'flex';
-    document.getElementById('details-loading').style.display = 'flex';
+    const listLoading = document.getElementById('email-list-loading');
+    const detailsLoading = document.getElementById('details-loading');
     
-    updateLoadingText('fetch');
-
+    // Force display flex and add visible class
+    listLoading.style.display = 'flex';
+    detailsLoading.style.display = 'flex';
+    listLoading.classList.add('visible');
+    detailsLoading.classList.add('visible');
+    
     try {
-        // Load and analyze emails in one step
+        // First try to load cached emails quickly
+        updateLoadingText('cache');
+        try {
+            const cacheResponse = await fetch(`/email/api/emails/cached?days_back=${config.days_back}`);
+            if (cacheResponse.ok) {
+                const cacheData = await cacheResponse.json();
+                if (cacheData.status === 'success' && cacheData.emails.length > 0) {
+                    // Update UI with cached data
+                    emailMap.clear();
+                    cacheData.emails.forEach(email => emailMap.set(email.id, { ...email, isAnalyzed: true }));
+                    updateEmailList();
+                    loadFirstEmail();
+                    
+                    // Hide loading states after cached data is loaded
+                    listLoading.style.display = 'none';
+                    detailsLoading.style.display = 'none';
+                    listLoading.classList.remove('visible');
+                    detailsLoading.classList.remove('visible');
+                }
+            }
+        } catch (cacheError) {
+            console.warn('Failed to load cached emails:', cacheError);
+        }
+        
+        // Then load and analyze fresh emails
         updateLoadingText('analyze');
         await loadEmailAnalysis();
         
@@ -92,8 +120,11 @@ async function initializePage() {
         showError('Failed to load emails. Please try again.');
         hasInitialized = false;  // Reset on error
     } finally {
-        document.getElementById('email-list-loading').style.display = 'none';
-        document.getElementById('details-loading').style.display = 'none';
+        // Ensure loading states are hidden
+        listLoading.style.display = 'none';
+        detailsLoading.style.display = 'none';
+        listLoading.classList.remove('visible');
+        detailsLoading.classList.remove('visible');
     }
 }
 
@@ -608,6 +639,9 @@ function updateLoadingText(stage) {
             break;
         case 'analyze':
             message = 'Analyzing emails...';
+            break;
+        case 'cache':
+            message = 'Loading cached emails...';
             break;
         default:
             message = 'Loading...';
