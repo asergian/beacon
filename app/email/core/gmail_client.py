@@ -102,7 +102,8 @@ class GmailClient:
             GmailAPIError: If fetching emails fails
         """
         if not self._service:
-            await self.connect()
+            self.logger.error("Gmail client not connected")
+            raise GmailAPIError("Gmail client must be connected before fetching emails")
             
         try:
             self.logger.info(f"Fetching emails from midnight {days} days ago until now")

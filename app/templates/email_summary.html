@@ -154,29 +154,9 @@
     window.emails = [];
     window.emailMap = new Map();
     
-    // Load cached data if available (user-specific)
-    const userId = '{{ user_id }}'; // Get from Flask session
-    const cacheKey = `emailCache_${userId}`;
-    const cachedEmails = localStorage.getItem(cacheKey);
-    
-    if (cachedEmails) {
-        try {
-            const parsed = JSON.parse(cachedEmails);
-            if (parsed.timestamp > Date.now() - (30 * 60 * 1000)) { // 30 minutes cache
-                window.emails = parsed.emails;
-                parsed.emails.forEach(email => window.emailMap.set(email.id, email));
-                console.log('Loaded cached emails for user:', userId);
-            }
-        } catch (e) {
-            console.warn('Failed to load cached emails:', e);
-            localStorage.removeItem(cacheKey); // Clear invalid cache
-        }
-    }
-    
-    // Initialize page immediately after DOM loads
+    // Initialize TinyMCE after DOM loads
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('DOM loaded, initializing page...');
-        initializePage(); // Start loading fresh data
+        console.log('DOM loaded, initializing TinyMCE...');
         tinymce.init({
             selector: '#response-editor',
             plugins: 'link lists image table code help wordcount emoticons',

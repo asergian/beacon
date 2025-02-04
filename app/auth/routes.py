@@ -198,4 +198,4 @@ def logout():
     
     logger.info("User logged out")
     session.clear()
-    return redirect(url_for('auth.show_login'))
+    return redirect(url_for('auth.show_login', from_logout=1))

@@ -111,5 +111,21 @@
             </div>
         </div>
     </footer>
+
+    {% if request.args.get('from_logout') %}
+    <script>
+        // Wait for page load and retry a few times if needed
+        function attemptClear(retries = 5) {
+            if (window.clearEmailState) {
+                window.clearEmailState();
+            } else if (retries > 0) {
+                // Try again in 100ms
+                setTimeout(() => attemptClear(retries - 1), 100);
+            }
+        }
+        // Start attempting to clear
+        attemptClear();
+    </script>
+    {% endif %}
 </body>
 </html> 

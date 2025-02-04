@@ -64,48 +64,41 @@ class EmailPipeline:
 
     async def get_analyzed_emails(self, command: AnalysisCommand) -> AnalysisResult:
         """Main method to get and analyze emails with caching and metrics"""
-        #start_time = datetime.now()
         errors = []
         stats = {"processed": 0, "cached": 0, "errors": 0, "new": 0}
 
         print("Getting analyzed emails")
         try:
-            # Ensure Gmail client is connected with current user's credentials
-            await self.connection.connect()
+            # First ensure we have user context
+            if 'user' not in session:
+                raise ValueError("No user found in session")
+                
+            user_id = int(session['user'].get('id'))
+            user_email = session['user'].get('email')
+            if not user_email:
+                raise ValueError("No user email found in session")
+                
+            self.logger.info(f"Processing emails for user: {user_email} (ID: {user_id})")
             
-            # Get cached emails first if cache is available
+            # Set up cache if available
             cached_emails = []
             cached_ids = set()
-            user_id = None
-            user_email = None
-            
             if self.cache:
-                # Set the user email from session
-                if 'user' in session:
-                    user_id = int(session['user'].get('id'))  # Convert to integer
-                    user_email = session['user'].get('email')
-                    self.logger.info(f"User ID from session: {user_id} (type: {type(user_id)})")
-                    if user_email:
-                        await self.cache.set_user(user_email)
-                    else:
-                        raise ValueError("No user email found in session")
-                else:
-                    raise ValueError("No user found in session")
-                    
+                await self.cache.set_user(user_email)
                 cached_emails = await self.cache.get_recent(command.cache_duration_days, command.days_back)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_emails)
-
-            self.logger.info(f"Cached email IDs: {cached_ids}")
-
-            # Fetch new emails
+                self.logger.info(f"Found {len(cached_ids)} cached email IDs")
+            
+            # Now that user context is set up, connect to Gmail
+            await self.connection.connect()
             raw_emails = await self.connection.fetch_emails(command.days_back)
-            self.logger.info(f"Fetched {len(raw_emails)} raw emails")
+            self.logger.info(f"Fetched {len(raw_emails)} raw emails for user {user_email}")
             
             # Filter out already cached emails
             new_raw_emails = []
             for email in raw_emails:
-                # Use Gmail API ID instead of Message-ID
+                # Use Gmail API ID for comparison
                 gmail_id = email.get('id')  # This is the hex ID from Gmail API
                 self.logger.info(f"Comparing Gmail ID: {gmail_id} against cached IDs")
                 if gmail_id and gmail_id not in cached_ids:
@@ -118,6 +111,7 @@ class EmailPipeline:
             self.logger.info(f"Found {len(new_raw_emails)} new emails out of {len(raw_emails)} total fetched emails")
             
             # Only process new emails if there are any
+            analyzed_emails = []
             if new_raw_emails:
                 self.logger.info("Processing new emails")
                 parsed_emails = [self.parser.extract_metadata(email) for email in new_raw_emails]
@@ -126,11 +120,11 @@ class EmailPipeline:
                 
                 # Process in batches if specified
                 if command.batch_size:
-                    analyzed_emails = []
+                    analyzed_batch = []
                     for i in range(0, len(parsed_emails), command.batch_size):
                         batch = parsed_emails[i:i + command.batch_size]
-                        analyzed_batch = await self.processor.analyze_parsed_emails(batch, user_id=user_id)
-                        analyzed_emails.extend(analyzed_batch)
+                        analyzed_batch.extend(await self.processor.analyze_parsed_emails(batch, user_id=user_id))
+                    analyzed_emails = analyzed_batch
                 else:
                     analyzed_emails = await self.processor.analyze_parsed_emails(parsed_emails, user_id=user_id)
 
@@ -139,10 +133,12 @@ class EmailPipeline:
                 # Cache new results if cache available
                 if self.cache and analyzed_emails:
                     await self.cache.store_many(analyzed_emails)
-                    cached_emails.extend(analyzed_emails)
-
-            # Apply filters to all emails (cached + new)
-            filtered_emails = self._apply_filters(cached_emails, command)
+            
+            # Combine cached and newly analyzed emails
+            all_emails = cached_emails + analyzed_emails
+            
+            # Apply filters to all emails
+            filtered_emails = self._apply_filters(all_emails, command)
 
             # Collect metrics
             # if self.metrics:

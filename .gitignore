@@ -2,7 +2,7 @@ venv/*
 certs/
 logs/
 cookies.txt
-
+.gitignore
 .env
 playground/*
 .DS_Store

@@ -553,14 +553,12 @@ header {
     border: 1px solid #ddd;
     overflow: hidden;
     position: relative;
-    margin-bottom: calc(var(--footer-height) + 20px);
 }
 
 #email-body iframe {
     width: 100%;
     border: none;
     min-height: 300px;
-    margin-bottom: 60px; /* Space for the button bar */
 }
 
 /* Email Response Section */
@@ -1015,7 +1013,6 @@ footer {
 .tox-tinymce {
     border: 1px solid #ddd !important;
     border-radius: 4px !important;
-    margin-bottom: calc(var(--footer-height) + 20px) !important;
 }
 
 .tox .tox-toolbar__primary {
