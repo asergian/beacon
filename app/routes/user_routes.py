@@ -100,11 +100,19 @@ def get_analytics():
         
         # Aggregate NLP stats
         nlp_stats = {
-            'entities_extracted': 0,
-            'sentiment_analyses': 0,
-            'keywords_extracted': 0,
+            'total_entities': 0,
+            'total_emails': 0,
+            'urgent_emails': 0,
+            'avg_sentences_per_email': 0,
             'avg_processing_time': 0,
-            'total_processed': 0
+            'total_processed': 0,
+            'entity_types': {
+                'PERSON': 0,
+                'ORG': 0,
+                'DATE': 0,
+                'LOC': 0,
+                'MISC': 0
+            }
         }
         
         # Track unique users for reporting
@@ -185,14 +193,36 @@ def get_analytics():
                     email_stats['failed_analysis'] += stats.get('failed_analysis', 0)
                 
                 elif activity.activity_type == 'nlp_processing':
-                    nlp_stats['entities_extracted'] += metadata.get('entities_extracted', 0)
-                    nlp_stats['sentiment_analyses'] += metadata.get('sentiment_analyses', 0)
-                    nlp_stats['keywords_extracted'] += metadata.get('keywords_extracted', 0)
+                    # Update total emails processed
                     nlp_stats['total_processed'] += 1
+                    nlp_stats['total_emails'] += 1
+                    
+                    # Update entity counts
+                    entities = metadata.get('entities', {})
+                    nlp_stats['total_entities'] += len(entities)
+                    
+                    # Update entity types
+                    for entity_type, _ in entities.items():
+                        if entity_type in nlp_stats['entity_types']:
+                            nlp_stats['entity_types'][entity_type] += 1
+                    
+                    # Update urgency count
+                    if metadata.get('is_urgent', False):
+                        nlp_stats['urgent_emails'] += 1
+                    
+                    # Update sentence count for average
+                    sentence_count = metadata.get('sentence_count', 0)
+                    current_avg = nlp_stats['avg_sentences_per_email']
+                    n = nlp_stats['total_processed']
+                    nlp_stats['avg_sentences_per_email'] = (
+                        (current_avg * (n - 1) + sentence_count) / n if n > 0 else 0
+                    )
+                    
+                    # Update processing time
                     if 'processing_time' in metadata:
                         nlp_stats['avg_processing_time'] = (
-                            (nlp_stats['avg_processing_time'] * (nlp_stats['total_processed'] - 1) +
-                             metadata['processing_time']) / nlp_stats['total_processed']
+                            (nlp_stats['avg_processing_time'] * (n - 1) +
+                             metadata['processing_time']) / n if n > 0 else 0
                         )
             except Exception as e:
                 logger.error(f"Error processing activity {activity.id} for user {activity.user.email}: {e}")

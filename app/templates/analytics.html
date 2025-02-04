@@ -261,15 +261,15 @@
         <div class="stats-grid">
             <div class="stat-item">
                 <div class="stat-value" id="entities-extracted">-</div>
-                <div class="stat-label">Entities Extracted</div>
+                <div class="stat-label">Total Entities</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="sentiment-analyses">-</div>
-                <div class="stat-label">Sentiment Analyses</div>
+                <div class="stat-value" id="urgent-emails">-</div>
+                <div class="stat-label">Urgent Emails (%)</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="keywords-extracted">-</div>
-                <div class="stat-label">Keywords Extracted</div>
+                <div class="stat-value" id="avg-complexity">-</div>
+                <div class="stat-label">Avg. Sentences/Email</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value" id="avg-processing-time">-</div>
@@ -397,9 +397,9 @@ function updateDashboard(data) {
     
     // Update NLP stats
     console.log('Updating NLP stats:', data.nlp_stats);
-    document.getElementById('entities-extracted').textContent = data.nlp_stats.entities_extracted.toLocaleString();
-    document.getElementById('sentiment-analyses').textContent = data.nlp_stats.sentiment_analyses.toLocaleString();
-    document.getElementById('keywords-extracted').textContent = data.nlp_stats.keywords_extracted.toLocaleString();
+    document.getElementById('entities-extracted').textContent = data.nlp_stats.total_entities.toLocaleString();
+    document.getElementById('urgent-emails').textContent = `${((data.nlp_stats.urgent_emails / data.nlp_stats.total_emails) * 100).toFixed(1)}%`;
+    document.getElementById('avg-complexity').textContent = Math.round(data.nlp_stats.avg_sentences_per_email).toLocaleString();
     document.getElementById('avg-processing-time').textContent = Math.round(data.nlp_stats.avg_processing_time * 1000);
     
     // Update activity list with animation
@@ -547,30 +547,46 @@ function createEmailChart(stats) {
 }
 
 function createNLPChart(stats) {
-    const trace = {
-        x: ['Entities', 'Sentiments', 'Keywords'],
+    // Create two traces for our chart
+    const entityTrace = {
+        x: ['People', 'Organizations', 'Dates', 'Locations', 'Other'],
         y: [
-            stats.entities_extracted,
-            stats.sentiment_analyses,
-            stats.keywords_extracted
+            stats.entity_types?.PERSON || 0,
+            stats.entity_types?.ORG || 0,
+            stats.entity_types?.DATE || 0,
+            stats.entity_types?.LOC || 0,
+            stats.entity_types?.MISC || 0
         ],
+        name: 'Entity Types',
         type: 'bar',
+        marker: { color: '#006F6A' }
+    };
+    
+    const urgencyTrace = {
+        labels: ['Urgent', 'Normal'],
+        values: [stats.urgent_emails || 0, stats.total_emails - (stats.urgent_emails || 0)],
+        name: 'Urgency Distribution',
+        type: 'pie',
+        domain: { row: 0, column: 1 },
         marker: {
-            color: '#006F6A'
+            colors: ['#DC3545', '#006F6A']
         }
     };
     
     const layout = {
-        title: 'NLP Analysis Results',
+        title: 'NLP Analysis Breakdown',
+        grid: { rows: 1, columns: 2 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
         margin: { t: 40, r: 20, b: 40, l: 60 },
-        responsive: true
+        responsive: true,
+        showlegend: true,
+        legend: { orientation: 'h' }
     };
     
     const config = { responsive: true };
     
-    Plotly.newPlot('nlp-analytics-chart', [trace], layout, config);
+    Plotly.newPlot('nlp-analytics-chart', [entityTrace, urgencyTrace], layout, config);
 }
 
 function refreshStats() {

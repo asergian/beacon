@@ -89,9 +89,11 @@ class EmailProcessor:
                                     description=f"NLP analysis for email {email_id}",
                                     metadata={
                                         'processing_time': nlp_processing_time,
-                                        'entities_extracted': len(nlp_results.get('entities', [])),
-                                        'sentiment_analyses': 1 if nlp_results.get('sentiment') else 0,
-                                        'keywords_extracted': len(nlp_results.get('keywords', []))
+                                        'entities': nlp_results.get('entities', {}),
+                                        'sentence_count': nlp_results.get('sentence_count', 0),
+                                        'is_urgent': nlp_results.get('urgency', False),
+                                        'sentiment_indicators': nlp_results.get('sentiment_indicators', {}),
+                                        'structural_elements': nlp_results.get('structural_elements', {})
                                     }
                                 )
                             
@@ -218,9 +220,11 @@ class EmailProcessor:
                         description=f"NLP analysis for email {parsed_email.id}",
                         metadata={
                             'processing_time': nlp_processing_time,
-                            'entities_extracted': len(nlp_results.get('entities', [])),
-                            'sentiment_analyses': 1 if nlp_results.get('sentiment') else 0,
-                            'keywords_extracted': len(nlp_results.get('keywords', []))
+                            'entities': nlp_results.get('entities', {}),
+                            'sentence_count': nlp_results.get('sentence_count', 0),
+                            'is_urgent': nlp_results.get('urgency', False),
+                            'sentiment_indicators': nlp_results.get('sentiment_indicators', {}),
+                            'structural_elements': nlp_results.get('structural_elements', {})
                         }
                     )
                 
