@@ -121,6 +121,12 @@ class EmailProcessor:
                                             # Cost tracking (in cents for easier display)
                                             'cost_cents': round(llm_results.get('cost', 0) * 100, 2),
                                             
+                                            # Email categorization
+                                            'category': llm_results.get('category', 'Informational'),
+                                            'priority_level': self._get_priority_level(llm_results.get('priority', 0)),
+                                            'needs_action': llm_results.get('needs_action', False),
+                                            'action_items': llm_results.get('action_items', []),
+                                            
                                             # Status for monitoring
                                             'status': 'success',
                                             
@@ -186,8 +192,37 @@ class EmailProcessor:
                         activity_type='email_processing',
                         description=f"Processed {len(raw_emails)} emails",
                         metadata={
-                            'processing_time': time.time() - start_time,
-                            **processing_stats
+                            'stats': {
+                                # Basic processing stats
+                                'total_fetched': len(raw_emails),
+                                'new_emails': len(raw_emails),  # All are new in direct processing
+                                'successfully_parsed': processing_stats['successfully_parsed'],
+                                'successfully_analyzed': processing_stats['successfully_analyzed'],
+                                'failed_parsing': processing_stats['failed_parsing'],
+                                'failed_analysis': processing_stats['failed_analysis'],
+                                
+                                # Category distribution
+                                'categories': {
+                                    'Work': sum(1 for email in processed_emails if email.category == 'Work'),
+                                    'Personal': sum(1 for email in processed_emails if email.category == 'Personal'),
+                                    'Promotions': sum(1 for email in processed_emails if email.category == 'Promotions'),
+                                    'Informational': sum(1 for email in processed_emails if email.category == 'Informational')
+                                },
+                                
+                                # Priority distribution
+                                'priority_levels': {
+                                    'HIGH': sum(1 for email in processed_emails if email.priority_level == 'HIGH'),
+                                    'MEDIUM': sum(1 for email in processed_emails if email.priority_level == 'MEDIUM'),
+                                    'LOW': sum(1 for email in processed_emails if email.priority_level == 'LOW')
+                                },
+                                
+                                # Action metrics
+                                'needs_action': sum(1 for email in processed_emails if email.needs_action),
+                                'has_deadline': sum(1 for email in processed_emails if any(item.get('due_date') for item in email.action_items)),
+                                
+                                # Processing time
+                                'processing_time': time.time() - start_time
+                            }
                         }
                     )
                     self.logger.info("Successfully logged email processing activity")
@@ -251,6 +286,12 @@ class EmailProcessor:
                                 
                                 # Cost tracking (in cents for easier display)
                                 'cost_cents': round(llm_results.get('cost', 0) * 100, 2),
+                                
+                                # Email categorization
+                                'category': llm_results.get('category', 'Informational'),
+                                'priority_level': self._get_priority_level(llm_results.get('priority', 0)),
+                                'needs_action': llm_results.get('needs_action', False),
+                                'action_items': llm_results.get('action_items', []),
                                 
                                 # Status for monitoring
                                 'status': 'success',

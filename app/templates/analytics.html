@@ -241,19 +241,20 @@
                 <div class="stat-label">Total Fetched</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="new-emails">-</div>
-                <div class="stat-label">New Emails</div>
+                <div class="stat-value" id="cache-hit-rate">-</div>
+                <div class="stat-label">Cache Hit Rate</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="success-rate">-</div>
-                <div class="stat-label">Success Rate</div>
+                <div class="stat-value" id="analysis-failure-rate">-</div>
+                <div class="stat-label">Analysis Failure Rate</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="failed-analysis">-</div>
-                <div class="stat-label">Failed Analysis</div>
+                <div class="stat-value" id="action-required">-</div>
+                <div class="stat-label">Action Required</div>
             </div>
         </div>
-        <div class="chart-container" id="email-processing-chart"></div>
+        <div class="chart-container" id="email-category-chart"></div>
+        <div class="chart-container" id="email-priority-chart"></div>
     </div>
     
     <div class="stats-card">
@@ -367,40 +368,69 @@ function updateDashboard(data) {
         errorEl.style.display = 'none';
     }
     
-    // Update LLM stats
-    console.log('Updating LLM stats:', data.llm_stats);
-    // Total metrics
-    document.getElementById('total-tokens').textContent = data.llm_stats.total_tokens.toLocaleString();
-    document.getElementById('total-requests').textContent = data.llm_stats.total_requests.toLocaleString();
-    document.getElementById('total-cost').textContent = `$${(data.llm_stats.total_cost_cents / 100).toFixed(2)}`;
-    
-    // Per-request averages
-    document.getElementById('avg-tokens-per-req').textContent = Math.round(data.llm_stats.avg_tokens_per_request).toLocaleString();
-    document.getElementById('avg-cost-per-req').textContent = `$${(data.llm_stats.avg_cost_cents_per_request / 100).toFixed(3)}`;
-    
-    // Debug log for processing time
-    console.log('Processing time value:', data.llm_stats.avg_processing_time_ms);
-    const processingTime = Math.round(data.llm_stats.avg_processing_time_ms);
-    console.log('Rounded processing time:', processingTime);
-    document.getElementById('llm-avg-processing-time').textContent = processingTime.toLocaleString();
-    
-    // Success rate
-    document.getElementById('success-rate').textContent = `${data.llm_stats.success_rate.toFixed(1)}%`;
-    
     // Update email stats
     console.log('Updating email stats:', data.email_stats);
-    document.getElementById('total-fetched').textContent = data.email_stats.total_fetched.toLocaleString();
-    document.getElementById('new-emails').textContent = data.email_stats.new_emails.toLocaleString();
-    const successRate = (data.email_stats.successfully_analyzed / data.email_stats.total_fetched * 100) || 0;
-    document.getElementById('success-rate').textContent = `${successRate.toFixed(1)}%`;
-    document.getElementById('failed-analysis').textContent = data.email_stats.failed_analysis.toLocaleString();
+    const emailStats = data.email_stats || {};
+    
+    // Basic stats
+    document.getElementById('total-fetched').textContent = 
+        (emailStats.total_fetched || 0).toLocaleString();
+    
+    // Cache hit rate (inverse of new emails rate)
+    const totalFetched = emailStats.total_fetched || 0;
+    const newEmails = emailStats.new_emails || 0;
+    const cacheHitRate = totalFetched > 0 ? 
+        ((totalFetched - newEmails) / totalFetched * 100) : 0;
+    document.getElementById('cache-hit-rate').textContent = 
+        `${cacheHitRate.toFixed(1)}%`;
+    
+    // Analysis failure rate
+    const totalAnalyzed = (emailStats.successfully_analyzed || 0) + 
+                        (emailStats.failed_parsing || 0) + 
+                        (emailStats.failed_analysis || 0);
+    const failureRate = totalAnalyzed > 0 ? 
+        (((emailStats.failed_parsing || 0) + (emailStats.failed_analysis || 0)) / totalAnalyzed * 100) : 0;
+    document.getElementById('analysis-failure-rate').textContent = 
+        `${failureRate.toFixed(1)}%`;
+    
+    // Combine needs_action and has_deadline into a single metric
+    // If an email has a deadline, it implicitly needs action
+    const actionRequired = Math.max(
+        emailStats.needs_action || 0,
+        emailStats.has_deadline || 0
+    );
+    document.getElementById('action-required').textContent = 
+        actionRequired.toLocaleString();
     
     // Update NLP stats
     console.log('Updating NLP stats:', data.nlp_stats);
-    document.getElementById('entities-extracted').textContent = data.nlp_stats.total_entities.toLocaleString();
-    document.getElementById('urgent-emails').textContent = `${((data.nlp_stats.urgent_emails / data.nlp_stats.total_emails) * 100).toFixed(1)}%`;
-    document.getElementById('avg-complexity').textContent = Math.round(data.nlp_stats.avg_sentences_per_email).toLocaleString();
-    document.getElementById('avg-processing-time').textContent = Math.round(data.nlp_stats.avg_processing_time * 1000);
+    document.getElementById('entities-extracted').textContent = (data.nlp_stats.total_entities || 0).toLocaleString();
+    
+    const urgencyRate = data.nlp_stats.total_emails ? 
+        ((data.nlp_stats.urgent_emails / data.nlp_stats.total_emails) * 100) : 0;
+    document.getElementById('urgent-emails').textContent = `${urgencyRate.toFixed(1)}%`;
+    
+    document.getElementById('avg-complexity').textContent = 
+        Math.round(data.nlp_stats.avg_sentences_per_email || 0).toLocaleString();
+    document.getElementById('avg-processing-time').textContent = 
+        Math.round((data.nlp_stats.avg_processing_time || 0) * 1000);
+    
+    // Update LLM stats
+    console.log('Updating LLM stats:', data.llm_stats);
+    document.getElementById('total-tokens').textContent = (data.llm_stats.total_tokens || 0).toLocaleString();
+    document.getElementById('total-requests').textContent = (data.llm_stats.total_requests || 0).toLocaleString();
+    document.getElementById('total-cost').textContent = 
+        `$${((data.llm_stats.total_cost_cents || 0) / 100).toFixed(2)}`;
+    document.getElementById('success-rate').textContent = 
+        `${(data.llm_stats.success_rate || 0).toFixed(1)}%`;
+    
+    // Per-request averages for LLM
+    document.getElementById('avg-tokens-per-req').textContent = 
+        Math.round(data.llm_stats.avg_tokens_per_request || 0).toLocaleString();
+    document.getElementById('avg-cost-per-req').textContent = 
+        `$${((data.llm_stats.avg_cost_cents_per_request || 0) / 100).toFixed(3)}`;
+    document.getElementById('llm-avg-processing-time').textContent = 
+        Math.round(data.llm_stats.avg_processing_time_ms || 0).toLocaleString();
     
     // Update activity list with animation
     const activityList = document.getElementById('activity-list');
@@ -430,20 +460,20 @@ function createLLMChart(stats) {
     const trace = {
         x: ['Total Tokens', 'Total Requests', 'Avg. Tokens/Req', 'Avg. Time (ms)'],
         y: [
-            stats.total_tokens,
-            stats.total_requests,
-            stats.avg_tokens_per_request,
-            stats.avg_processing_time_ms
+            stats.total_tokens || 0,
+            stats.total_requests || 0,
+            stats.avg_tokens_per_request || 0,
+            stats.avg_processing_time_ms || 0
         ],
         type: 'bar',
         marker: {
             color: ['#00918C', '#00B4AE', '#006F6A', '#008080']
         },
         text: [
-            stats.total_tokens.toLocaleString(),
-            stats.total_requests.toLocaleString(),
-            Math.round(stats.avg_tokens_per_request).toLocaleString(),
-            Math.round(stats.avg_processing_time_ms).toLocaleString()
+            (stats.total_tokens || 0).toLocaleString(),
+            (stats.total_requests || 0).toLocaleString(),
+            Math.round(stats.avg_tokens_per_request || 0).toLocaleString(),
+            Math.round(stats.avg_processing_time_ms || 0).toLocaleString()
         ],
         textposition: 'auto',
     };
@@ -466,9 +496,9 @@ function createLLMChart(stats) {
 }
 
 function createModelDistributionChart(stats) {
-    const models = Object.keys(stats.requests_by_model);
-    const tokensByModel = models.map(model => stats.tokens_by_model[model].total_tokens);
-    const requestsByModel = models.map(model => stats.requests_by_model[model]);
+    const models = Object.keys(stats.requests_by_model || {});
+    const tokensByModel = models.map(model => (stats.tokens_by_model || {})[model]?.total_tokens || 0);
+    const requestsByModel = models.map(model => (stats.requests_by_model || {})[model] || 0);
     
     const tokenTrace = {
         x: models,
@@ -520,30 +550,61 @@ function createModelDistributionChart(stats) {
 }
 
 function createEmailChart(stats) {
-    const trace = {
-        labels: ['Successfully Analyzed', 'Failed Analysis', 'Failed Parsing'],
-        values: [
-            stats.successfully_analyzed,
-            stats.failed_analysis,
-            stats.failed_parsing
-        ],
+    // Create category distribution chart
+    const categoryTrace = {
+        labels: Object.keys(stats.categories || {}),
+        values: Object.values(stats.categories || {}),
         type: 'pie',
+        name: 'Email Categories',
+        domain: { row: 0, column: 0 },
         marker: {
-            colors: ['#006F6A', '#DC3545', '#FFC107']
+            colors: [
+                '#2563EB',  // Work - Professional deep blue
+                '#16A34A',  // Personal - Forest green
+                '#F97316',  // Promotions - Vibrant orange
+                '#6366F1'   // Informational - Indigo
+            ]
+        }
+    };
+    
+    // Create priority distribution chart
+    const priorityTrace = {
+        labels: ['HIGH', 'MEDIUM', 'LOW'].filter(level => (stats.priority_levels || {})[level] !== undefined),
+        values: ['HIGH', 'MEDIUM', 'LOW'].map(level => (stats.priority_levels || {})[level] || 0),
+        type: 'pie',
+        name: 'Priority Levels',
+        domain: { row: 0, column: 1 },
+        marker: {
+            colors: [
+                '#FF4B4B',  // HIGH - Bright red
+                '#FF8C42',  // MEDIUM - Orange
+                '#66BB6A'   // LOW - Green
+            ]
         }
     };
     
     const layout = {
-        title: 'Email Processing Results',
+        title: 'Email Distribution by Category and Priority',
+        grid: { rows: 1, columns: 2 },
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
         margin: { t: 40, r: 20, b: 40, l: 20 },
-        responsive: true
+        responsive: true,
+        showlegend: true,
+        legend: { orientation: 'h' }
     };
     
     const config = { responsive: true };
     
-    Plotly.newPlot('email-processing-chart', [trace], layout, config);
+    Plotly.newPlot('email-category-chart', [categoryTrace], {
+        ...layout,
+        title: 'Email Categories'
+    }, config);
+    
+    Plotly.newPlot('email-priority-chart', [priorityTrace], {
+        ...layout,
+        title: 'Priority Distribution'
+    }, config);
 }
 
 function createNLPChart(stats) {
@@ -551,20 +612,23 @@ function createNLPChart(stats) {
     const entityTrace = {
         x: ['People', 'Organizations', 'Dates', 'Locations', 'Other'],
         y: [
-            stats.entity_types?.PERSON || 0,
-            stats.entity_types?.ORG || 0,
-            stats.entity_types?.DATE || 0,
-            stats.entity_types?.LOC || 0,
-            stats.entity_types?.MISC || 0
+            (stats.entity_types?.PERSON || 0),
+            (stats.entity_types?.ORG || 0),
+            (stats.entity_types?.DATE || 0),
+            (stats.entity_types?.LOC || 0),
+            (stats.entity_types?.MISC || 0)
         ],
         name: 'Entity Types',
         type: 'bar',
         marker: { color: '#006F6A' }
     };
     
+    const totalEmails = stats.total_emails || 0;
+    const urgentEmails = stats.urgent_emails || 0;
+    
     const urgencyTrace = {
         labels: ['Urgent', 'Normal'],
-        values: [stats.urgent_emails || 0, stats.total_emails - (stats.urgent_emails || 0)],
+        values: [urgentEmails, totalEmails - urgentEmails],
         name: 'Urgency Distribution',
         type: 'pie',
         domain: { row: 0, column: 1 },

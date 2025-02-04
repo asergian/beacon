@@ -88,14 +88,27 @@ def get_analytics():
             'tokens_by_model': {}
         }
         
-        # Aggregate email processing stats
+        # Aggregate email stats
         email_stats = {
             'total_fetched': 0,
             'new_emails': 0,
             'successfully_parsed': 0,
             'successfully_analyzed': 0,
             'failed_parsing': 0,
-            'failed_analysis': 0
+            'failed_analysis': 0,
+            'needs_action': 0,
+            'has_deadline': 0,
+            'categories': {
+                'Work': 0,
+                'Personal': 0,
+                'Promotions': 0,
+                'Informational': 0
+            },
+            'priority_levels': {
+                'HIGH': 0,
+                'MEDIUM': 0,
+                'LOW': 0
+            }
         }
         
         # Aggregate NLP stats
@@ -182,15 +195,30 @@ def get_analytics():
                     llm_stats['success_rate'] = round((successes * 100 / n), 1) if n > 0 else 0
                     logger.info(f"Success rate: {llm_stats['success_rate']}% ({successes} successful out of {n} total)")
                 
-                elif activity.activity_type == 'email_processing' or activity.activity_type == 'pipeline_processing':
-                    # Get stats from metadata
-                    stats = metadata.get('stats', metadata)  # Try stats key first, fall back to direct metadata
-                    email_stats['total_fetched'] += stats.get('emails_fetched', 0)
+                elif activity.activity_type in ['email_processing', 'pipeline_processing']:
+                    stats = metadata.get('stats', {})
+                    
+                    # Basic stats
+                    email_stats['total_fetched'] += stats.get('total_fetched', stats.get('emails_fetched', 0))
                     email_stats['new_emails'] += stats.get('new_emails', 0)
                     email_stats['successfully_parsed'] += stats.get('successfully_parsed', 0)
                     email_stats['successfully_analyzed'] += stats.get('successfully_analyzed', 0)
                     email_stats['failed_parsing'] += stats.get('failed_parsing', 0)
                     email_stats['failed_analysis'] += stats.get('failed_analysis', 0)
+                    
+                    # Action metrics
+                    email_stats['needs_action'] += stats.get('needs_action', 0)
+                    email_stats['has_deadline'] += stats.get('has_deadline', 0)
+                    
+                    # Category distribution
+                    categories = stats.get('categories', {})
+                    for category in email_stats['categories']:
+                        email_stats['categories'][category] += categories.get(category, 0)
+                    
+                    # Priority distribution
+                    priority_levels = stats.get('priority_levels', {})
+                    for level in email_stats['priority_levels']:
+                        email_stats['priority_levels'][level] += priority_levels.get(level, 0)
                 
                 elif activity.activity_type == 'nlp_processing':
                     # Update total emails processed

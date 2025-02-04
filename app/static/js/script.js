@@ -275,14 +275,18 @@ function updateEmailList() {
                 return isWithinRange;
             })
             .sort((a, b) => {
+                // First sort by needs_action
                 if (a.needs_action !== b.needs_action) {
                     return b.needs_action ? 1 : -1;
                 }
-                const aPriority = a.priority || 0;
-                const bPriority = b.priority || 0;
+                // Then by priority level
+                const priorityOrder = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
+                const aPriority = priorityOrder[a.priority_level] || 0;
+                const bPriority = priorityOrder[b.priority_level] || 0;
                 if (aPriority !== bPriority) {
                     return bPriority - aPriority;
                 }
+                // Finally by date
                 return new Date(b.date) - new Date(a.date);
             });
 
@@ -315,7 +319,7 @@ function updateEmailList() {
                     <span class="email-subject">${email.subject || 'No Subject'}</span>
                     <div class="tags-container">
                         <span class="tag priority-${(email.priority_level || 'pending').toLowerCase()}">${formatTagText(email.priority_level) || 'Pending'}</span>
-                        <span class="tag category">${formatTagText(email.category) || 'Pending'}</span>
+                        <span class="tag category" data-category="${email.category || 'Informational'}">${formatTagText(email.category) || 'Pending'}</span>
                         ${email.needs_action ? '<span class="tag action-required">Action Required</span>' : ''}
                     </div>
                 </div>
@@ -406,6 +410,7 @@ function loadEmailDetails(emailId) {
         
         // Handle category
         detailsElements.category.textContent = formatTagText(email.category || 'uncategorized');
+        detailsElements.category.setAttribute('data-category', email.category || 'Informational');
         
         // Handle action required
         if (email.needs_action) {

@@ -12,6 +12,7 @@ from redis import asyncio as aioredis
 import spacy
 import logging
 from flask import session
+import time
 
 from ..core.email_processor import EmailProcessor
 from ..models.processed_email import ProcessedEmail
@@ -164,12 +165,43 @@ class EmailPipeline:
             self.logger.info(f"User ID for logging: {user_id}")
 
             try:
+                start_time = time.time()
                 log_activity(
                     user_id=user_id,
                     activity_type='pipeline_processing',
                     description=f"Pipeline processed {len(filtered_emails)} emails",
                     metadata={
-                        'stats': stats,
+                        'stats': {
+                            # Basic processing stats
+                            'total_fetched': stats.get('emails_fetched', 0),
+                            'new_emails': stats.get('new_emails', 0),
+                            'successfully_parsed': stats.get('successfully_parsed', 0),
+                            'successfully_analyzed': stats.get('successfully_analyzed', 0),
+                            'failed_parsing': stats.get('failed_parsing', 0),
+                            'failed_analysis': stats.get('failed_analysis', 0),
+                            
+                            # Category distribution
+                            'categories': {
+                                'Work': sum(1 for email in filtered_emails if email.category == 'Work'),
+                                'Personal': sum(1 for email in filtered_emails if email.category == 'Personal'),
+                                'Promotions': sum(1 for email in filtered_emails if email.category == 'Promotions'),
+                                'Informational': sum(1 for email in filtered_emails if email.category == 'Informational')
+                            },
+                            
+                            # Priority distribution
+                            'priority_levels': {
+                                'HIGH': sum(1 for email in filtered_emails if email.priority_level == 'HIGH'),
+                                'MEDIUM': sum(1 for email in filtered_emails if email.priority_level == 'MEDIUM'),
+                                'LOW': sum(1 for email in filtered_emails if email.priority_level == 'LOW')
+                            },
+                            
+                            # Action metrics
+                            'needs_action': sum(1 for email in filtered_emails if email.needs_action),
+                            'has_deadline': sum(1 for email in filtered_emails if any(item.get('due_date') for item in email.action_items)),
+                            
+                            # Processing time
+                            'processing_time': time.time() - start_time
+                        },
                         'command': {
                             'days_back': command.days_back,
                             'cache_duration_days': command.cache_duration_days,
