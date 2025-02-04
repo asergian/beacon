@@ -71,11 +71,21 @@ def get_analytics():
         
         # Aggregate LLM usage
         llm_stats = {
+            # Totals
             'total_tokens': 0,
-            'total_prompts': 0,
+            'total_cost_cents': 0,
+            'total_requests': 0,
+            
+            # Averages
+            'avg_tokens_per_request': 0,
+            'avg_cost_cents_per_request': 0,
+            'avg_processing_time_ms': 0,
+            
+            # Model tracking
             'models_used': set(),
-            'avg_prompt_length': 0,
-            'total_cost': 0  # If you track costs
+            'success_rate': 0,
+            'requests_by_model': {},
+            'tokens_by_model': {}
         }
         
         # Aggregate email processing stats
@@ -107,23 +117,72 @@ def get_analytics():
                 unique_users.add(activity.user_id)
                 
                 if activity.activity_type == 'llm_request':
-                    llm_stats['total_tokens'] += metadata.get('total_tokens', 0)
-                    llm_stats['total_prompts'] += 1
-                    llm_stats['models_used'].add(metadata.get('model', 'unknown'))
-                    llm_stats['total_cost'] += metadata.get('cost', 0)
-                    if 'prompt_length' in metadata:
-                        llm_stats['avg_prompt_length'] = (
-                            (llm_stats['avg_prompt_length'] * (llm_stats['total_prompts'] - 1) +
-                             metadata['prompt_length']) / llm_stats['total_prompts']
+                    # Get total tokens and cost
+                    total_tokens = metadata.get('total_tokens', 0)
+                    cost_cents = metadata.get('cost_cents', round(metadata.get('cost', 0) * 100, 2))
+                    processing_time = metadata.get('processing_time_ms', round(metadata.get('processing_time', 0) * 1000))
+                    
+                    # Debug logging
+                    logger.info(f"Processing LLM request activity {activity.id}:")
+                    logger.info(f"Raw metadata: {metadata}")
+                    logger.info(f"Total tokens: {total_tokens}, Cost (cents): {cost_cents}")
+                    
+                    # Update totals
+                    llm_stats['total_tokens'] += total_tokens
+                    llm_stats['total_cost_cents'] += cost_cents
+                    llm_stats['total_requests'] += 1
+                    
+                    # Update averages with running calculation
+                    n = llm_stats['total_requests']
+                    if n > 0:  # Prevent division by zero
+                        llm_stats['avg_tokens_per_request'] = round(llm_stats['total_tokens'] / n)
+                        llm_stats['avg_cost_cents_per_request'] = round(llm_stats['total_cost_cents'] / n, 2)
+                        llm_stats['avg_processing_time_ms'] = round(
+                            (llm_stats['avg_processing_time_ms'] * (n - 1) + processing_time) / n
                         )
+                    
+                    # Model tracking
+                    model = metadata.get('model', 'unknown')
+                    llm_stats['models_used'].add(model)
+                    
+                    # Track requests by model
+                    llm_stats['requests_by_model'][model] = llm_stats['requests_by_model'].get(model, 0) + 1
+                    
+                    # Track tokens by model
+                    if model not in llm_stats['tokens_by_model']:
+                        llm_stats['tokens_by_model'][model] = {
+                            'total_tokens': 0,
+                            'avg_tokens_per_request': 0,
+                            'avg_cost_cents_per_request': 0
+                        }
+                    
+                    model_stats = llm_stats['tokens_by_model'][model]
+                    model_stats['total_tokens'] += total_tokens
+                    
+                    model_requests = llm_stats['requests_by_model'][model]
+                    if model_requests > 0:
+                        model_stats['avg_tokens_per_request'] = round(model_stats['total_tokens'] / model_requests)
+                        model_stats['avg_cost_cents_per_request'] = round(
+                            (model_stats.get('total_cost_cents', 0) + cost_cents) / model_requests, 2
+                        )
+                    
+                    # Success rate - count requests that completed without errors
+                    successes = sum(1 for a in activities 
+                        if a.activity_type == 'llm_request' and 
+                        (a.activity_metadata.get('status') == 'success' or 
+                         'error' not in a.activity_metadata))
+                    llm_stats['success_rate'] = round((successes * 100 / n), 1) if n > 0 else 0
+                    logger.info(f"Success rate: {llm_stats['success_rate']}% ({successes} successful out of {n} total)")
                 
-                elif activity.activity_type == 'email_processing':
-                    email_stats['total_fetched'] += metadata.get('emails_fetched', 0)
-                    email_stats['new_emails'] += metadata.get('new_emails', 0)
-                    email_stats['successfully_parsed'] += metadata.get('successfully_parsed', 0)
-                    email_stats['successfully_analyzed'] += metadata.get('successfully_analyzed', 0)
-                    email_stats['failed_parsing'] += metadata.get('failed_parsing', 0)
-                    email_stats['failed_analysis'] += metadata.get('failed_analysis', 0)
+                elif activity.activity_type == 'email_processing' or activity.activity_type == 'pipeline_processing':
+                    # Get stats from metadata
+                    stats = metadata.get('stats', metadata)  # Try stats key first, fall back to direct metadata
+                    email_stats['total_fetched'] += stats.get('emails_fetched', 0)
+                    email_stats['new_emails'] += stats.get('new_emails', 0)
+                    email_stats['successfully_parsed'] += stats.get('successfully_parsed', 0)
+                    email_stats['successfully_analyzed'] += stats.get('successfully_analyzed', 0)
+                    email_stats['failed_parsing'] += stats.get('failed_parsing', 0)
+                    email_stats['failed_analysis'] += stats.get('failed_analysis', 0)
                 
                 elif activity.activity_type == 'nlp_processing':
                     nlp_stats['entities_extracted'] += metadata.get('entities_extracted', 0)
@@ -179,4 +238,38 @@ def get_analytics():
     
     except Exception as e:
         logger.error(f"Failed to get user analytics: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+@user_bp.route('/api/debug/activities')
+@admin_required
+def debug_activities():
+    """Debug endpoint to inspect raw activities."""
+    try:
+        logger.info("Fetching debug activities")
+        # Get last 50 activities
+        activities = db.session.query(UserActivity).join(User).order_by(UserActivity.created_at.desc()).limit(50).all()
+        
+        logger.info(f"Found {len(activities)} activities")
+        
+        activity_data = []
+        for activity in activities:
+            logger.info(f"Processing activity: {activity.activity_type} from {activity.user.email}")
+            activity_data.append({
+                'id': activity.id,
+                'type': activity.activity_type,
+                'description': activity.description,
+                'created_at': activity.created_at.isoformat(),
+                'metadata': activity.activity_metadata,
+                'user_email': activity.user.email
+            })
+            
+        response = {
+            'activities': activity_data,
+            'count': len(activity_data)
+        }
+        logger.info(f"Returning {len(activity_data)} activities")
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Failed to get debug activities: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500 

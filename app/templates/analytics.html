@@ -201,19 +201,36 @@
                 <div class="stat-label">Total Tokens</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="total-prompts">-</div>
-                <div class="stat-label">Total Prompts</div>
+                <div class="stat-value" id="total-requests">-</div>
+                <div class="stat-label">Total Requests</div>
             </div>
             <div class="stat-item">
-                <div class="stat-value" id="avg-prompt-length">-</div>
-                <div class="stat-label">Avg. Prompt Length</div>
+                <div class="stat-value" id="success-rate">-</div>
+                <div class="stat-label">Success Rate</div>
             </div>
             <div class="stat-item">
                 <div class="stat-value" id="total-cost">-</div>
                 <div class="stat-label">Total Cost ($)</div>
             </div>
         </div>
+        
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-value" id="avg-tokens-per-req">-</div>
+                <div class="stat-label">Avg. Tokens/Request</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="avg-cost-per-req">-</div>
+                <div class="stat-label">Avg. Cost/Request</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="llm-avg-processing-time">-</div>
+                <div class="stat-label">Avg. Processing Time (ms)</div>
+            </div>
+        </div>
+        
         <div class="chart-container" id="llm-usage-chart"></div>
+        <div class="chart-container" id="llm-model-distribution"></div>
     </div>
     
     <div class="stats-card">
@@ -263,7 +280,10 @@
     </div>
     
     <div class="stats-card">
-        <h2>Recent Activity</h2>
+        <div class="stats-header">
+            <h2>Recent Activity</h2>
+            <button class="refresh-button" onclick="debugActivities()">Debug Raw Data</button>
+        </div>
         <ul class="activity-list" id="activity-list">
             <!-- Activities will be populated by JavaScript -->
         </ul>
@@ -339,6 +359,8 @@ function showError(message) {
 }
 
 function updateDashboard(data) {
+    console.log('Received analytics data:', data);
+    
     // Hide any existing error message
     const errorEl = document.getElementById('error-message');
     if (errorEl) {
@@ -346,12 +368,27 @@ function updateDashboard(data) {
     }
     
     // Update LLM stats
+    console.log('Updating LLM stats:', data.llm_stats);
+    // Total metrics
     document.getElementById('total-tokens').textContent = data.llm_stats.total_tokens.toLocaleString();
-    document.getElementById('total-prompts').textContent = data.llm_stats.total_prompts.toLocaleString();
-    document.getElementById('avg-prompt-length').textContent = Math.round(data.llm_stats.avg_prompt_length).toLocaleString();
-    document.getElementById('total-cost').textContent = data.llm_stats.total_cost.toFixed(2);
+    document.getElementById('total-requests').textContent = data.llm_stats.total_requests.toLocaleString();
+    document.getElementById('total-cost').textContent = `$${(data.llm_stats.total_cost_cents / 100).toFixed(2)}`;
+    
+    // Per-request averages
+    document.getElementById('avg-tokens-per-req').textContent = Math.round(data.llm_stats.avg_tokens_per_request).toLocaleString();
+    document.getElementById('avg-cost-per-req').textContent = `$${(data.llm_stats.avg_cost_cents_per_request / 100).toFixed(3)}`;
+    
+    // Debug log for processing time
+    console.log('Processing time value:', data.llm_stats.avg_processing_time_ms);
+    const processingTime = Math.round(data.llm_stats.avg_processing_time_ms);
+    console.log('Rounded processing time:', processingTime);
+    document.getElementById('llm-avg-processing-time').textContent = processingTime.toLocaleString();
+    
+    // Success rate
+    document.getElementById('success-rate').textContent = `${data.llm_stats.success_rate.toFixed(1)}%`;
     
     // Update email stats
+    console.log('Updating email stats:', data.email_stats);
     document.getElementById('total-fetched').textContent = data.email_stats.total_fetched.toLocaleString();
     document.getElementById('new-emails').textContent = data.email_stats.new_emails.toLocaleString();
     const successRate = (data.email_stats.successfully_analyzed / data.email_stats.total_fetched * 100) || 0;
@@ -359,6 +396,7 @@ function updateDashboard(data) {
     document.getElementById('failed-analysis').textContent = data.email_stats.failed_analysis.toLocaleString();
     
     // Update NLP stats
+    console.log('Updating NLP stats:', data.nlp_stats);
     document.getElementById('entities-extracted').textContent = data.nlp_stats.entities_extracted.toLocaleString();
     document.getElementById('sentiment-analyses').textContent = data.nlp_stats.sentiment_analyses.toLocaleString();
     document.getElementById('keywords-extracted').textContent = data.nlp_stats.keywords_extracted.toLocaleString();
@@ -383,31 +421,102 @@ function updateDashboard(data) {
     
     // Create charts with responsive layout
     createLLMChart(data.llm_stats);
+    createModelDistributionChart(data.llm_stats);
     createEmailChart(data.email_stats);
     createNLPChart(data.nlp_stats);
 }
 
 function createLLMChart(stats) {
     const trace = {
-        x: ['Total Tokens', 'Prompt Tokens', 'Completion Tokens'],
-        y: [stats.total_tokens, stats.prompt_tokens || 0, stats.completion_tokens || 0],
+        x: ['Total Tokens', 'Total Requests', 'Avg. Tokens/Req', 'Avg. Time (ms)'],
+        y: [
+            stats.total_tokens,
+            stats.total_requests,
+            stats.avg_tokens_per_request,
+            stats.avg_processing_time_ms
+        ],
         type: 'bar',
         marker: {
-            color: ['#006F6A', '#00918C', '#00B4AE']
-        }
+            color: ['#00918C', '#00B4AE', '#006F6A', '#008080']
+        },
+        text: [
+            stats.total_tokens.toLocaleString(),
+            stats.total_requests.toLocaleString(),
+            Math.round(stats.avg_tokens_per_request).toLocaleString(),
+            Math.round(stats.avg_processing_time_ms).toLocaleString()
+        ],
+        textposition: 'auto',
     };
     
     const layout = {
-        title: 'Token Usage Distribution',
+        title: 'LLM Performance Metrics',
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
-        margin: { t: 40, r: 20, b: 40, l: 60 },
-        responsive: true
+        margin: { t: 40, r: 20, b: 80, l: 60 },
+        responsive: true,
+        yaxis: {
+            type: 'log',  // Use log scale to handle different magnitudes
+            title: 'Value (log scale)'
+        }
     };
     
     const config = { responsive: true };
     
     Plotly.newPlot('llm-usage-chart', [trace], layout, config);
+}
+
+function createModelDistributionChart(stats) {
+    const models = Object.keys(stats.requests_by_model);
+    const tokensByModel = models.map(model => stats.tokens_by_model[model].total_tokens);
+    const requestsByModel = models.map(model => stats.requests_by_model[model]);
+    
+    const tokenTrace = {
+        x: models,
+        y: tokensByModel,
+        name: 'Total Tokens',
+        type: 'bar',
+        marker: { color: '#00918C' }
+    };
+    
+    const requestTrace = {
+        x: models,
+        y: requestsByModel,
+        name: 'Total Requests',
+        yaxis: 'y2',
+        type: 'scatter',
+        mode: 'lines+markers',
+        marker: { color: '#00B4AE' }
+    };
+    
+    const layout = {
+        title: 'Usage by Model Type',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { t: 40, r: 50, b: 60, l: 60 },
+        yaxis: { 
+            title: 'Total Tokens',
+            titlefont: { color: '#00918C' },
+            tickfont: { color: '#00918C' }
+        },
+        yaxis2: {
+            title: 'Total Requests',
+            titlefont: { color: '#00B4AE' },
+            tickfont: { color: '#00B4AE' },
+            overlaying: 'y',
+            side: 'right'
+        },
+        showlegend: true,
+        legend: {
+            x: 0,
+            y: 1.2
+        },
+        responsive: true,
+        bargap: 0.3
+    };
+    
+    const config = { responsive: true };
+    
+    Plotly.newPlot('llm-model-distribution', [tokenTrace, requestTrace], layout, config);
 }
 
 function createEmailChart(stats) {
@@ -468,6 +577,42 @@ function refreshStats() {
     fetchAnalytics();
 }
 
+async function debugActivities() {
+    try {
+        console.log('Fetching debug activities...');
+        const response = await fetch('/user/api/debug/activities');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`Found ${data.count} activities`);
+        console.log('Raw activities:', data.activities);
+        
+        // Log specific activity types
+        const activityTypes = data.activities.reduce((acc, activity) => {
+            acc[activity.type] = (acc[activity.type] || 0) + 1;
+            return acc;
+        }, {});
+        console.log('Activity types count:', activityTypes);
+        
+        // Log email processing activities specifically
+        const emailActivities = data.activities.filter(a => 
+            a.type === 'email_processing' || a.type === 'pipeline_processing'
+        );
+        console.log(`Found ${emailActivities.length} email processing activities:`);
+        emailActivities.forEach((activity, index) => {
+            console.log(`\nEmail Activity ${index + 1}:`);
+            console.log('Type:', activity.type);
+            console.log('Description:', activity.description);
+            console.log('Metadata:', activity.metadata);
+        });
+        
+    } catch (error) {
+        console.error('Failed to fetch debug activities:', error);
+    }
+}
+
 // Initial load
 document.addEventListener('DOMContentLoaded', fetchAnalytics);
 
@@ -475,6 +620,7 @@ document.addEventListener('DOMContentLoaded', fetchAnalytics);
 window.addEventListener('resize', () => {
     if (currentStats) {
         createLLMChart(currentStats.llm_stats);
+        createModelDistributionChart(currentStats.llm_stats);
         createEmailChart(currentStats.email_stats);
         createNLPChart(currentStats.nlp_stats);
     }

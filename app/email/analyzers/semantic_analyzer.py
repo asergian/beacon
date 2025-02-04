@@ -121,6 +121,7 @@ class SemanticAnalyzer:
                 raise LLMProcessingError(f"OpenAI API call failed: {e}")
             
             # Log token usage
+            prompt_tokens = response.usage.prompt_tokens
             completion_tokens = response.usage.completion_tokens
             total_tokens = response.usage.total_tokens
             self.logger.info(f"Token usage - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}")

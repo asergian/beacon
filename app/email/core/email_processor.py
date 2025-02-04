@@ -99,6 +99,7 @@ class EmailProcessor:
                             try:
                                 llm_start_time = time.time()
                                 llm_results = await self.llm_analyzer.analyze(parsed_email, nlp_results)
+                                llm_processing_time = time.time() - llm_start_time
                                 
                                 if user_id:
                                     log_activity(
@@ -106,11 +107,23 @@ class EmailProcessor:
                                         activity_type='llm_request',
                                         description=f"LLM analysis for email {email_id}",
                                         metadata={
+                                            # Model info
                                             'model': llm_results.get('model', 'unknown'),
+                                            
+                                            # Token metrics
                                             'total_tokens': llm_results.get('total_tokens', 0),
-                                            'prompt_length': len(str(parsed_email.body)),
-                                            'processing_time': time.time() - llm_start_time,
-                                            'cost': llm_results.get('cost', 0)
+                                            
+                                            # Performance metrics
+                                            'processing_time_ms': round(llm_processing_time * 1000),
+                                            
+                                            # Cost tracking (in cents for easier display)
+                                            'cost_cents': round(llm_results.get('cost', 0) * 100, 2),
+                                            
+                                            # Status for monitoring
+                                            'status': 'success',
+                                            
+                                            # Timestamp for time-series
+                                            'timestamp': datetime.now().isoformat()
                                         }
                                     )
                                 
@@ -164,15 +177,20 @@ class EmailProcessor:
             
             # Log overall processing stats
             if user_id:
-                log_activity(
-                    user_id=user_id,
-                    activity_type='email_processing',
-                    description=f"Processed {len(raw_emails)} emails",
-                    metadata={
-                        'processing_time': time.time() - start_time,
-                        **processing_stats
-                    }
-                )
+                self.logger.info(f"About to log email processing activity with stats: {processing_stats}")
+                try:
+                    log_activity(
+                        user_id=user_id,
+                        activity_type='email_processing',
+                        description=f"Processed {len(raw_emails)} emails",
+                        metadata={
+                            'processing_time': time.time() - start_time,
+                            **processing_stats
+                        }
+                    )
+                    self.logger.info("Successfully logged email processing activity")
+                except Exception as e:
+                    self.logger.error(f"Failed to log email processing activity: {e}")
             
             return processed_emails
             
@@ -210,6 +228,7 @@ class EmailProcessor:
                 try:
                     llm_start_time = time.time()
                     llm_results = await self.llm_analyzer.analyze(parsed_email, nlp_results)
+                    llm_processing_time = time.time() - llm_start_time
                     
                     if user_id:
                         log_activity(
@@ -217,11 +236,23 @@ class EmailProcessor:
                             activity_type='llm_request',
                             description=f"LLM analysis for email {parsed_email.id}",
                             metadata={
+                                # Model info
                                 'model': llm_results.get('model', 'unknown'),
+                                
+                                # Token metrics
                                 'total_tokens': llm_results.get('total_tokens', 0),
-                                'prompt_length': len(str(parsed_email.body)),
-                                'processing_time': time.time() - llm_start_time,
-                                'cost': llm_results.get('cost', 0)
+                                
+                                # Performance metrics
+                                'processing_time_ms': round(llm_processing_time * 1000),
+                                
+                                # Cost tracking (in cents for easier display)
+                                'cost_cents': round(llm_results.get('cost', 0) * 100, 2),
+                                
+                                # Status for monitoring
+                                'status': 'success',
+                                
+                                # Timestamp for time-series
+                                'timestamp': datetime.now().isoformat()
                             }
                         )
                     

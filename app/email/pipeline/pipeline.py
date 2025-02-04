@@ -25,6 +25,7 @@ from ..analyzers.content_analyzer import ContentAnalyzer
 from ..utils.priority_scoring import PriorityScorer
 from ..models.analysis_settings import ProcessingConfig
 from ..utils.clean_message_id import clean_message_id
+from ...models import log_activity
 
 @dataclass
 class AnalysisCommand:
@@ -65,7 +66,14 @@ class EmailPipeline:
     async def get_analyzed_emails(self, command: AnalysisCommand) -> AnalysisResult:
         """Main method to get and analyze emails with caching and metrics"""
         errors = []
-        stats = {"processed": 0, "cached": 0, "errors": 0, "new": 0}
+        stats = {
+            "emails_fetched": 0,
+            "new_emails": 0,
+            "successfully_parsed": 0,
+            "successfully_analyzed": 0,
+            "failed_parsing": 0,
+            "failed_analysis": 0
+        }
 
         print("Getting analyzed emails")
         try:
@@ -93,22 +101,19 @@ class EmailPipeline:
             # Now that user context is set up, connect to Gmail
             await self.connection.connect()
             raw_emails = await self.connection.fetch_emails(command.days_back)
-            self.logger.info(f"Fetched {len(raw_emails)} raw emails for user {user_email}")
+            stats["emails_fetched"] = len(raw_emails)
+            self.logger.info(f"Stats after fetch: emails_fetched={stats['emails_fetched']}")
             
             # Filter out already cached emails
             new_raw_emails = []
             for email in raw_emails:
                 # Use Gmail API ID for comparison
                 gmail_id = email.get('id')  # This is the hex ID from Gmail API
-                self.logger.info(f"Comparing Gmail ID: {gmail_id} against cached IDs")
                 if gmail_id and gmail_id not in cached_ids:
-                    self.logger.info(f"New email found with ID: {gmail_id}")
                     new_raw_emails.append(email)
-                else:
-                    self.logger.info(f"Email already cached with ID: {gmail_id}")
             
-            stats["new"] = len(new_raw_emails)
-            self.logger.info(f"Found {len(new_raw_emails)} new emails out of {len(raw_emails)} total fetched emails")
+            stats["new_emails"] = len(new_raw_emails)
+            self.logger.info(f"Stats after new email check: new_emails={stats['new_emails']}")
             
             # Only process new emails if there are any
             analyzed_emails = []
@@ -117,28 +122,67 @@ class EmailPipeline:
                 parsed_emails = [self.parser.extract_metadata(email) for email in new_raw_emails]
                 # Filter out None values from parsing failures
                 parsed_emails = [email for email in parsed_emails if email is not None]
+                self.logger.info(f"Parsing results: attempted={len(new_raw_emails)}, successful={len(parsed_emails)}")
                 
                 # Process in batches if specified
                 if command.batch_size:
                     analyzed_batch = []
                     for i in range(0, len(parsed_emails), command.batch_size):
                         batch = parsed_emails[i:i + command.batch_size]
-                        analyzed_batch.extend(await self.processor.analyze_parsed_emails(batch, user_id=user_id))
+                        batch_results = await self.processor.analyze_parsed_emails(batch, user_id=user_id)
+                        self.logger.info(f"Batch analysis results: input={len(batch)}, output={len(batch_results)}")
+                        analyzed_batch.extend(batch_results)
                     analyzed_emails = analyzed_batch
                 else:
                     analyzed_emails = await self.processor.analyze_parsed_emails(parsed_emails, user_id=user_id)
+                    self.logger.info(f"Full analysis results: input={len(parsed_emails)}, output={len(analyzed_emails)}")
 
-                stats["processed"] = len(analyzed_emails)
+                stats["successfully_analyzed"] = len(analyzed_emails)
+                stats["successfully_parsed"] = len(parsed_emails)
+                stats["failed_parsing"] = len(new_raw_emails) - len(parsed_emails)
+                stats["failed_analysis"] = len(parsed_emails) - len(analyzed_emails)
+                
+                self.logger.info(f"Final stats: {stats}")
 
                 # Cache new results if cache available
                 if self.cache and analyzed_emails:
                     await self.cache.store_many(analyzed_emails)
+                    self.logger.info(f"Cached {len(analyzed_emails)} new emails")
+            else:
+                self.logger.info("No new emails to process")
             
             # Combine cached and newly analyzed emails
             all_emails = cached_emails + analyzed_emails
+            self.logger.info(f"Total emails after combining: cached={len(cached_emails)}, new={len(analyzed_emails)}, total={len(all_emails)}")
             
             # Apply filters to all emails
             filtered_emails = self._apply_filters(all_emails, command)
+            self.logger.info(f"Emails after filtering: {len(filtered_emails)}")
+
+            # Log pipeline stats
+            self.logger.info(f"About to log pipeline activity with stats: {stats}")
+            self.logger.info(f"User ID for logging: {user_id}")
+
+            try:
+                log_activity(
+                    user_id=user_id,
+                    activity_type='pipeline_processing',
+                    description=f"Pipeline processed {len(filtered_emails)} emails",
+                    metadata={
+                        'stats': stats,
+                        'command': {
+                            'days_back': command.days_back,
+                            'cache_duration_days': command.cache_duration_days,
+                            'batch_size': command.batch_size,
+                            'priority_threshold': command.priority_threshold,
+                            'categories': command.categories
+                        }
+                    }
+                )
+                self.logger.info("Successfully logged pipeline activity")
+            except Exception as e:
+                self.logger.error(f"Failed to log pipeline activity: {e}")
+                # Don't raise the exception - we don't want to fail the whole pipeline if logging fails
 
             # Collect metrics
             # if self.metrics:
