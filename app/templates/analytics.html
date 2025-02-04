@@ -322,6 +322,39 @@
         cursor: pointer;
         accent-color: #006F6A;
     }
+
+    .error-message {
+        background-color: #fff3f3;
+        border: 1px solid #dc3545;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: none;
+    }
+
+    .error-content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .error-content strong {
+        color: #dc3545;
+    }
+
+    .error-content p {
+        margin: 0;
+        color: #666;
+    }
+
+    .error-content .refresh-button {
+        align-self: flex-start;
+        background-color: #dc3545;
+    }
+
+    .error-content .refresh-button:hover {
+        background-color: #c82333;
+    }
 </style>
 {% endblock %}
 
@@ -566,7 +599,6 @@ async function fetchAnalytics() {
         updateLoadingState(false);
     } catch (error) {
         console.error('Failed to fetch analytics:', error);
-        showError(error.message);
         updateLoadingState(false);
     } finally {
         isLoading = false;
@@ -584,34 +616,8 @@ function updateLoadingState(loading) {
     }
 }
 
-function showError(message) {
-    // Create error element if it doesn't exist
-    let errorEl = document.getElementById('error-message');
-    if (!errorEl) {
-        errorEl = document.createElement('div');
-        errorEl.id = 'error-message';
-        errorEl.className = 'error-message';
-        document.querySelector('.stats-container').prepend(errorEl);
-    }
-    
-    errorEl.innerHTML = `
-        <div class="error-content">
-            <strong>Error loading analytics:</strong>
-            <p>${message}</p>
-            <button onclick="fetchAnalytics()" class="refresh-button">Retry</button>
-        </div>
-    `;
-    errorEl.style.display = 'block';
-}
-
 function updateDashboard(data) {
     console.log('Received analytics data:', data);
-    
-    // Hide any existing error message
-    const errorEl = document.getElementById('error-message');
-    if (errorEl) {
-        errorEl.style.display = 'none';
-    }
     
     // Update system overview stats
     const userStats = data.user_stats || {};
@@ -1053,7 +1059,6 @@ function createNLPChart(stats) {
 async function refreshSection(section) {
     if (isLoading) return;
     
-    // Find the button by finding the header with matching text and then its refresh button
     const header = Array.from(document.querySelectorAll('.stats-header'))
         .find(header => header.querySelector('h2').textContent === section);
     const button = header ? header.querySelector('.refresh-button') : null;
@@ -1098,7 +1103,6 @@ async function refreshSection(section) {
         }
     } catch (error) {
         console.error(`Failed to refresh ${section} section:`, error);
-        showError(error.message);
     } finally {
         updateLoadingState(false, button);
         isLoading = false;
@@ -1395,7 +1399,6 @@ async function refreshAll() {
         
     } catch (error) {
         console.error('Failed to refresh all sections:', error);
-        showError(error.message);
     } finally {
         updateLoadingState(false, button);
         isLoading = false;
