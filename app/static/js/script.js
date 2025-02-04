@@ -72,19 +72,17 @@ async function initializePage() {
     clearEmailState();
     hasInitialized = true;  // Set again after clear
     
-    // Show loading states initially
-    const listLoading = document.getElementById('email-list-loading');
-    const detailsLoading = document.getElementById('details-loading');
-    
-    // Force display flex and add visible class
-    listLoading.style.display = 'flex';
-    detailsLoading.style.display = 'flex';
-    listLoading.classList.add('visible');
-    detailsLoading.classList.add('visible');
+    // Ensure content containers are empty but visible
+    const emailList = document.querySelector('.email-list');
+    const emailDetails = document.getElementById('email-details');
+    emailList.innerHTML = '';
+    emailDetails.style.display = 'none';  // Hide initially
     
     try {
         // First try to load cached emails quickly
         updateLoadingText('cache');
+        let hasCachedData = false;
+        
         try {
             const cacheResponse = await fetch(`/email/api/emails/cached?days_back=${config.days_back}`);
             if (cacheResponse.ok) {
@@ -95,12 +93,11 @@ async function initializePage() {
                     cacheData.emails.forEach(email => emailMap.set(email.id, { ...email, isAnalyzed: true }));
                     updateEmailList();
                     loadFirstEmail();
+                    hasCachedData = true;
                     
-                    // Hide loading states after cached data is loaded
-                    listLoading.style.display = 'none';
-                    detailsLoading.style.display = 'none';
-                    listLoading.classList.remove('visible');
-                    detailsLoading.classList.remove('visible');
+                    // Make content visible
+                    emailList.style.display = 'block';
+                    emailDetails.style.display = 'block';
                 }
             }
         } catch (cacheError) {
@@ -115,16 +112,17 @@ async function initializePage() {
         updateEmailList();
         loadFirstEmail();
         
+        // Make content visible if it wasn't already
+        emailList.style.display = 'block';
+        emailDetails.style.display = 'block';
+        
     } catch (error) {
         console.error('Error loading emails:', error);
         showError('Failed to load emails. Please try again.');
         hasInitialized = false;  // Reset on error
     } finally {
-        // Ensure loading states are hidden
-        listLoading.style.display = 'none';
-        detailsLoading.style.display = 'none';
-        listLoading.classList.remove('visible');
-        detailsLoading.classList.remove('visible');
+        emailList.style.display = 'block';
+        emailDetails.style.display = 'block';
     }
 }
 
@@ -182,71 +180,6 @@ async function retryLoading() {
     hideError();
     await initializePage();
 }
-
-// // Load basic email metadata
-// async function loadEmailMetadata() {
-//     if (isLoadingMetadata) return;
-//     isLoadingMetadata = true;
-    
-//     showLoadingBar('Loading email metadata...');
-//     updateLoadingText('parse');
-//     console.log('Loading email metadata with days_back:', config.days_back);
-    
-//     try {
-//         const response = await fetch(`/email/api/emails/metadata?days_back=${config.days_back}`);
-//         if (!response.ok) {
-//             throw new Error(`HTTP error! status: ${response.status}`);
-//         }
-//         const data = await response.json();
-        
-//         if (data.status === 'success') {
-//             console.log('Received metadata for', data.emails.length, 'emails');
-//             console.log('Current emailMap size before clearing:', emailMap.size);
-            
-//             // Clear existing emails before adding new ones
-//             emailMap.clear();
-//             console.log('EmailMap size after clearing:', emailMap.size);
-            
-//             // Add new emails and update UI immediately
-//             data.emails.forEach(email => {
-//                 const emailDate = new Date(email.date);
-//                 const now = new Date();
-//                 const daysDiff = Math.floor((now - emailDate) / (1000 * 60 * 60 * 24));
-//                 console.log(`Email ${email.id} date: ${emailDate}, days old: ${daysDiff}`);
-                
-//                 if (daysDiff <= config.days_back) {
-//                     emailMap.set(email.id, {
-//                         ...email,
-//                         isAnalyzed: false,
-//                         priority_level: 'pending',
-//                         category: 'pending',
-//                         summary: 'Analysis in progress...'
-//                     });
-//                 } else {
-//                     console.log(`Skipping email ${email.id} as it's older than ${config.days_back} days`);
-//                 }
-//             });
-            
-//             console.log('EmailMap size after adding new emails:', emailMap.size);
-            
-//             // Update UI immediately with unanalyzed emails
-//             clearEmailList();
-//             updateEmailList();
-//             loadFirstEmail();
-            
-//             // Keep loading indicator visible for analysis
-//             document.getElementById('email-list-loading').style.display = 'flex';
-//         } else {
-//             throw new Error(data.message || 'Failed to load email metadata');
-//         }
-//     } catch (error) {
-//         console.error('Error loading email metadata:', error);
-//         showError('Failed to load email metadata. ' + error.message);
-//     } finally {
-//         isLoadingMetadata = false;
-//         hideLoadingBar();
-//     }
-// }
 
 // Load email analysis results
 async function loadEmailAnalysis() {
@@ -427,7 +360,6 @@ function loadEmailDetails(emailId) {
         actionRequired: document.getElementById('details-action-required'),
         summary: document.getElementById('details-summary'),
         keyDates: document.getElementById('key-dates-list'),
-        loading: document.getElementById('details-loading'),
         emailBody: document.getElementById('email-body')
     };
     
@@ -447,22 +379,12 @@ function loadEmailDetails(emailId) {
         }
     });
     
-    // Show/hide loading state
-    detailsElements.loading.style.display = !email.isAnalyzed ? 'flex' : 'none';
-    
-    // Show all detail elements if email is analyzed
-    if (email.isAnalyzed) {
-        Object.entries(detailsElements).forEach(([key, element]) => {
-            if (element && key !== 'loading' && key !== 'actionRequired') {
-                element.style.display = 'block';
-            }
-        });
-        
-        // Special handling for action required tag
-        if (detailsElements.actionRequired) {
-            detailsElements.actionRequired.style.display = email.needs_action ? 'inline-flex' : 'none';
+    // Show all detail elements
+    Object.values(detailsElements).forEach(element => {
+        if (element) {
+            element.style.display = 'block';  // Use display instead of visibility
         }
-    }
+    });
     
     // Helper function to format tag text
     const formatTagText = (text) => {
@@ -472,8 +394,6 @@ function loadEmailDetails(emailId) {
     
     // Batch DOM updates
     requestAnimationFrame(() => {
-        console.log('Starting DOM updates...');
-        
         // Update content
         detailsElements.subject.textContent = email.subject || 'No Subject';
         detailsElements.sender.textContent = email.sender || 'Unknown Sender';
