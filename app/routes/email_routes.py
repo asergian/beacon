@@ -28,33 +28,47 @@ except Exception as e:
 @async_route
 async def home():
     """Home page that loads email UI without waiting for data."""
-    return render_template('email_summary.html', emails=[])
+    return render_template('email_summary.html', 
+                         emails=[],
+                         tiny_mce_api_key=current_app.config.get('TINYMCE_API_KEY', ''))
 
-@email_bp.route('/api/emails/metadata')
+# Note: We previously had a /api/emails/metadata endpoint here for fetching basic email data
+# It has been replaced by /api/emails/cached which serves analyzed emails from cache
+# This provides a better UX by showing full email analysis while waiting for fresh data
+
+@email_bp.route('/api/emails/cached')
 @login_required
 @async_route
-async def get_email_metadata():
-    """Get basic email metadata without analysis."""
+async def get_cached_emails():
+    """Get only cached emails without fetching from Gmail."""
     try:
-        raw_emails = await current_app.pipeline.connection.fetch_emails(days=1)
-        basic_emails = []
-        
-        for email in raw_emails:
-            parsed = current_app.pipeline.parser.extract_metadata(email)
-            if parsed:
-                basic_emails.append({
-                    'id': parsed.id,
-                    'subject': parsed.subject,
-                    'sender': parsed.sender,
-                    'date': parsed.date.isoformat() if parsed.date else None,
-                })
+        days_back = int(request.args.get('days_back', 0))  # Get days_back from request params
+        if not current_app.pipeline.cache:
+            return jsonify({
+                'status': 'error',
+                'message': 'Cache not available'
+            }), 404
+            
+        # Ensure user email is set in cache
+        if 'user' not in session or 'email' not in session['user']:
+            return jsonify({
+                'status': 'error',
+                'message': 'No user found in session'
+            }), 401
+            
+        # Set user email in cache
+        await current_app.pipeline.cache.set_user(session['user']['email'])
+            
+        # Get cached emails only
+        cached_emails = await current_app.pipeline.cache.get_recent(7, days_back)  # Use 7 days cache duration
         
         return jsonify({
             'status': 'success',
-            'emails': basic_emails
+            'emails': [email.dict() for email in cached_emails],
+            'is_cached': True
         })
     except Exception as e:
-        logger.error(f"Failed to fetch email metadata: {e}")
+        logger.error(f"Failed to fetch cached emails: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @email_bp.route('/api/emails/analysis')
@@ -63,8 +77,9 @@ async def get_email_metadata():
 async def get_email_analysis():
     """Get analyzed emails in batches."""
     try:
+        days_back = int(request.args.get('days_back', 0))  # Get days_back from request params
         command = AnalysisCommand(
-            days_back=1,
+            days_back=days_back,
             cache_duration_days=7,
             batch_size=10  # Process in small batches
         )

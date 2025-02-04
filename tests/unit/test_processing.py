@@ -71,7 +71,7 @@ async def test_process_single_email_success(email_processor, sample_email_metada
     assert result.priority_level == 'HIGH'
 
 @pytest.mark.asyncio
-async def test_process_parsed_emails_success(email_processor, sample_email_metadata):
+async def test_analyze_parsed_emails_success(email_processor, sample_email_metadata):
     # Mock successful processing of multiple emails
     email_processor.text_analyzer.analyze.return_value = {
         'entities': {},
@@ -87,7 +87,7 @@ async def test_process_parsed_emails_success(email_processor, sample_email_metad
     
     email_processor.priority_calculator.score.return_value = (3, 'LOW')
 
-    results = await email_processor.process_parsed_emails([sample_email_metadata] * 3)
+    results = await email_processor.analyze_parsed_emails([sample_email_metadata] * 3)
     
     assert len(results) == 3
     assert all(isinstance(r, ProcessedEmail) for r in results)
@@ -118,7 +118,7 @@ async def test_context_manager(email_processor):
     email_processor.email_client.close.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_process_parsed_emails_partial_failure(email_processor, sample_email_metadata):
+async def test_analyze_parsed_emails_partial_failure(email_processor, sample_email_metadata):
     # Mock one success, one failure
     email_processor.text_analyzer.analyze.side_effect = [
         {'entities': {}, 'is_urgent': False},
@@ -134,7 +134,7 @@ async def test_process_parsed_emails_partial_failure(email_processor, sample_ema
     
     email_processor.priority_calculator.score.return_value = (3, 'LOW')
 
-    results = await email_processor.process_parsed_emails([sample_email_metadata] * 2)
+    results = await email_processor.analyze_parsed_emails([sample_email_metadata] * 2)
     
     # Should return only successful results
     assert len(results) == 1

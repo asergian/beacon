@@ -187,3 +187,20 @@ async def flush_cache():
             'status': 'error',
             'message': f'Failed to clear cache: {str(e)}'
         }), 500 
+    
+
+@test_bp.route('/cache/flush-all')
+@async_route
+async def flush_all_cache():
+    try:
+        await current_app.pipeline.cache.clear_all_cache()
+        return jsonify({
+            'status': 'success',
+            'message': 'All caches successfully cleared'
+        })
+    except Exception as e:
+        logger.error(f"Failed to clear all caches: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to clear all caches: {str(e)}'
+        }), 500 

@@ -6,7 +6,9 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 import os
 import pathlib
+from datetime import datetime
 from ..utils.logging_config import setup_logging
+from ..models import db, User, log_activity
 
 # Set up logger
 logger = setup_logging()
@@ -28,27 +30,14 @@ def show_login():
         return redirect(url_for('email.home'))
     return render_template('login.html')
 
-@auth_bp.route('/login/start', methods=['POST'])
-def start_login():
-    """Initiate Google OAuth2 login flow."""
+@auth_bp.route('/oauth/login')
+def oauth_login():
+    """Initiate the OAuth login flow."""
     logger.info("Starting OAuth login flow")
-    
     try:
-        # Verify HTTPS
-        if not request.is_secure:
-            logger.error("Attempted OAuth flow over non-HTTPS connection")
-            return render_template('login.html', 
-                                error="HTTPS is required for secure authentication. Please use HTTPS."), 400
-        
-        # Load client configuration
-        client_secrets_file = os.path.join(
-            pathlib.Path(__file__).parent.parent.parent,
-            'beacon-gmail-client.json'
-        )
-        
-        # Create flow instance to manage OAuth 2.0 Authorization Grant Flow
+        # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow
         flow = Flow.from_client_secrets_file(
-            client_secrets_file,
+            os.path.join(pathlib.Path(__file__).parent.parent.parent, 'beacon-gmail-client.json'),
             scopes=SCOPES,
             redirect_uri=url_for('auth.oauth2callback', _external=True)
         )
@@ -56,21 +45,19 @@ def start_login():
         # Generate URL for request to Google's OAuth 2.0 server
         authorization_url, state = flow.authorization_url(
             access_type='offline',  # Enable refresh token
-            include_granted_scopes='true'  # Enable incremental authorization
+            include_granted_scopes='true',  # Enable incremental authorization
+            prompt='consent'  # Force consent screen to ensure refresh token
         )
-        
-        logger.info("Authorization URL: %s", authorization_url)
         
         # Store the state in the session for later validation
         session['state'] = state
-        logger.debug("OAuth state stored in session")
         
+        # Redirect to Google's OAuth 2.0 server
         return redirect(authorization_url)
         
     except Exception as e:
         logger.error(f"Failed to initiate OAuth flow: {e}")
-        return render_template('login.html', 
-                            error="Failed to initiate authentication. Please try again."), 500
+        return render_template('login.html', error="Failed to start authentication. Please try again."), 500
 
 @auth_bp.route('/oauth2callback')
 async def oauth2callback():
@@ -78,8 +65,8 @@ async def oauth2callback():
     logger.info("Handling OAuth callback")
     
     try:
-        # Verify HTTPS
-        if not request.is_secure:
+        # Verify HTTPS in production
+        if not request.is_secure and not current_app.debug:
             logger.error("Attempted OAuth callback over non-HTTPS connection")
             return render_template('login.html', 
                                 error="HTTPS is required for secure authentication. Please use HTTPS."), 400
@@ -94,51 +81,104 @@ async def oauth2callback():
         # Clear the session after state verification but before setting new user data
         session.clear()
         
-        client_secrets_file = os.path.join(
-            pathlib.Path(__file__).parent.parent.parent,
-            'beacon-gmail-client.json'
-        )
+        # Get OAuth credentials
+        try:
+            flow = Flow.from_client_secrets_file(
+                os.path.join(pathlib.Path(__file__).parent.parent.parent, 'beacon-gmail-client.json'),
+                scopes=SCOPES,
+                redirect_uri=request.base_url
+            )
+            
+            flow.fetch_token(
+                authorization_response=request.url,
+                access_type='offline',
+                include_granted_scopes=True
+            )
+            
+            credentials = flow.credentials
+            
+            # Get user info from ID token
+            id_info = id_token.verify_oauth2_token(
+                credentials.id_token, 
+                requests.Request(),
+                flow.client_config['client_id']
+            )
+        except Exception as e:
+            logger.error(f"OAuth flow error: {e}")
+            return render_template('login.html', 
+                                error="Authentication failed. Please try again."), 500
         
-        flow = Flow.from_client_secrets_file(
-            client_secrets_file,
-            scopes=SCOPES,
-            state=state,
-            redirect_uri=url_for('auth.oauth2callback', _external=True)
-        )
-        
-        # Use authorization code to get credentials
-        flow.fetch_token(authorization_response=request.url)
-        credentials = flow.credentials
-        
-        # Get user info from ID token
-        id_info = id_token.verify_oauth2_token(
-            credentials.id_token, 
-            requests.Request(),
-            flow.client_config['client_id']
-        )
-        
-        # Store user info and credentials in session
-        session['user'] = {
-            'email': id_info['email'],
-            'name': id_info.get('name'),
-            'picture': id_info.get('picture')
-        }
-        session['credentials'] = {
-            'token': credentials.token,
-            'refresh_token': credentials.refresh_token,
-            'token_uri': credentials.token_uri,
-            'client_id': credentials.client_id,
-            'client_secret': credentials.client_secret,
-            'scopes': credentials.scopes
-        }
-        
-        logger.info(f"Successfully authenticated user: {id_info['email']}")
-        return redirect(url_for('email.home'))
-        
-    except ValueError as e:
-        logger.error(f"Error verifying ID token: {e}")
-        return render_template('login.html', 
-                            error="Failed to verify authentication. Please try again."), 400
+        # Handle user creation/update and activity logging in a transaction
+        try:
+            # Start a transaction
+            db.session.begin()
+            
+            # Find or create user
+            user = User.query.filter_by(email=id_info['email']).first()
+            is_new_user = user is None
+            
+            if is_new_user:
+                # Create new user
+                user = User(
+                    email=id_info['email'],
+                    name=id_info.get('name'),
+                    picture=id_info.get('picture'),
+                    roles=['user', 'admin'] if id_info['email'] == 'alex.sergian@gmail.com' else ['user']
+                )
+                db.session.add(user)
+                db.session.flush()  # Get the user ID without committing
+                
+                # Log user creation in the same transaction
+                activity = log_activity(
+                    user_id=user.id,
+                    activity_type='user_created',
+                    description=f"New user account created for {user.email}"
+                )
+                db.session.add(activity)
+            else:
+                # Update existing user
+                user.name = id_info.get('name')
+                user.picture = id_info.get('picture')
+                user.last_login = datetime.utcnow()
+                
+                # Log user login in the same transaction
+                activity = log_activity(
+                    user_id=user.id,
+                    activity_type='user_login',
+                    description=f"User logged in: {user.email}"
+                )
+                db.session.add(activity)
+            
+            # Store user info and credentials in session
+            session['user'] = {
+                'id': user.id,
+                'email': user.email,
+                'name': user.name,
+                'picture': user.picture,
+                'roles': user.roles
+            }
+            session['credentials'] = {
+                'token': credentials.token,
+                'refresh_token': credentials.refresh_token,
+                'token_uri': credentials.token_uri,
+                'client_id': credentials.client_id,
+                'client_secret': credentials.client_secret,
+                'scopes': credentials.scopes
+            }
+            
+            # Commit the entire transaction
+            db.session.commit()
+            logger.info(f"Successfully authenticated user: {user.email}")
+            
+            # Redirect to email home
+            return redirect(url_for('email.home'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Database error during authentication: {str(e)}")
+            return render_template('login.html', 
+                                error="Failed to complete authentication. Please try again."), 500
+            
     except Exception as e:
         logger.error(f"OAuth callback error: {e}")
         return render_template('login.html', 
@@ -147,6 +187,15 @@ async def oauth2callback():
 @auth_bp.route('/logout')
 def logout():
     """Clear the user's session."""
+    if 'user' in session:
+        user_id = session['user'].get('id')
+        if user_id:
+            log_activity(
+                user_id=user_id,
+                activity_type='user_logout',
+                description=f"User logged out: {session['user'].get('email')}"
+            )
+    
     logger.info("User logged out")
     session.clear()
-    return redirect(url_for('auth.show_login'))
+    return redirect(url_for('auth.show_login', from_logout=1))

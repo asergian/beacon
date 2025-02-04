@@ -1,168 +1,164 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inbox - Beacon</title>
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <script>
-        // Initialize empty emails array and map
-        window.emails = [];
-        window.emailMap = new Map();
-        
-        // Load cached data if available (user-specific)
-        const userId = '{{ user_id }}'; // Get from Flask session
-        const cacheKey = `emailCache_${userId}`;
-        const cachedEmails = localStorage.getItem(cacheKey);
-        
-        if (cachedEmails) {
-            try {
-                const parsed = JSON.parse(cachedEmails);
-                if (parsed.timestamp > Date.now() - (30 * 60 * 1000)) { // 30 minutes cache
-                    window.emails = parsed.emails;
-                    parsed.emails.forEach(email => window.emailMap.set(email.id, email));
-                    console.log('Loaded cached emails for user:', userId);
-                }
-            } catch (e) {
-                console.warn('Failed to load cached emails:', e);
-                localStorage.removeItem(cacheKey); // Clear invalid cache
-            }
-        }
-        
-        // Initialize page immediately after DOM loads
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, initializing page...');
-            initializePage(); // Start loading fresh data
-        });
-    </script>
-    <script src="{{ url_for('static', filename='js/script.js') }}" defer></script>
-</head>
-<body>
-    <!-- Loading Bar -->
-    <div id="loading-bar" class="loading-bar"></div>
-    <div id="loading-text" class="loading-text"></div>
+{% extends "base.html" %}
 
-    <!-- Error Message -->
-    <div id="error-message" class="error-message">
-        <p id="error-text"></p>
-        <button onclick="retryLoading()">Retry</button>
-    </div>
+{% block title %}Inbox - Beacon{% endblock %}
 
-    <!-- Header Section -->
-    <header>
-        <div class="header-container">
-            <div class="nav-logo">
-                <img src="{{ url_for('static', filename='images/beacon-logo-hero.svg') }}" alt="Beacon" height="40">
-            </div>
-            <nav class="header-nav">
-                <ul>
-                    <li><a href="/" class="active">Home</a></li>
-                    <li><a href="#">Settings</a></li>
-                    <li><a href="/logout">Log Out</a></li>
-                </ul>
-            </nav>
-        </div>
-    </header>
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+{% endblock %}
 
-    <!-- Filters Row -->
-    <div class="filters-row">
-        <label for="priority-filter">Filter by Priority:</label>
+{% block content %}
+<!-- Loading Bar -->
+<div id="loading-bar" class="loading-bar"></div>
+<div id="loading-text" class="loading-text"></div>
+
+<!-- Error Message -->
+<div id="error-message" class="error-message">
+    <p id="error-text"></p>
+    <button onclick="retryLoading()">Retry</button>
+</div>
+
+<!-- Filters Row -->
+<div class="filters-row">
+    <div class="filter-group">
+        <label for="priority-filter">Priority:</label>
         <select id="priority-filter" onchange="filterEmails()">
             <option value="all">All</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
         </select>
+    </div>
 
-        <label for="category-filter">Filter by Category:</label>
+    <div class="filter-group">
+        <label for="category-filter">Category:</label>
         <select id="category-filter" onchange="filterEmails()">
             <option value="all">All</option>
-            <option value="work">Work</option>
-            <option value="personal">Personal</option>
-            <option value="promotions">Promotions</option>
-            <option value="informational">Informational</option>
+            <option value="Work">Work</option>
+            <option value="Personal">Personal</option>
+            <option value="Promotions">Promotions</option>
+            <option value="Informational">Informational</option>
         </select>
     </div>
 
-    <!-- Updated Content Section -->
-    <div class="container">
-        <!-- Left Column: Email List -->
-        <div class="email-list-column">
-            <div id="email-list-loading" class="column-loading" style="display: none;">
-                <div class="loading-spinner"></div>
-                <p>Loading emails...</p>
+    <div class="filter-group">
+        <label for="action-filter">Action:</label>
+        <select id="action-filter" onchange="filterEmails()">
+            <option value="all">All</option>
+            <option value="required">Action Required</option>
+            <option value="none">No Action</option>
+        </select>
+    </div>
+</div>
+
+<!-- Updated Content Section -->
+<div class="container">
+    <!-- Left Column: Email List -->
+    <div class="email-list-column">
+        <ul class="email-list">
+            <!-- Email items will be populated by JavaScript -->
+        </ul>
+    </div>
+
+    <!-- Right Column: Email Details -->
+    <div class="email-details-column">
+        <div id="email-details">
+            
+            
+            <div class="email-meta">
+                <div class="summary-actions-box">
+                    <h2 id="details-subject"></h2>
+                    <div class="sender-date">
+                        <div class="sender" id="details-sender"></div>
+                        <div class="date" id="details-date"></div>
+                    </div>
+                    
+                    <div class="tags-container">
+                        <div class="tag" id="details-priority"></div>
+                        <div class="tag category" id="details-category"></div>
+                        <div class="tag action-required" id="details-action-required"></div>
+                    </div>
+                    <div class="summary-section">
+                        <h3>Summary</h3>
+                        <p id="details-summary"></p>
+                        <ul id="key-dates-list"></ul>
+                    </div>
+                </div>
             </div>
-            <ul class="email-list">
-                <!-- Email items will be populated by JavaScript -->
-            </ul>
-        </div>
 
-        <!-- Right Column: Email Details -->
-        <div class="email-details-column">
-            <div id="email-details">
-                <!-- Loading placeholder for email details -->
-                <div id="details-loading" class="details-loading" style="display: none;">
-                    <div class="loading-spinner"></div>
-                    <p>Select an email to view details...</p>
+            <div id="details-body">
+                <div id="email-body" class="email-body-container">
+                    <!-- iframe will be inserted here by JavaScript -->
                 </div>
-                
-                <h2 id="details-subject"></h2>
-                
-                <div class="email-meta">
-                    <div class="summary-actions-box">
-                        <div class="sender-date">
-                            <div class="sender" id="details-sender"></div>
-                            <div class="date" id="details-date"></div>
+            </div>
+
+            <!-- Response Section -->
+            <div id="email-response" class="email-response-section">
+                <div class="email-compose-header">
+                    <h3>Draft a Response</h3>
+                    <div class="compose-fields">
+                        <div class="compose-field">
+                            <label for="response-to">To:</label>
+                            <input type="text" id="response-to" readonly>
                         </div>
-                        
-                        <div class="tags-container">
-                            <div class="tag" id="details-priority"></div>
-                            <div class="tag category" id="details-category"></div>
+                        <div class="compose-field">
+                            <label for="response-cc">Cc:</label>
+                            <input type="text" id="response-cc" placeholder="Add Cc recipients">
                         </div>
-                        <div class="summary-section">
-                            <h3>Summary</h3>
-                            <p id="details-summary"></p>
-                            <ul id="key-dates-list"></ul>
+                        <div class="compose-field">
+                            <label for="response-subject">Subject:</label>
+                            <input type="text" id="response-subject">
                         </div>
-                        
-                        <!-- <div class="action-items">
-                            <h3>Action Items</h3>
-                            <ul id="key-dates-list"></ul>
-                        </div> -->
                     </div>
                 </div>
-
-                <div id="details-body">
-                    <div id="email-body" class="email-body-container">
-                        <!-- iframe will be inserted here by JavaScript -->
-                    </div>
+                
+                <div class="email-compose-body">
+                    <textarea id="response-editor"></textarea>
                 </div>
-
-                <!-- Response Section -->
-                <div id="email-response">
-                    <h3>Draft a Response:</h3>
-                    <textarea id="response-draft" rows="6" placeholder="Write your response here..."></textarea>
-                    <button id="send-button" onclick="sendEmailResponse()">Send</button>
+                
+                <div class="email-compose-actions">
+                    <div class="left-actions">
+                        <button id="send-button" class="primary-button" onclick="sendEmailResponse()">
+                            <span class="button-icon">📤</span> Send
+                        </button>
+                        <button id="save-draft-button" class="secondary-button" onclick="saveEmailDraft()">
+                            <span class="button-icon">💾</span> Save Draft
+                        </button>
+                    </div>
+                    <div class="right-actions">
+                        <button id="discard-button" class="danger-button" onclick="discardEmail()">
+                            <span class="button-icon">🗑️</span> Discard
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
 
-    <!-- Footer Section -->
-    <footer>
-        <div class="footer-container">
-            <div class="footer-left">
-                <p>&copy; 2025 Beacon by Shronas. All rights reserved.</p>
-            </div>
-            <div class="footer-right">
-                <ul>
-                    <li><a href="#">Privacy Policy</a></li>
-                    <li><a href="#">Terms of Service</a></li>
-                    <li><a href="#">Support</a></li>
-                </ul>
-            </div>
-        </div>
-    </footer>
-</body>
-</html>
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.tiny.cloud/1/{{ tiny_mce_api_key }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+    // Initialize empty emails array and map
+    window.emails = [];
+    window.emailMap = new Map();
+    
+    // Initialize TinyMCE after DOM loads
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded, initializing TinyMCE...');
+        tinymce.init({
+            selector: '#response-editor',
+            plugins: 'link lists image table code help wordcount emoticons',
+            toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright | bullist numlist | link image emoticons | formatselect',
+            menubar: 'file edit view insert format tools',
+            height: 300,
+            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px }',
+            branding: false,
+            promotion: false,
+            placeholder: 'Write your response here...'
+        });
+    });
+</script>
+{% endblock %}
