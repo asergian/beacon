@@ -1,5 +1,6 @@
 venv/*
 certs/
+*.pem
 logs/
 cookies.txt
 .gitignore
