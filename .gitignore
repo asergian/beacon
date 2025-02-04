@@ -1,5 +1,6 @@
 venv/*
 certs/
+diff.txt
 *.pem
 logs/
 cookies.txt
