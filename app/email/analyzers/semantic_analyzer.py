@@ -18,10 +18,10 @@ class SemanticAnalyzer:
         self.max_tokens = 1000  # Maximum tokens per request
         self.max_content_tokens = 500  # Maximum tokens for email content
         try:
-            self.encoding = tiktoken.encoding_for_model(self.model)
+            self.encoding = tiktoken.get_encoding("cl100k_base")  # Explicitly use cl100k_base encoding
         except Exception as e:
-            self.logger.warning(f"Failed to get encoding for {self.model}, using cl100k_base: {e}")
-            self.encoding = tiktoken.get_encoding("cl100k_base")
+            self.logger.error(f"Failed to get tiktoken encoding: {e}")
+            self.encoding = None
     
     def count_tokens(self, text: str) -> int:
         """Count the number of tokens in a text string."""
