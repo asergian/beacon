@@ -80,6 +80,7 @@ class User(db.Model):
         'email_preferences': {
             'priority_threshold': 50,
             'days_to_analyze': 1,
+            'cache_duration_days': 7,
             'vip_senders': [],
             'urgency_keywords': ['urgent', 'asap', 'deadline', 'immediate', 'priority']
         },
@@ -140,7 +141,7 @@ class User(db.Model):
             
             db.session.commit()
         except Exception as e:
-            logger.error(f"Failed to update settings group: {e}")
+            logging.error(f"Failed to update settings group: {e}")
             db.session.rollback()
             raise
 

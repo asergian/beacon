@@ -26,6 +26,7 @@ def upgrade():
         'email_preferences': {
             'priority_threshold': 50,
             'days_to_analyze': 1,
+            'cache_duration_days': 7,
             'vip_senders': [],
             'urgency_keywords': ['urgent', 'asap', 'deadline', 'immediate', 'priority']
         },

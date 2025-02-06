@@ -13,6 +13,7 @@ from ..analyzers.content_analyzer import ContentAnalyzer
 from ..utils.priority_scoring import PriorityScorer
 from ..models.processed_email import ProcessedEmail
 from ..models.exceptions import EmailProcessingError
+from ..models.analysis_command import AnalysisCommand
 
 class EmailProcessor:
     """Processes emails using various analyzers and tracks analytics."""
@@ -39,7 +40,7 @@ class EmailProcessor:
             return date.replace(tzinfo=timezone.utc)
         return date.astimezone(timezone.utc)
 
-    async def analyze_recent_emails(self, days_back: int = 1, user_id: Optional[int] = None) -> List[ProcessedEmail]:
+    async def analyze_recent_emails(self, command: AnalysisCommand, user_id: Optional[int] = None) -> List[ProcessedEmail]:
         """Analyze recent emails with detailed analytics tracking."""
         try:
             start_time = time.time()
@@ -58,7 +59,7 @@ class EmailProcessor:
             }
             
             # Fetch emails
-            raw_emails = await self.email_client.fetch_emails(days=days_back)
+            raw_emails = await self.email_client.fetch_emails(command.days_back)
             processing_stats['emails_fetched'] = len(raw_emails)
             
             # Track already processed emails

@@ -36,31 +36,31 @@
             <div class="setting-item">
                 <div class="setting-content">
                     <div class="setting-info">
-                        <span class="setting-title">Priority Threshold</span>
-                        <span class="setting-description">Minimum priority level for email notifications (0-100)</span>
-                    </div>
-                    <input type="number" 
-                           name="email_preferences.priority_threshold" 
-                           id="priority_threshold"
-                           min="0" 
-                           max="100" 
-                           value="{{ user_settings.email_preferences.priority_threshold }}"
-                           class="form-input">
-                </div>
-            </div>
-            
-            <div class="setting-item">
-                <div class="setting-content">
-                    <div class="setting-info">
-                        <span class="setting-title">Days to Analyze</span>
-                        <span class="setting-description">Number of days of emails to analyze</span>
+                        <span class="setting-title">Email History</span>
+                        <span class="setting-description">Number of days of email history to fetch</span>
                     </div>
                     <input type="number" 
                            name="email_preferences.days_to_analyze" 
                            id="days_to_analyze"
+                           min="0" 
+                           max="7" 
+                           value="{{ user_settings.email_preferences.days_to_analyze }}"
+                           class="form-input">
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-content">
+                    <div class="setting-info">
+                        <span class="setting-title">Cache Duration</span>
+                        <span class="setting-description">Number of days to store emails in cache</span>
+                    </div>
+                    <input type="number" 
+                           name="email_preferences.cache_duration_days" 
+                           id="cache_duration_days"
                            min="1" 
                            max="30" 
-                           value="{{ user_settings.email_preferences.days_to_analyze }}"
+                           value="{{ user_settings.email_preferences.cache_duration_days }}"
                            class="form-input">
                 </div>
             </div>
@@ -68,6 +68,22 @@
         
         <div class="setting-group">
             <h3 class="group-title">AI Features</h3>
+            <div class="setting-item">
+                <div class="setting-content">
+                    <div class="setting-info">
+                        <span class="setting-title">Priority Threshold</span>
+                        <span class="setting-description">Minimum priority level for email notifications (0-100)</span>
+                    </div>
+                    <input type="number" 
+                           name="ai_features.priority_threshold" 
+                           id="priority_threshold"
+                           min="0" 
+                           max="100" 
+                           value="{{ user_settings.ai_features.priority_threshold }}"
+                           class="form-input">
+                </div>
+            </div>
+            
             <div class="setting-item">
                 <div class="setting-content">
                     <div class="setting-info">
@@ -255,14 +271,16 @@
         opacity: 0;
         width: 100%;
         height: 100%;
-        cursor: pointer;
-        z-index: 2;
+        z-index: 3;
         margin: 0;
+        padding: 0;
+        top: 0;
+        left: 0;
+        cursor: pointer;
     }
     
     .toggle-switch {
         position: absolute;
-        cursor: pointer;
         top: 0;
         left: 0;
         right: 0;
@@ -270,7 +288,7 @@
         background-color: var(--toggle-bg);
         transition: .4s;
         border-radius: 34px;
-        z-index: 1;
+        pointer-events: none;
     }
     
     .toggle-switch:before {
@@ -284,7 +302,7 @@
         transition: .4s;
         border-radius: 50%;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        z-index: 1;
+        pointer-events: none;
     }
     
     input:checked + .toggle-switch {

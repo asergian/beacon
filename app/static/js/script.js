@@ -7,7 +7,7 @@ let hasInitialized = false;  // Add initialization flag
 
 // Configuration
 const config = {
-    days_back: 0,  // Number of days to fetch emails for
+    days_back: 1,  // Default value, will be updated from user settings
     batch_size: 50  // Batch size for UI updates
 };
 
@@ -16,6 +16,22 @@ let selectedEmailId = null;
 
 // Add this at the top with other global variables
 let updateEmailListTimeout = null;
+
+// Function to fetch user settings
+async function fetchUserSettings() {
+    try {
+        const response = await fetch('/email/api/user/settings');
+        if (response.ok) {
+            const settings = await response.json();
+            if (settings.status === 'success' && settings.settings) {
+                config.days_back = settings.settings.email_preferences.days_to_analyze;
+                console.log('Updated days_back from user settings:', config.days_back);
+            }
+        }
+    } catch (error) {
+        console.warn('Failed to fetch user settings:', error);
+    }
+}
 
 // Function to clear all email state
 function clearEmailState() {
@@ -71,6 +87,9 @@ async function initializePage() {
     // Clear any existing state
     clearEmailState();
     hasInitialized = true;  // Set again after clear
+    
+    // Fetch user settings first
+    await fetchUserSettings();
     
     // Ensure content containers are empty but visible
     const emailList = document.querySelector('.email-list');
@@ -297,13 +316,13 @@ function updateEmailList() {
             li.className = `email-item ${!email.isAnalyzed ? 'analyzing' : ''}`;
             li.dataset.emailId = email.id;
             li.onclick = () => {
+                // Remove active class from all items
+                document.querySelectorAll('.email-item').forEach(item => item.classList.remove('active'));
+                // Add active class to clicked item
+                li.classList.add('active');
                 selectedEmailId = email.id;
                 loadEmailDetails(email.id);
             };
-
-            if (email.id === selectedEmailId) {
-                li.classList.add('active');
-            }
 
             if (email.needs_action) {
                 li.classList.add('needs-action');

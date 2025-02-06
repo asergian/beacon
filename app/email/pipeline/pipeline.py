@@ -16,26 +16,18 @@ import time
 
 from ..core.email_processor import EmailProcessor
 from ..models.processed_email import ProcessedEmail
-from ..storage.cache import EmailCache, RedisEmailCache
+from ..storage.cache import EmailCache
 # from ..rate_limiting import RateLimiter
 # from ..metrics import MetricsCollector
 from ..core.gmail_client import GmailClient
 from ..core.email_parsing import EmailParser
-from ..analyzers.semantic_analyzer import SemanticAnalyzer
-from ..analyzers.content_analyzer import ContentAnalyzer
-from ..utils.priority_scoring import PriorityScorer
-from ..models.analysis_settings import ProcessingConfig
-from ..utils.clean_message_id import clean_message_id
+# from ..analyzers.semantic_analyzer import SemanticAnalyzer
+# from ..analyzers.content_analyzer import ContentAnalyzer
+# from ..utils.priority_scoring import PriorityScorer
+# from ..models.analysis_settings import ProcessingConfig
+# from ..utils.clean_message_id import clean_message_id
 from ...models import log_activity
-
-@dataclass
-class AnalysisCommand:
-    """Represents a request to analyze emails"""
-    days_back: int
-    cache_duration_days: int
-    batch_size: Optional[int] = None
-    priority_threshold: Optional[int] = None
-    categories: Optional[List[str]] = None
+from ..models.analysis_command import AnalysisCommand
 
 @dataclass
 class AnalysisResult:
@@ -89,12 +81,21 @@ class EmailPipeline:
                 
             self.logger.info(f"Processing emails for user: {user_email} (ID: {user_id})")
             
+            # Get user settings
+            from app.models import User
+            user = User.query.get(user_id)
+            if not user:
+                raise ValueError("User not found in database")
+            
+            # Get cache duration from settings
+            cache_duration = user.get_setting('email_preferences.cache_duration_days', 7)
+            
             # Set up cache if available
             cached_emails = []
             cached_ids = set()
             if self.cache:
                 await self.cache.set_user(user_email)
-                cached_emails = await self.cache.get_recent(command.cache_duration_days, command.days_back)
+                cached_emails = await self.cache.get_recent(cache_duration, command.days_back)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_emails)
                 self.logger.info(f"Found {len(cached_ids)} cached email IDs")
