@@ -12,12 +12,6 @@
 <div id="loading-bar" class="loading-bar"></div>
 <div id="loading-text" class="loading-text"></div>
 
-<!-- Error Message -->
-<div id="error-message" class="error-message">
-    <p id="error-text"></p>
-    <button onclick="retryLoading()">Retry</button>
-</div>
-
 <!-- Filters Row -->
 <div class="filters-row">
     <div class="filter-group">
@@ -154,10 +148,46 @@
             toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright | bullist numlist | link image emoticons | formatselect',
             menubar: 'file edit view insert format tools',
             height: 300,
-            content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 14px }',
+            skin: document.documentElement.getAttribute('data-theme') === 'dark' ? 'oxide-dark' : 'oxide',
+            content_css: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+            content_style: `
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                    font-size: 14px;
+                    background: ${getComputedStyle(document.documentElement).getPropertyValue('--input-bg')};
+                    color: ${getComputedStyle(document.documentElement).getPropertyValue('--text-color')};
+                }
+            `,
             branding: false,
             promotion: false,
             placeholder: 'Write your response here...'
+        });
+
+        // Update TinyMCE theme when system theme changes
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'data-theme') {
+                    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                    tinymce.activeEditor.setOption('skin', isDark ? 'oxide-dark' : 'oxide');
+                    tinymce.activeEditor.setOption('content_css', isDark ? 'dark' : 'default');
+                    
+                    // Update content area background and text color
+                    const contentStyle = `
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                            font-size: 14px;
+                            background: ${getComputedStyle(document.documentElement).getPropertyValue('--input-bg')};
+                            color: ${getComputedStyle(document.documentElement).getPropertyValue('--text-color')};
+                        }
+                    `;
+                    tinymce.activeEditor.dom.addStyle(contentStyle);
+                }
+            });
+        });
+
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['data-theme']
         });
     });
 </script>

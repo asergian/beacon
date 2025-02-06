@@ -18,7 +18,7 @@
     .stats-container {
         padding: 2rem;
         margin-top: calc(var(--filter-height) + 1rem);
-        background-color: #f4f7f9;
+        background-color: var(--bg-color);
         overflow-y: auto;
         height: calc(100vh - var(--header-height) - var(--filter-height) - var(--footer-height));
         position: relative;
@@ -27,14 +27,14 @@
     }
     
     .stats-card {
-        background: white;
+        background: var(--card-bg);
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: var(--card-shadow);
         padding: 1.5rem;
     }
     
     .stats-header {
-        color: #006F6A;
+        color: var(--header-bg);
         margin-bottom: 1rem;
         display: flex;
         justify-content: space-between;
@@ -44,6 +44,7 @@
     .stats-header h2 {
         margin: 0;
         font-size: 1.5rem;
+        color: var(--text-color);
     }
     
     .stats-grid {
@@ -54,27 +55,29 @@
     }
     
     .stat-item {
-        background: #f8f9fa;
+        background: var(--card-bg);
         padding: 1.5rem;
         border-radius: 8px;
         text-align: center;
-        transition: transform 0.2s ease;
+        transition: transform 0.2s ease, background-color 0.2s ease;
+        border: 1px solid var(--input-border);
     }
     
     .stat-item:hover {
         transform: translateY(-2px);
+        background: var(--email-item-hover);
     }
     
     .stat-value {
         font-size: 1.8rem;
         font-weight: bold;
-        color: #006F6A;
+        color: var(--header-bg);
         margin-bottom: 0.5rem;
     }
     
     .stat-label {
         font-size: 0.9rem;
-        color: #666;
+        color: var(--description-color);
         margin-top: 0.5rem;
     }
     
@@ -82,9 +85,10 @@
         min-height: 400px;
         height: auto;
         margin-top: 1.5rem;
-        background: #f8f9fa;
+        background: var(--card-bg);
         border-radius: 8px;
         padding: 1.5rem;
+        border: 1px solid var(--input-border);
     }
     
     .activity-list {
@@ -94,13 +98,18 @@
     }
     
     .activity-item {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 1rem;
         padding: 1rem;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--input-border);
         transition: background-color 0.2s ease;
+        align-items: start;
+        border-radius: 4px;
     }
     
     .activity-item:hover {
-        background-color: #f8f9fa;
+        background-color: var(--email-item-hover);
     }
     
     .activity-item:last-child {
@@ -108,27 +117,25 @@
     }
     
     .activity-time {
-        color: #666;
-        font-size: 0.9rem;
-        margin-bottom: 0.25rem;
+        color: var(--description-color);
+        font-size: 0.85rem;
     }
     
     .refresh-button {
-        background: #006F6A;
-        color: white;
-        border: none;
-        padding: 0.5rem 1.2rem;
+        background: var(--card-bg);
+        color: var(--text-color);
+        border: 1px solid var(--input-border);
+        padding: 8px;
         border-radius: 6px;
         cursor: pointer;
-        font-weight: 500;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.5rem;
         transition: all 0.2s ease;
-        min-width: 100px;
-        height: 36px;
-        line-height: 1;
+        width: 40px;
+        height: 40px;
+        min-width: unset;
+        position: relative;
     }
     
     .refresh-button:disabled {
@@ -137,7 +144,7 @@
     }
     
     .refresh-button:not(:disabled):hover {
-        background: #005753;
+        background: var(--email-item-hover);
         transform: translateY(-1px);
     }
     
@@ -145,17 +152,29 @@
         transform: translateY(0);
     }
     
+    .refresh-button::before {
+        content: '';
+        width: 20px;
+        height: 20px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99' /%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        display: block;
+    }
+    
+    .refresh-button.loading::before {
+        display: none;
+    }
+    
     .loading-spinner {
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.3);
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(203, 213, 225, 0.3);  /* Softer gray for the spinner background */
         border-radius: 50%;
-        border-top-color: #fff;
+        border-top-color: var(--text-color);
         animation: spin 1s linear infinite;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-top: 10px;
+        margin: auto;
     }
     
     @keyframes spin {
@@ -186,9 +205,10 @@
         display: grid;
         grid-template-columns: 1fr;
         gap: 1rem;
-        background: #f8f9fa;
+        background: var(--card-bg);
         border-radius: 8px;
         padding: 1.5rem;
+        border: 1px solid var(--input-border);
     }
     
     .activity-list {
@@ -204,13 +224,14 @@
         grid-template-columns: auto 1fr;
         gap: 1rem;
         padding: 1rem;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--input-border);
         transition: background-color 0.2s ease;
         align-items: start;
+        border-radius: 4px;
     }
     
     .activity-item:hover {
-        background-color: #fff;
+        background-color: var(--email-item-hover);
     }
     
     .activity-item:last-child {
@@ -225,7 +246,7 @@
     }
     
     .activity-time {
-        color: #666;
+        color: var(--description-color);
         font-size: 0.85rem;
     }
     
@@ -254,6 +275,11 @@
         color: #991b1b;
     }
     
+    .activity-type.default-activity {
+        background: #64748b;  /* Changed from #475569 to a lighter slate gray */
+        color: #ffffff;
+    }
+    
     .activity-content {
         display: flex;
         flex-direction: column;
@@ -261,14 +287,14 @@
     }
     
     .activity-description {
-        color: #374151;
+        color: var(--text-color);
         font-size: 0.95rem;
         line-height: 1.4;
     }
     
     .activity-metadata {
         font-size: 0.85rem;
-        color: #6b7280;
+        color: var(--description-color);
     }
     
     .stats-card h2 {
@@ -283,8 +309,8 @@
         left: 0;
         right: 0;
         height: var(--filter-height);
-        background-color: #F1F3F5;
-        border-bottom: 1px solid #ddd;
+        background-color: var(--card-bg);
+        border-bottom: 1px solid var(--input-border);
         z-index: 100;
         display: flex;
         align-items: center;
@@ -301,30 +327,33 @@
     .toggle-group {
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
     }
     
     .toggle-group label {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: #4a5568;
+        color: var(--text-color);
         font-size: 0.9rem;
         font-weight: 400;
         cursor: pointer;
+        margin: 0;
+        display: flex;
+        align-items: center;
     }
     
     .toggle-group input[type="checkbox"] {
         width: 1rem;
         height: 1rem;
         border-radius: 4px;
-        border: 2px solid #006F6A;
+        border: 2px solid var(--header-bg);
         cursor: pointer;
-        accent-color: #006F6A;
+        accent-color: var(--header-bg);
+        margin: 0;
+        margin-right: 0.5rem;
     }
 
     .error-message {
-        background-color: #fff3f3;
+        background-color: var(--card-bg);
         border: 1px solid #dc3545;
         border-radius: 8px;
         padding: 1rem;
@@ -344,7 +373,7 @@
 
     .error-content p {
         margin: 0;
-        color: #666;
+        color: var(--description-color);
     }
 
     .error-content .refresh-button {
@@ -354,6 +383,29 @@
 
     .error-content .refresh-button:hover {
         background-color: #c82333;
+    }
+
+    [data-theme="dark"] .activity-item:hover {
+        background-color: var(--email-item-hover);
+    }
+
+    [data-theme="dark"] .refresh-button {
+        color: #e2e8f0;
+        background: var(--card-bg);
+        border-color: #4a5568;
+    }
+
+    [data-theme="dark"] .refresh-button:not(:disabled):hover {
+        background: #2d3748;
+    }
+
+    [data-theme="dark"] .refresh-button::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='2' stroke='%23e2e8f0'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99' /%3E%3C/svg%3E");
+    }
+
+    [data-theme="dark"] .loading-spinner {
+        border-color: rgba(71, 85, 105, 0.3);  /* Softer dark gray for dark theme */
+        border-top-color: #e2e8f0;
     }
 </style>
 {% endblock %}
@@ -398,7 +450,7 @@
     <div class="stats-card">
         <div class="stats-header">
             <h2>System Overview</h2>
-            <button class="refresh-button" onclick="refreshAll()">Refresh All</button>
+            <button class="refresh-button" onclick="refreshAll()"></button>
         </div>
         <div class="stats-grid">
             <div class="stat-item">
@@ -431,7 +483,7 @@
     <div class="stats-card">
         <div class="stats-header">
             <h2>Email Processing Statistics</h2>
-            <button class="refresh-button" onclick="refreshSection('Email Processing Statistics')">Refresh</button>
+            <button class="refresh-button" onclick="refreshSection('Email Processing Statistics')"></button>
         </div>
         <div class="stats-grid">
             <div class="stat-item">
@@ -460,7 +512,7 @@
     <div class="stats-card">
         <div class="stats-header">
             <h2>NLP Analytics</h2>
-            <button class="refresh-button" onclick="refreshSection('NLP Analytics')">Refresh</button>
+            <button class="refresh-button" onclick="refreshSection('NLP Analytics')"></button>
         </div>
         <div class="stats-grid">
             <div class="stat-item">
@@ -489,7 +541,7 @@
     <div class="stats-card">
         <div class="stats-header">
             <h2>LLM Usage Statistics</h2>
-            <button class="refresh-button" onclick="refreshSection('LLM Usage Statistics')">Refresh</button>
+            <button class="refresh-button" onclick="refreshSection('LLM Usage Statistics')"></button>
         </div>
         <div class="stats-grid">
             <div class="stat-item">
@@ -534,7 +586,7 @@
     <div class="stats-card">
         <div class="stats-header">
             <h2>User Activity & Analytics</h2>
-            <button class="refresh-button" onclick="refreshSection('User Activity & Analytics')">Refresh</button>
+            <button class="refresh-button" onclick="refreshSection('User Activity & Analytics')"></button>
         </div>
         
         <div class="activity-stats-grid">
@@ -605,14 +657,17 @@ async function fetchAnalytics() {
     }
 }
 
-function updateLoadingState(loading) {
-    const button = document.querySelector('.refresh-button');
+function updateLoadingState(loading, button = document.querySelector('.refresh-button')) {
+    if (!button) return;
+    
     if (loading) {
-        button.innerHTML = '<span class="loading-spinner"></span> Loading...';
+        button.classList.add('loading');
         button.disabled = true;
+        button.innerHTML = '<span class="loading-spinner"></span>';
     } else {
-        button.innerHTML = 'Refresh';
+        button.classList.remove('loading');
         button.disabled = false;
+        button.innerHTML = '';  // Empty string since we're using ::before for the icon
     }
 }
 
@@ -1109,28 +1164,6 @@ async function refreshSection(section) {
     }
 }
 
-function updateLoadingState(loading, button) {
-    if (!button) return;
-    
-    const originalText = button.getAttribute('data-original-text') || 'Refresh';
-    
-    if (loading) {
-        // Store the original text if not already stored
-        if (!button.getAttribute('data-original-text')) {
-            button.setAttribute('data-original-text', button.textContent);
-        }
-        button.innerHTML = '<span class="loading-spinner"></span> Loading...';
-        button.disabled = true;
-        button.style.opacity = '0.7';
-        button.style.cursor = 'not-allowed';
-    } else {
-        button.innerHTML = originalText;
-        button.disabled = false;
-        button.style.opacity = '1';
-        button.style.cursor = 'pointer';
-    }
-}
-
 function updateOverviewStats(data) {
     const userStats = data.user_stats || {};
     const emailStats = data.email_stats || {};
@@ -1250,7 +1283,7 @@ function getActivityType(type) {
         case 'failure':
             return { class: 'error', label: 'Error' };
         default:
-            return { class: '', label: 'Activity' };
+            return { class: 'default-activity', label: 'Activity' };
     }
 }
 

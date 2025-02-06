@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{ g.user.get_setting('theme') if g.user else 'light' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,7 +23,7 @@
                     {% if session.user.get('roles', []) and 'admin' in session.user.get('roles', []) %}
                     <li><a href="{{ url_for('user.analytics_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'user.analytics_dashboard' }}">Analytics</a></li>
                     {% endif %}
-                    <li><a href="{{ url_for('user.get_settings') }}" class="nav-link {{ 'active' if request.endpoint == 'user.get_settings' }}">Settings</a></li>
+                    <li><a href="{{ url_for('user.settings') }}" class="nav-link {{ 'active' if request.endpoint == 'user.settings' }}">Settings</a></li>
                     <li>
                         <div class="user-menu">
                             <img src="{{ session.user.picture }}" alt="{{ session.user.name }}" class="user-avatar">

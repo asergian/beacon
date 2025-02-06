@@ -16,33 +16,82 @@ def analytics_dashboard():
     """Display the analytics dashboard."""
     return render_template('analytics.html')
 
-@user_bp.route('/api/settings', methods=['GET'])
+@user_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
-def get_settings():
-    """Get user settings."""
+def settings():
+    """Handle settings page and updates."""
     try:
         user = User.query.get(session['user']['id'])
-        return jsonify(user.settings)
-    except Exception as e:
-        logger.error(f"Failed to get user settings: {e}")
-        return jsonify({"error": str(e)}), 500
+        if not user:
+            logger.error(f"User not found for ID: {session['user']['id']}")
+            return render_template('settings.html', user_settings=User.DEFAULT_SETTINGS)
 
-@user_bp.route('/api/settings', methods=['POST'])
-@login_required
-def update_settings():
-    """Update user settings."""
-    try:
-        user = User.query.get(session['user']['id'])
-        user.update_settings(request.json)
-        log_activity(
-            user_id=user.id,
-            activity_type='settings_update',
-            description="User settings updated",
-            metadata=request.json
-        )
-        return jsonify({"status": "success"})
+        if request.method == 'POST':
+            logger.info(f"Processing POST request for user {user.id}")
+            
+            try:
+                # Get the setting key and value from the request
+                if not request.json or len(request.json) != 1:
+                    raise ValueError("Request must contain exactly one setting update")
+                
+                key = next(iter(request.json))  # Get the only key
+                value = request.json[key]
+                
+                logger.info(f"Updating setting {key} to: {value}")
+                
+                # Get current value for logging
+                current_value = user.get_setting(key)
+                logger.info(f"Current value of {key}: {current_value}")
+                
+                # Update the setting
+                user.set_setting(key, value)
+                
+                # Get the updated value for verification
+                updated_value = user.get_setting(key)
+                logger.info(f"Updated value of {key}: {updated_value}")
+                
+                # Get the group name for the setting (if any)
+                group = key.split('.')[0] if '.' in key else None
+                
+                # Log the activity
+                log_activity(
+                    user_id=user.id,
+                    activity_type='settings_update',
+                    description=f"Updated setting: {key}",
+                    metadata={
+                        'key': key,
+                        'old_value': current_value,
+                        'new_value': updated_value,
+                        'group': group
+                    }
+                )
+                
+                # Return the updated settings group if it exists, otherwise just the updated value
+                response_data = {
+                    "status": "success",
+                    "value": updated_value
+                }
+                
+                if group:
+                    response_data["group"] = user.get_settings_group(group)
+                
+                return jsonify(response_data)
+                
+            except Exception as e:
+                logger.error(f"Failed to update setting: {e}", exc_info=True)
+                return jsonify({"error": str(e)}), 500
+            
+        # GET request - display settings page
+        logger.info(f"Processing GET request for user {user.id}")
+        
+        # Get all user settings
+        user_settings = user.get_all_settings()
+        logger.info(f"Retrieved settings for display: {user_settings}")
+            
+        return render_template('settings.html', user_settings=user_settings)
+        
     except Exception as e:
-        logger.error(f"Failed to update user settings: {e}")
+        logger.error(f"Failed to handle settings request: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @user_bp.route('/api/analytics')

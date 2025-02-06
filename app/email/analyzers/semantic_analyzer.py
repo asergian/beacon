@@ -71,6 +71,27 @@ class SemanticAnalyzer:
             Dictionary containing LLM analysis results and usage statistics
         """
         try:
+            # Get user settings from current app context
+            user_settings = {}
+            if hasattr(g, 'user') and hasattr(g.user, 'settings'):
+                user_settings = g.user.settings
+
+            # Check if AI summarization is enabled
+            if not user_settings.get('enable_ai_summarization', True):
+                # Return basic analysis without LLM processing
+                return {
+                    'needs_action': False,
+                    'category': 'Informational',
+                    'action_items': [],
+                    'summary': None,
+                    'priority': 50,
+                    'model': self.model,
+                    'total_tokens': 0,
+                    'prompt_tokens': 0,
+                    'completion_tokens': 0,
+                    'cost': 0
+                }
+
             # Ensure email_data is properly structured
             if not isinstance(email_data, EmailMetadata):
                 self.logger.error(f"email_data is not an EmailMetadata object (got {type(email_data)})")

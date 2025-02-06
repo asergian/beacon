@@ -16,7 +16,7 @@ Functions:
     create_app: Factory function that creates and configures the Flask application.
 """
 
-from flask import Flask, g, current_app
+from flask import Flask, g, current_app, session
 import logging
 from logging.handlers import RotatingFileHandler
 from openai import AsyncOpenAI
@@ -26,7 +26,7 @@ from datetime import timedelta
 import asyncio
 
 from .config import Config
-from .models import db
+from .models import db, User
 from flask_migrate import Migrate
 from .email.core.email_processor import EmailProcessor
 from .email.core.email_connection import EmailConnection
@@ -42,6 +42,7 @@ from .email.storage.cache import RedisEmailCache
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
 from .utils.async_utils import async_manager
+from .utils.logging_config import setup_logging
 
 def init_logging(app: Flask) -> None:
     """Initialize logging configuration for the application.
@@ -254,4 +255,10 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         app.logger.error(f"Failed to initialize routes: {str(e)}")
         raise
         
+    @app.before_request
+    def load_user():
+        g.user = None
+        if 'user' in session:
+            g.user = User.query.get(session['user']['id'])
+    
     return app
