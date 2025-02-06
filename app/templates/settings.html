@@ -12,12 +12,17 @@
             <div class="setting-item">
                 <div class="setting-content">
                     <div class="setting-info">
-                        <span class="setting-title">Theme</span>
+                        <span class="setting-title">Dark Theme</span>
+                        <span class="setting-description">Switch between light and dark mode</span>
                     </div>
-                    <select id="theme" name="theme" class="form-select">
-                        <option value="light" {% if user_settings.theme == 'light' %}selected{% endif %}>Light</option>
-                        <option value="dark" {% if user_settings.theme == 'dark' %}selected{% endif %}>Dark</option>
-                    </select>
+                    <div class="toggle-container">
+                        <input type="checkbox" 
+                               name="theme" 
+                               id="theme"
+                               {% if user_settings.theme == 'dark' %}checked{% endif %}
+                        >
+                        <span class="toggle-switch"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -366,14 +371,15 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Theme switching function
-    function setTheme(theme) {
+    function setTheme(isDark) {
+        const theme = isDark ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
     }
 
     // Initialize theme
     const currentTheme = '{{ user_settings.theme }}';
-    setTheme(currentTheme);
+    setTheme(currentTheme === 'dark');
 
     // Function to update a setting
     async function updateSetting(key, value) {
@@ -396,7 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // If theme was updated, apply it immediately
             if (key === 'theme') {
-                setTheme(value);
+                setTheme(value === 'dark');
             }
             
             // If we got back a group update, update all related fields
@@ -416,21 +422,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Show success message
-            const toast = document.createElement('div');
-            toast.className = 'toast success';
-            toast.textContent = 'Setting updated successfully';
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            showToast('Setting updated successfully', 'success');
             
         } catch (error) {
             console.error('Failed to update setting:', error);
-            
-            // Show error message
-            const toast = document.createElement('div');
-            toast.className = 'toast error';
-            toast.textContent = error.message || 'Failed to update setting';
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            showToast(error.message || 'Failed to update setting', 'error');
         }
     }
     
@@ -438,7 +434,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input, select').forEach(element => {
         if (element.type === 'checkbox') {
             element.addEventListener('change', (e) => {
-                updateSetting(e.target.name, e.target.checked);
+                let value = e.target.checked;
+                // Special handling for theme toggle
+                if (e.target.name === 'theme') {
+                    value = e.target.checked ? 'dark' : 'light';
+                }
+                updateSetting(e.target.name, value);
             });
         } else {
             element.addEventListener('change', (e) => {
@@ -450,9 +451,28 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // Toast notification function
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        // Trigger reflow to ensure animation plays
+        toast.offsetHeight;
+        
+        // Add animation
+        toast.style.animation = 'slideIn 0.3s ease-out forwards';
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease-out forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
 });
 
-// Add styles for toast notifications
+// Add styles for toast notifications and animations
 const style = document.createElement('style');
 style.textContent = `
     .toast {
@@ -460,30 +480,29 @@ style.textContent = `
         bottom: 20px;
         right: 20px;
         padding: 1rem 2rem;
-        border-radius: 4px;
+        border-radius: 8px;
         color: white;
         font-weight: 500;
         z-index: 1000;
-        animation: slideIn 0.3s ease-out;
+        transform: translateX(120%);
     }
     
     .toast.success {
-        background-color: #28a745;
+        background-color: #10b981;
     }
     
     .toast.error {
-        background-color: #dc3545;
+        background-color: #ef4444;
     }
     
     @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
+        from { transform: translateX(120%); }
+        to { transform: translateX(0); }
+    }
+    
+    @keyframes slideOut {
+        from { transform: translateX(0); }
+        to { transform: translateX(120%); }
     }
 `;
 document.head.appendChild(style);
