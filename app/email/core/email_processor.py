@@ -78,9 +78,21 @@ class EmailProcessor:
                         if parsed_email:
                             processing_stats['successfully_parsed'] += 1
                             
-                            # Track NLP processing
+                            # Clean HTML before any analysis
+                            clean_body = self.llm_analyzer._strip_html(parsed_email.body)
+                            
+                            # Create clean version of email metadata
+                            clean_email = EmailMetadata(
+                                id=parsed_email.id,
+                                subject=parsed_email.subject,
+                                sender=parsed_email.sender,
+                                body=clean_body,
+                                date=parsed_email.date
+                            )
+                            
+                            # Track NLP processing with clean text
                             nlp_start_time = time.time()
-                            nlp_results = self.text_analyzer.analyze(parsed_email.body)
+                            nlp_results = self.text_analyzer.analyze(clean_body)
                             nlp_processing_time = time.time() - nlp_start_time
                             
                             if user_id:
@@ -98,7 +110,7 @@ class EmailProcessor:
                                     }
                                 )
                             
-                            # LLM Analysis
+                            # LLM Analysis with clean email
                             try:
                                 llm_start_time = time.time()
                                 llm_results = await self.llm_analyzer.analyze(parsed_email, nlp_results)

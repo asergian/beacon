@@ -112,32 +112,23 @@ def get_analytics():
         for activity in activities:
             user_activity_counts[activity.user.email] = user_activity_counts.get(activity.user.email, 0) + 1
         
-        logger.info(f"Activity distribution by user:")
-        for email, count in user_activity_counts.items():
-            logger.info(f"User {email}: {count} activities")
+        logger.debug(f"Activity distribution by user: {user_activity_counts}")
+        logger.info(f"Processing {len(activities)} activities from {len(user_activity_counts)} users")
         
-        logger.info(f"Found {len(activities)} total activities across {len(user_activity_counts)} users")
-        
-        # Aggregate LLM usage
+        # Initialize statistics
         llm_stats = {
-            # Totals
             'total_tokens': 0,
             'total_cost_cents': 0,
             'total_requests': 0,
-            
-            # Averages
             'avg_tokens_per_request': 0,
             'avg_cost_cents_per_request': 0,
             'avg_processing_time_ms': 0,
-            
-            # Model tracking
             'models_used': set(),
             'success_rate': 0,
             'requests_by_model': {},
             'tokens_by_model': {}
         }
         
-        # Aggregate email stats
         email_stats = {
             'total_fetched': 0,
             'new_emails': 0,
@@ -160,7 +151,6 @@ def get_analytics():
             }
         }
         
-        # Aggregate NLP stats
         nlp_stats = {
             'total_entities': 0,
             'total_emails': 0,
@@ -192,11 +182,6 @@ def get_analytics():
                     cost_cents = metadata.get('cost_cents', round(metadata.get('cost', 0) * 100, 2))
                     processing_time = metadata.get('processing_time_ms', round(metadata.get('processing_time', 0) * 1000))
                     
-                    # Debug logging
-                    logger.info(f"Processing LLM request activity {activity.id}:")
-                    logger.info(f"Raw metadata: {metadata}")
-                    logger.info(f"Total tokens: {total_tokens}, Cost (cents): {cost_cents}")
-                    
                     # Update totals
                     llm_stats['total_tokens'] += total_tokens
                     llm_stats['total_cost_cents'] += cost_cents
@@ -214,8 +199,6 @@ def get_analytics():
                     # Model tracking
                     model = metadata.get('model', 'unknown')
                     llm_stats['models_used'].add(model)
-                    
-                    # Track requests by model
                     llm_stats['requests_by_model'][model] = llm_stats['requests_by_model'].get(model, 0) + 1
                     
                     # Track tokens by model
@@ -242,89 +225,72 @@ def get_analytics():
                         (a.activity_metadata.get('status') == 'success' or 
                          'error' not in a.activity_metadata))
                     llm_stats['success_rate'] = round((successes * 100 / n), 1) if n > 0 else 0
-                    logger.info(f"Success rate: {llm_stats['success_rate']}% ({successes} successful out of {n} total)")
+                    logger.debug(f"LLM success rate: {llm_stats['success_rate']}% ({successes}/{n})")
                 
                 elif activity.activity_type in ['email_processing', 'pipeline_processing']:
                     stats = metadata.get('stats', {})
                     
-                    # Basic stats
-                    email_stats['total_fetched'] += stats.get('total_fetched', stats.get('emails_fetched', 0))
-                    email_stats['new_emails'] += stats.get('new_emails', 0)
-                    email_stats['successfully_parsed'] += stats.get('successfully_parsed', 0)
-                    email_stats['successfully_analyzed'] += stats.get('successfully_analyzed', 0)
-                    email_stats['failed_parsing'] += stats.get('failed_parsing', 0)
-                    email_stats['failed_analysis'] += stats.get('failed_analysis', 0)
+                    # Update email stats
+                    for key in ['total_fetched', 'new_emails', 'successfully_parsed', 'successfully_analyzed', 
+                              'failed_parsing', 'failed_analysis', 'needs_action', 'has_deadline']:
+                        email_stats[key] += stats.get(key, 0)
                     
-                    # Action metrics
-                    email_stats['needs_action'] += stats.get('needs_action', 0)
-                    email_stats['has_deadline'] += stats.get('has_deadline', 0)
+                    # Update category and priority distributions
+                    for category, count in stats.get('categories', {}).items():
+                        if category in email_stats['categories']:
+                            email_stats['categories'][category] += count
                     
-                    # Category distribution
-                    categories = stats.get('categories', {})
-                    for category in email_stats['categories']:
-                        email_stats['categories'][category] += categories.get(category, 0)
-                    
-                    # Priority distribution
-                    priority_levels = stats.get('priority_levels', {})
-                    for level in email_stats['priority_levels']:
-                        email_stats['priority_levels'][level] += priority_levels.get(level, 0)
+                    for level, count in stats.get('priority_levels', {}).items():
+                        if level in email_stats['priority_levels']:
+                            email_stats['priority_levels'][level] += count
                 
                 elif activity.activity_type == 'nlp_processing':
-                    # Update total emails processed
                     nlp_stats['total_processed'] += 1
                     nlp_stats['total_emails'] += 1
+                    nlp_stats['total_entities'] += len(metadata.get('entities', {}))
                     
-                    # Update entity counts
-                    entities = metadata.get('entities', {})
-                    nlp_stats['total_entities'] += len(entities)
-                    
-                    # Update entity types
-                    for entity_type, _ in entities.items():
-                        if entity_type in nlp_stats['entity_types']:
-                            nlp_stats['entity_types'][entity_type] += 1
-                    
-                    # Update urgency count
                     if metadata.get('is_urgent', False):
                         nlp_stats['urgent_emails'] += 1
                     
-                    # Update sentence count for average
-                    sentence_count = metadata.get('sentence_count', 0)
-                    current_avg = nlp_stats['avg_sentences_per_email']
+                    # Update running averages
                     n = nlp_stats['total_processed']
-                    nlp_stats['avg_sentences_per_email'] = (
-                        (current_avg * (n - 1) + sentence_count) / n if n > 0 else 0
-                    )
-                    
-                    # Update processing time
-                    if 'processing_time' in metadata:
-                        nlp_stats['avg_processing_time'] = (
-                            (nlp_stats['avg_processing_time'] * (n - 1) +
-                             metadata['processing_time']) / n if n > 0 else 0
+                    if n > 0:
+                        nlp_stats['avg_sentences_per_email'] = (
+                            (nlp_stats['avg_sentences_per_email'] * (n - 1) + 
+                             metadata.get('sentence_count', 0)) / n
                         )
+                        if 'processing_time' in metadata:
+                            nlp_stats['avg_processing_time'] = (
+                                (nlp_stats['avg_processing_time'] * (n - 1) +
+                                 metadata['processing_time']) / n
+                            )
+                    
+                    # Update entity types
+                    for entity_type in metadata.get('entities', {}).keys():
+                        if entity_type in nlp_stats['entity_types']:
+                            nlp_stats['entity_types'][entity_type] += 1
+                            
             except Exception as e:
-                logger.error(f"Error processing activity {activity.id} for user {activity.user.email}: {e}")
+                logger.error(f"Error processing activity {activity.id}: {e}")
                 continue
         
-        # Get total number of users in the system
+        # Get user statistics
         total_users = db.session.query(User).count()
-        
-        # Get active users today using db.session
         active_today = db.session.query(UserActivity.user_id).distinct().filter(
             UserActivity.created_at >= datetime.utcnow().replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
         ).count()
         
-        # Convert sets to lists for JSON serialization
+        # Prepare response data
         llm_stats['models_used'] = list(llm_stats['models_used'])
-        
         response_data = {
             'llm_stats': llm_stats,
             'email_stats': email_stats,
             'nlp_stats': nlp_stats,
             'user_stats': {
-                'total_users': total_users,  # Use actual count from users table
-                'active_users': len(unique_users),  # Users with any activity
+                'total_users': total_users,
+                'active_users': len(unique_users),
                 'active_today': active_today
             },
             'recent_activities': [
@@ -333,14 +299,14 @@ def get_analytics():
                     'description': activity.description,
                     'created_at': activity.created_at.isoformat(),
                     'metadata': activity.activity_metadata,
-                    'user_email': activity.user.email,  # Add user email for admin view
-                    'user_name': activity.user.name  # Add user name for better identification
+                    'user_email': activity.user.email,
+                    'user_name': activity.user.name
                 }
-                for activity in activities[:10]  # Last 10 activities
+                for activity in activities[:10]
             ]
         }
         
-        logger.info(f"Successfully compiled analytics. Stats: {total_users} total users, {len(unique_users)} active users, {active_today} active today")
+        logger.info(f"Analytics summary: {total_users} total users, {len(unique_users)} active users, {active_today} active today")
         return jsonify(response_data)
     
     except Exception as e:

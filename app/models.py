@@ -107,27 +107,45 @@ class User(db.Model):
         
         # Get the setting from the database
         setting = UserSetting.get_setting(self.id, key, None)
+        
+        # Log all AI feature settings retrievals
+        if key.startswith('ai_features.'):
+            logging.info(f"Getting setting {key} - DB value: {setting}, Default: {default_value}")
+            
         return setting if setting is not None else default_value
     
     def set_setting(self, key: str, value: Any) -> None:
         """Set a single setting value."""
+        # Log the setting update
+        if key == 'ai_features.model_type':
+            logging.info(f"Setting model_type - Key: {key}, Value: {value}")
+            
         UserSetting.set_setting(self.id, key, value)
     
     def get_settings_group(self, prefix: str) -> Dict[str, Any]:
         """Get all settings with a specific prefix."""
         if prefix not in self.DEFAULT_SETTINGS:
+            logging.warning(f"Prefix {prefix} not found in DEFAULT_SETTINGS")
             return {}
             
         # Get default values for the group
         defaults = self.DEFAULT_SETTINGS[prefix]
         if not isinstance(defaults, dict):
-            return {prefix: self.get_setting(prefix)}
+            value = self.get_setting(prefix)
+            logging.info(f"Getting non-dict settings group {prefix}: {value}")
+            return {prefix: value}
             
         # Build the settings dictionary
         settings = {}
         for key, default in defaults.items():
             full_key = f"{prefix}.{key}"
-            settings[key] = self.get_setting(full_key, default)
+            value = self.get_setting(full_key, default)
+            settings[key] = value
+            
+        # Log AI features group retrieval
+        if prefix == 'ai_features':
+            logging.info(f"Getting complete AI features group: {settings}")
+            
         return settings
     
     def update_settings_group(self, prefix: str, values: Dict[str, Any]) -> None:

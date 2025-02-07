@@ -1,10 +1,10 @@
-"""Core email functionality routes"""
+"""Email processing and viewing routes."""
+
 from flask import Blueprint, current_app, render_template, jsonify, request, redirect, url_for, session
+import logging
 from ..auth.decorators import login_required
 from ..email.models.analysis_command import AnalysisCommand
-from ..email.models.analysis_settings import ProcessingConfig
-from ..utils.logging_config import setup_logging
-import logging
+from ..models import log_activity
 import asyncio
 from functools import wraps
 from ..models import User
@@ -16,13 +16,8 @@ def async_route(f):
     return wrapper
 
 # Set up logger
-logger = setup_logging()
-
-try:
-    email_bp = Blueprint('email', __name__)
-except Exception as e:
-    logger.error(f"Failed to initialize email blueprint: {str(e)}")
-    raise
+logger = logging.getLogger(__name__)
+email_bp = Blueprint('email', __name__)
 
 @email_bp.route('/')
 @login_required

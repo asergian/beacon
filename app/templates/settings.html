@@ -125,8 +125,8 @@
                                 <span class="setting-description">Choose between speed and accuracy (affects cost)</span>
                             </div>
                             <select id="model_type" name="ai_features.model_type" class="form-select">
-                                <option value="gpt-4o-mini" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o-mini' %}selected{% endif %}>Standard (GPT-4-mini)</option>
-                                <option value="gpt-4" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4' %}selected{% endif %}>Premium (GPT-4)</option>
+                                <option value="gpt-4o-mini" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o-mini' %}selected{% endif %}>Standard (GPT-4o-mini)</option>
+                                <option value="gpt-4o" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o' %}selected{% endif %}>Premium (GPT-4o)</option>
                             </select>
                         </div>
                     </div>

@@ -22,9 +22,24 @@ class ContentAnalyzer:
             sentiment indicators, and structural elements useful for LLM processing.
         """
         doc = self.nlp(text)
+
+        # Filter out HTML-like entities and keep only meaningful ones
+        valid_entity_labels = {'PERSON', 'ORG', 'GPE', 'DATE', 'TIME', 'MONEY', 'PERCENT', 'PRODUCT', 'EVENT', 'WORK_OF_ART'}
+        filtered_entities = [
+            (ent.label_, ent.text) for ent in doc.ents 
+            if (ent.label_ in valid_entity_labels and 
+                not any(html_indicator in ent.text.lower() for html_indicator in ['<', '>', '/', 'http', 'www', 'html', 'css']))
+        ]
+
+        # Get meaningful noun chunks (avoid HTML/code fragments)
+        valid_chunks = [
+            chunk.text for chunk in doc.noun_chunks
+            if not any(html_indicator in chunk.text.lower() for html_indicator in ['<', '>', '/', 'http', 'www', 'html', 'css'])
+        ]
+
         return {
-            'entities': dict(list((ent.label_, ent.text) for ent in doc.ents)[:5]),  # Top 5 entities
-            'key_phrases': [chunk.text for chunk in doc.noun_chunks][:3],  # Top 3 phrases
+            'entities': dict(filtered_entities[:5]),  # Top 5 valid entities
+            'key_phrases': valid_chunks[:3],  # Top 3 valid phrases
             'urgency': self._check_urgency(text),
             'sentence_count': len(list(doc.sents)),
             'sentiment_indicators': {
@@ -33,7 +48,7 @@ class ContentAnalyzer:
             },
             'structural_elements': {
                 'verbs': [token.lemma_ for token in doc if token.pos_ == 'VERB'][:5],  # Top 5 verbs
-                'named_entities_categories': list(set(ent.label_ for ent in doc.ents))[:3],  # Top 3 entity types
+                'named_entities_categories': list(set(ent.label_ for ent in doc.ents if ent.label_ in valid_entity_labels))[:3],  # Top 3 valid entity types
                 'dependencies': [(token.text, token.dep_) for token in doc if token.dep_ in ('ROOT', 'dobj', 'iobj')][:3]  # Top 3 dependencies
             }
         }

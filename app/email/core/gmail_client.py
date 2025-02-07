@@ -41,7 +41,6 @@ class GmailClient:
             
             # Get credentials from session
             if 'credentials' not in session:
-                self.logger.error("No credentials found in session")
                 raise GmailAPIError("No credentials found. Please authenticate first.")
             
             creds_dict = session['credentials']
@@ -51,10 +50,8 @@ class GmailClient:
             missing_fields = [field for field in required_fields if field not in creds_dict]
             
             if missing_fields:
-                self.logger.error(f"Missing required credential fields: {missing_fields}")
-                # Clear invalid session credentials
                 session.pop('credentials', None)
-                raise GmailAPIError("Session expired. Please authenticate again.")
+                raise GmailAPIError(f"Authentication incomplete - missing: {', '.join(missing_fields)}")
             
             credentials = Credentials(
                 token=creds_dict['token'],
@@ -70,7 +67,6 @@ class GmailClient:
             
             # Check if token was refreshed and update session
             if credentials.token != creds_dict['token']:
-                self.logger.info("Token was refreshed, updating session")
                 session['credentials'] = {
                     'token': credentials.token,
                     'refresh_token': credentials.refresh_token,
@@ -79,11 +75,11 @@ class GmailClient:
                     'client_secret': credentials.client_secret,
                     'scopes': credentials.scopes
                 }
+                self.logger.info("OAuth token refreshed")
             
-            self.logger.info("Successfully connected to Gmail API")
+            self.logger.info("Gmail API connection established")
             
         except Exception as e:
-            self.logger.error(f"Gmail API connection failed: {e}")
             # Clear invalid session credentials
             session.pop('credentials', None)
             raise GmailAPIError(f"Connection error: {e}")
@@ -102,18 +98,13 @@ class GmailClient:
             GmailAPIError: If fetching emails fails
         """
         if not self._service:
-            self.logger.error("Gmail client not connected")
             raise GmailAPIError("Gmail client must be connected before fetching emails")
             
         try:
-            self.logger.info(f"Fetching emails for the past {days_back} days (inclusive)")
-            
             # Calculate the time range using local timezone
             local_tz = datetime.now().astimezone().tzinfo
-            self.logger.info(f"Local timezone: {local_tz}")
             
             # Set after_date to midnight of days_back - 1 days ago in local time
-            # For days_back=1 (today), this will be yesterday's midnight
             local_midnight = (datetime.now(local_tz) - timedelta(days=days_back - 1)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
@@ -122,9 +113,11 @@ class GmailClient:
             utc_date = (local_midnight - timedelta(days=1)).astimezone(timezone.utc)
             query = f'after:{utc_date.strftime("%Y/%m/%d")}'
             
-            self.logger.info(f"Local midnight: {local_midnight}")
-            self.logger.info(f"UTC date: {utc_date}")
-            self.logger.info(f"Query: {query}")
+            self.logger.info(
+                "Fetching emails\n"
+                f"    Days Back: {days_back}\n"
+                f"    Start Date: {local_midnight.strftime('%Y-%m-%d %H:%M:%S %Z')}"
+            )
             
             # Get list of messages
             results = self._service.users().messages().list(
@@ -164,10 +157,9 @@ class GmailClient:
                                 # Convert GMT to UTC
                                 email_date = email_date.replace(tzinfo=timezone.utc)
                             except ValueError:
-                                # If both fail, log and skip
-                                self.logger.warning(f"Could not parse date {date_str}")
+                                self.logger.debug(f"Skipping email {message['id']}: invalid date format '{date_str}'")
                                 continue
-                                
+                        
                         local_email_date = email_date.astimezone(local_tz)
                         
                         # Only include emails after local_midnight
@@ -182,14 +174,13 @@ class GmailClient:
                                 'date': date_str
                             })
                     except ValueError as e:
-                        self.logger.warning(f"Could not parse date {date_str}: {e}")
+                        self.logger.debug(f"Skipping email {message['id']}: {e}")
                         continue
             
-            self.logger.info(f"Fetched {len(emails)} emails after filtering by local timezone")
+            self.logger.info(f"Retrieved {len(emails)} emails from Gmail API")
             return emails
             
         except Exception as e:
-            self.logger.error(f"Email fetch error: {e}")
             raise GmailAPIError(f"Failed to fetch emails: {e}")
     
     async def close(self):
@@ -198,9 +189,9 @@ class GmailClient:
             if self._service:
                 self._service.close()
                 self._service = None
-                self.logger.info("Gmail API connection closed")
+                self.logger.debug("Gmail API connection closed")
         except Exception as e:
-            self.logger.warning(f"Error closing Gmail API connection: {e}")
+            self.logger.debug(f"Error closing Gmail API connection: {e}")
             
     def __del__(self):
         """Ensure resources are cleaned up."""
