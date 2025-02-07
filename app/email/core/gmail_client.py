@@ -93,7 +93,7 @@ class GmailClient:
         Fetch emails from Gmail using the API.
         
         Args:
-            days_back: Number of days to fetch emails for (default 1)
+            days_back: Number of days to fetch emails for (1 = today, 2 = today and yesterday, etc.)
             
         Returns:
             List of dictionaries containing email data
@@ -106,14 +106,15 @@ class GmailClient:
             raise GmailAPIError("Gmail client must be connected before fetching emails")
             
         try:
-            self.logger.info(f"Fetching emails from midnight {days_back} days ago until now")
+            self.logger.info(f"Fetching emails for the past {days_back} days (inclusive)")
             
             # Calculate the time range using local timezone
             local_tz = datetime.now().astimezone().tzinfo
             self.logger.info(f"Local timezone: {local_tz}")
             
-            # Set after_date to midnight of the specified day in local time
-            local_midnight = (datetime.now(local_tz) - timedelta(days=days_back)).replace(
+            # Set after_date to midnight of days_back - 1 days ago in local time
+            # For days_back=1 (today), this will be yesterday's midnight
+            local_midnight = (datetime.now(local_tz) - timedelta(days=days_back - 1)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
             
