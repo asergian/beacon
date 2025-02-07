@@ -6,9 +6,7 @@
 {{ super() }}
 <style>
     :root {
-        --header-height: 64px;
         --filter-height: 56px;
-        --footer-height: 130px;
     }
 
     .header {
@@ -20,6 +18,7 @@
         margin-top: calc(var(--filter-height) + 1rem);
         background-color: var(--bg-color);
         overflow-y: auto;
+        /* Use global footer height variable */
         height: calc(100vh - var(--header-height) - var(--filter-height) - var(--footer-height));
         position: relative;
         display: grid;
@@ -31,6 +30,11 @@
         border-radius: 8px;
         box-shadow: var(--card-shadow);
         padding: 1.5rem;
+    }
+    
+    /* Add margin to last stats card */
+    .stats-card:last-child {
+        margin-bottom: calc(var(--footer-height) + 1.5rem);  /* footer height plus standard gap */
     }
     
     .stats-header {
