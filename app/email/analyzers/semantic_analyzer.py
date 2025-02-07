@@ -3,6 +3,7 @@ import logging
 from typing import Dict, Any, List
 from flask import g, current_app
 import tiktoken
+import re
 
 #from ..models.processed_email import ProcessedEmail
 from ..core.email_parsing import EmailMetadata
@@ -47,7 +48,6 @@ class SemanticAnalyzer:
         truncated_text = self.encoding.decode(tokens[:max_tokens])
         
         # Split into sentences (accounting for common sentence endings)
-        import re
         sentences = re.split(r'(?<=[.!?])\s+', truncated_text)
         
         # If we only have one sentence or empty text, return the truncated text as is
@@ -95,7 +95,6 @@ class SemanticAnalyzer:
         4. Normalizes whitespace
         5. Preserves important line breaks
         """
-        import re
         from html import unescape
         
         # First unescape any HTML entities
@@ -154,22 +153,24 @@ class SemanticAnalyzer:
                     f"    Summary Length: {ai_settings.get('summary_length', 'medium')}"
                 )
 
-            # Check if AI summarization is enabled
-            ai_enabled = user_settings.get('ai_features.enabled', True)
+            # Check if AI features are enabled (default to True if setting not found)
+            ai_enabled = g.user.get_setting('ai_features.enabled', True) if hasattr(g, 'user') else True
 
             if not ai_enabled:
-                self.logger.info("AI features disabled, returning basic analysis")
+                self.logger.info("AI features disabled, returning basic metadata")
                 return {
                     'needs_action': False,
                     'category': 'Informational',
                     'action_items': [],
-                    'summary': None,
-                    'priority': 50,
-                    'model': self.model,
+                    'summary': 'No summary available',
+                    'priority': 30,
+                    'model': None,
                     'total_tokens': 0,
                     'prompt_tokens': 0,
                     'completion_tokens': 0,
-                    'cost': 0
+                    'cost': 0,
+                    'email_id': getattr(email_data, 'id', None),
+                    'ai_enabled': False
                 }
 
             # Get model type from user settings
@@ -181,10 +182,51 @@ class SemanticAnalyzer:
             context_length = int(raw_context_length) if raw_context_length else 1000
             self.max_content_tokens = context_length
 
-            # Get summary length from user settings
-            raw_summary_length = g.user.get_setting('ai_features.summary_length')
-            summary_length = raw_summary_length or 'medium'
-
+            # Get summary length preference and set constraints
+            summary_length = g.user.get_setting('ai_features.summary_length', 'medium')
+            
+            summary_constraints = {
+                'short': {
+                    'guidance': """Generate a 1-2 sentence summary (max 25 words) that captures:
+- The core message or main request
+- The most critical action item (if any)
+Example format: "Request for project timeline update. Needs response with Q3 milestones by Friday."
+""",
+                    'max_words': 25,
+                    'max_sentences': 2
+                },
+                'medium': {
+                    'guidance': """Generate a 3-4 sentence summary (40-60 words) that includes:
+- The core message or request
+- Key context or background
+- Important deadlines or next steps
+- Any critical implications
+Example format: "Budget approval request for Q3 marketing campaign. Previous quarter showed 20% ROI. Requesting $50K for digital ads and events. Approval needed by July 1st to meet campaign timeline."
+""",
+                    'max_words': 60,
+                    'max_sentences': 4
+                },
+                'long': {
+                    'guidance': """Generate a comprehensive 5-7 sentence summary (80-120 words) covering:
+- Complete context and background
+- All key points and requests
+- Detailed action items and deadlines
+- Stakeholders involved and their roles
+- Implications and potential impact
+- Related projects or dependencies
+Example format: "Quarterly strategy review for APAC expansion. Team reports 30% growth in existing markets, with China and Japan exceeding targets. Three new market opportunities identified: Vietnam, Thailand, and Indonesia. Local partnerships needed for regulatory compliance, estimated setup time 6-8 months. Budget impact of $2M over 18 months. Legal team review required for partnership agreements. VP approval needed by August for 2024 planning."
+""",
+                    'max_words': 120,
+                    'max_sentences': 7
+                }
+            }
+            
+            # Get constraints for the selected length, with fallback to medium
+            selected_constraints = summary_constraints.get(summary_length)
+            if not selected_constraints:
+                self.logger.warning(f"Invalid summary length '{summary_length}', falling back to medium")
+                selected_constraints = summary_constraints['medium']
+            
             # Set max response tokens based on summary length
             max_response_tokens = {
                 'short': 150,   # Brief summary and key points
@@ -307,7 +349,8 @@ class SemanticAnalyzer:
                 'prompt_tokens': prompt_tokens,
                 'completion_tokens': completion_tokens,
                 'cost': total_cost,
-                'email_id': getattr(email_data, 'id', None)  # Include email ID if available
+                'email_id': getattr(email_data, 'id', None),  # Include email ID if available
+                'ai_enabled': True
             })
             
             return analysis
@@ -316,30 +359,102 @@ class SemanticAnalyzer:
             self.logger.error(f"LLM analysis failed: {str(e)}")
             raise LLMProcessingError(f"LLM analysis failed: {str(e)}")
     
+    def _format_list(self, items: list) -> str:
+        """Safely format a list of items."""
+        if not items:
+            return "[]"
+        # Limit to first 3 items and truncate each item to 50 chars
+        formatted_items = [str(item)[:50] for item in items[:3]]
+        return str(formatted_items)
+
+    def _format_dict(self, d: dict) -> str:
+        """Safely format a dictionary."""
+        if not d:
+            return "{}"
+        # Limit to first 3 items and truncate values to 50 chars
+        formatted_dict = {str(k): str(v)[:50] for k, v in list(d.items())[:3]}
+        return str(formatted_dict)
+
+    def _select_important_patterns(self, patterns: dict, max_items: int = 3) -> dict:
+        """Select the most important sentiment patterns."""
+        if not patterns:
+            return {}
+        # Sort by value (frequency) and take top N
+        sorted_patterns = sorted(patterns.items(), key=lambda x: x[1], reverse=True)
+        return dict(sorted_patterns[:max_items])
+
     def _create_prompt(self, email_data: EmailMetadata, nlp_results: Dict) -> str:
         """Create a prompt for the LLM analysis."""
         try:
+            # Validate and sanitize NLP results
+            if nlp_results is None:
+                self.logger.warning("NLP results are None, using empty dict")
+                nlp_results = {}
+            
+            # Ensure all expected NLP result sections exist with defaults
+            nlp_results = {
+                'entities': nlp_results.get('entities', {}),
+                'key_phrases': nlp_results.get('key_phrases', []),
+                'urgency': nlp_results.get('urgency', False),
+                'sentiment_analysis': nlp_results.get('sentiment_analysis', {
+                    'scores': {'positive': 0.5, 'negative': 0.5},
+                    'is_positive': False,
+                    'is_strong_sentiment': False,
+                    'has_gratitude': False,
+                    'has_dissatisfaction': False,
+                    'patterns': {}
+                }),
+                'email_patterns': nlp_results.get('email_patterns', {
+                    'is_bulk': False,
+                    'is_automated': False,
+                    'bulk_indicators': [],
+                    'automated_indicators': []
+                }),
+                'questions': nlp_results.get('questions', {
+                    'has_questions': False,
+                    'direct_questions': [],
+                    'rhetorical_questions': [],
+                    'request_questions': [],
+                    'question_count': 0
+                }),
+                'time_sensitivity': nlp_results.get('time_sensitivity', {
+                    'has_deadline': False,
+                    'deadline_phrases': [],
+                    'time_references': []
+                })
+            }
+
             # Get user settings from current app context
             user_settings = {}
             if hasattr(g, 'user') and hasattr(g.user, 'settings'):
                 user_settings = g.user.settings
 
             # Get summary length preference and set constraints
-            summary_length = user_settings.get('ai_features.summary_length', 'medium')
-            summary_guidance = {
-                'short': """Generate a 1-2 sentence summary (max 25 words) that captures:
+            summary_length = g.user.get_setting('ai_features.summary_length', 'medium')
+            
+            summary_constraints = {
+                'short': {
+                    'guidance': """Generate a 1-2 sentence summary (max 25 words) that captures:
 - The core message or main request
 - The most critical action item (if any)
 Example format: "Request for project timeline update. Needs response with Q3 milestones by Friday."
 """,
-                'medium': """Generate a 3-4 sentence summary (40-60 words) that includes:
+                    'max_words': 25,
+                    'max_sentences': 2
+                },
+                'medium': {
+                    'guidance': """Generate a 3-4 sentence summary (40-60 words) that includes:
 - The core message or request
 - Key context or background
 - Important deadlines or next steps
 - Any critical implications
 Example format: "Budget approval request for Q3 marketing campaign. Previous quarter showed 20% ROI. Requesting $50K for digital ads and events. Approval needed by July 1st to meet campaign timeline."
 """,
-                'long': """Generate a comprehensive 5-7 sentence summary (80-120 words) covering:
+                    'max_words': 60,
+                    'max_sentences': 4
+                },
+                'long': {
+                    'guidance': """Generate a comprehensive 5-7 sentence summary (80-120 words) covering:
 - Complete context and background
 - All key points and requests
 - Detailed action items and deadlines
@@ -347,47 +462,77 @@ Example format: "Budget approval request for Q3 marketing campaign. Previous qua
 - Implications and potential impact
 - Related projects or dependencies
 Example format: "Quarterly strategy review for APAC expansion. Team reports 30% growth in existing markets, with China and Japan exceeding targets. Three new market opportunities identified: Vietnam, Thailand, and Indonesia. Local partnerships needed for regulatory compliance, estimated setup time 6-8 months. Budget impact of $2M over 18 months. Legal team review required for partnership agreements. VP approval needed by August for 2024 planning."
-"""
-            }.get(summary_length, '2-3 sentences, covering key points and decisions needed')
+""",
+                    'max_words': 120,
+                    'max_sentences': 7
+                }
+            }
+            
+            # Get constraints for the selected length, with fallback to medium
+            selected_constraints = summary_constraints.get(summary_length)
+            if not selected_constraints:
+                self.logger.warning(f"Invalid summary length '{summary_length}', falling back to medium")
+                selected_constraints = summary_constraints['medium']
 
-            # Validate and convert nlp_results if needed
-            if nlp_results is None:
-                nlp_results = {}
-            elif isinstance(nlp_results, str):
-                try:
-                    nlp_results = json.loads(nlp_results)
-                except json.JSONDecodeError:
-                    self.logger.warning("Could not parse nlp_results string as JSON, using empty dict")
-                    nlp_results = {}
-            elif not isinstance(nlp_results, dict):
-                self.logger.warning(f"nlp_results is not a dict or string (got {type(nlp_results)}), using empty dict")
-                nlp_results = {}
-
-            # Get email content
+            # Get and validate email content
             subject = getattr(email_data, 'subject', 'No subject')
             sender = getattr(email_data, 'sender', 'Unknown sender')
             body = getattr(email_data, 'body', '')
 
-            # Ensure body is a string
-            if not isinstance(body, str):
-                body = str(body)
+            # Ensure content is properly sanitized
+            subject = self._sanitize_text(subject)
+            sender = self._sanitize_text(sender)
+            body = self._sanitize_text(body) if body else ""
+
+            # Process NLP results with error handling
+            try:
+                sentiment_analysis = nlp_results['sentiment_analysis']
+                email_patterns = nlp_results['email_patterns']
+                questions = nlp_results['questions']
+                time_sensitivity = nlp_results['time_sensitivity']
+                
+                # Format sentiment information with validation
+                sentiment_info = (
+                    "Positive" if sentiment_analysis.get('is_positive', False) else "Negative"
+                    if sentiment_analysis.get('is_strong_sentiment', False) else "Neutral"
+                )
+                if sentiment_analysis.get('has_gratitude', False):
+                    sentiment_info += " (expressing gratitude)"
+                if sentiment_analysis.get('has_dissatisfaction', False):
+                    sentiment_info += " (expressing dissatisfaction)"
+                
+                # Format question information with validation (limit to top 2 of each type)
+                question_info = []
+                if questions.get('direct_questions'):
+                    direct_q = [q[:100] for q in questions['direct_questions'][:2]]  # Truncate long questions
+                    question_info.append(f"Direct questions: {self._format_list(direct_q)}")
+                if questions.get('request_questions'):
+                    request_q = [q[:100] for q in questions['request_questions'][:2]]  # Truncate long questions
+                    question_info.append(f"Requests: {self._format_list(request_q)}")
+                
+                # Format time sensitivity information with validation (limit phrases)
+                deadline_info = []
+                if time_sensitivity.get('has_deadline', False):
+                    deadline_info.extend([p[:100] for p in time_sensitivity.get('deadline_phrases', [])[:2]])
+                if time_sensitivity.get('time_references'):
+                    deadline_info.extend([r[:50] for r in time_sensitivity.get('time_references', [])[:2]])
+                
+                # Select most important sentiment patterns
+                important_patterns = self._select_important_patterns(
+                    sentiment_analysis.get('patterns', {}),
+                    max_items=3
+                )
+                
+            except Exception as e:
+                self.logger.error(f"Error processing NLP results: {e}")
+                # Use default values if processing fails
+                sentiment_info = "Neutral"
+                question_info = []
+                deadline_info = []
+                important_patterns = {}
             
-            # Process NLP results
-            entities = nlp_results.get('entities', [])
-            keywords = nlp_results.get('keywords', [])
-            sentiment = nlp_results.get('sentiment', 'neutral')
-            
-            # Ensure entities and keywords are lists
-            if not isinstance(entities, list):
-                entities = []
-            if not isinstance(keywords, list):
-                keywords = []
-            
-            # Select important entities and keywords
-            important_entities = self._select_important_entities(entities)
-            important_keywords = self._select_important_keywords(keywords)
-            
-            return f"""You are an email analysis assistant. Analyze the following email and provide a structured assessment to help prioritize inbox management.
+            # Create the prompt with validated data and limited content
+            prompt = f"""You are an email analysis assistant. Analyze the following email and provide a structured assessment to help prioritize inbox management.
 EMAIL CONTENT
 -------------
 Subject: {subject}
@@ -396,10 +541,23 @@ Content: {body}
 
 CONTEXT
 -------
-NLP Context:
-- Entities: {important_entities}
-- Keywords: {important_keywords}
-- Sentiment: {sentiment}
+NLP Analysis:
+1. Content Classification:
+   - Key Entities: {self._format_dict(nlp_results['entities'])}
+   - Main Phrases: {self._format_list(nlp_results['key_phrases'])}
+   - Urgency: {"Detected" if nlp_results['urgency'] else "Not detected"}
+   - Email Type: {"Automated" if email_patterns.get('is_automated', False) else ""}{"Bulk/Marketing" if email_patterns.get('is_bulk', False) else ""}{"Standard" if not email_patterns.get('is_automated', False) and not email_patterns.get('is_bulk', False) else ""}
+
+2. Sentiment and Tone:
+   - Overall: {sentiment_info}
+   - Key Indicators: {self._format_dict(important_patterns)}
+
+3. Interaction Patterns:
+   - Questions: {questions.get('question_count', 0)} detected
+   {chr(10).join(question_info) if question_info else "   - No questions detected"}
+
+4. Time Sensitivity:
+   {"   - Deadlines/Time References: " + "; ".join(deadline_info) if deadline_info else "   - No specific deadlines detected"}
 
 TASK
 ----
@@ -422,7 +580,10 @@ Analyze this email and provide a JSON response with the following fields:
     - Leave empty array if no actions needed
 
 4. summary (string):
-    - {summary_guidance}
+    {selected_constraints['guidance']}
+    STRICT CONSTRAINTS:
+    - Maximum {selected_constraints['max_words']} words
+    - Maximum {selected_constraints['max_sentences']} sentences
     - Focus on key decisions and actions needed
     - Be concise but informative
 
@@ -432,6 +593,12 @@ Analyze this email and provide a JSON response with the following fields:
     - 41-60: Medium priority
     - 61-80: High priority
     - 81-100: Urgent/immediate attention
+    Consider the following in priority scoring:
+    - Urgency indicators: {nlp_results['urgency']}
+    - Time sensitivity: {bool(deadline_info)}
+    - Question type: {"Requests present" if questions.get('request_questions') else "Direct questions" if questions.get('direct_questions') else "No questions"}
+    - Sentiment: {"Strong" if sentiment_analysis.get('is_strong_sentiment', False) else "Neutral"}
+    - Email type: {"Automated" if email_patterns.get('is_automated', False) else ""}{"Bulk" if email_patterns.get('is_bulk', False) else ""}
 
 OUTPUT FORMAT
 ------------
@@ -443,10 +610,22 @@ Return only valid JSON matching this schema:
     "summary": string,
     "priority": integer
 }}"""
+            return prompt
+
         except Exception as e:
             self.logger.error(f"Error creating prompt: {str(e)}")
             raise LLMProcessingError(f"Failed to create prompt: {str(e)}")
-    
+
+    def _sanitize_text(self, text: str) -> str:
+        """Sanitize text to prevent prompt injection and ensure valid formatting."""
+        if not text:
+            return ""
+        # Remove any potential markdown or prompt injection characters
+        text = re.sub(r'[`*_~<>{}[\]()#+-]', ' ', str(text))
+        # Normalize whitespace
+        text = ' '.join(text.split())
+        return text
+
     def _parse_response(self, response_text: str) -> Dict[str, Any]:
         """Parse the LLM response into a structured format."""
         try:

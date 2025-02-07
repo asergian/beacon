@@ -48,6 +48,47 @@ class EmailProcessor:
             # Debug logging for session data
             self.logger.info(f"Processing emails for user ID: {user_id} (type: {type(user_id)})")
             
+            # Get user settings if user_id is provided
+            if user_id:
+                from ...models import User
+                user = User.query.get(user_id)
+                if user:
+                    # Check if AI features are enabled first
+                    ai_enabled = user.get_setting('ai_features.enabled', True)
+                    if not ai_enabled:
+                        self.logger.info("AI features disabled, skipping analysis")
+                        # Fetch emails but return basic metadata only
+                        raw_emails = await self.email_client.fetch_emails(command.days_back)
+                        processed_emails = []
+                        for raw_email in raw_emails:
+                            parsed_email = self.parser.extract_metadata(raw_email)
+                            if parsed_email:
+                                email_date = self._ensure_utc_date(parsed_email.date)
+                                processed_email = ProcessedEmail(
+                                    id=parsed_email.id,
+                                    subject=parsed_email.subject,
+                                    sender=parsed_email.sender,
+                                    body=parsed_email.body,
+                                    date=email_date,
+                                    urgency=False,
+                                    entities={},
+                                    key_phrases=[],
+                                    sentence_count=0,
+                                    sentiment_indicators={},
+                                    structural_elements={},
+                                    needs_action=False,
+                                    category='Informational',
+                                    action_items=[],
+                                    summary='No summary available',
+                                    priority=30,
+                                    priority_level='LOW'
+                                )
+                                processed_emails.append(processed_email)
+                        return processed_emails
+                    
+                    priority_threshold = user.get_setting('ai_features.priority_threshold', 50)
+                    self.priority_calculator.set_priority_threshold(priority_threshold)
+            
             # Initialize analytics
             processing_stats = {
                 'emails_fetched': 0,
@@ -248,9 +289,50 @@ class EmailProcessor:
             self.logger.error(f"Email analysis failed: {e}")
             raise
 
-    async def analyze_parsed_emails(self, parsed_emails: List[EmailMetadata], user_id: Optional[int] = None) -> List[ProcessedEmail]:
+    async def analyze_parsed_emails(self, parsed_emails: List[EmailMetadata], user_id: Optional[int] = None, ai_enabled: Optional[bool] = None) -> List[ProcessedEmail]:
         """Analyze a list of already parsed emails."""
         self.logger.info(f"Analyzing parsed emails for user ID: {user_id} (type: {type(user_id)})")
+        
+        # Get user settings if user_id is provided
+        if user_id:
+            from ...models import User
+            user = User.query.get(user_id)
+            if user:
+                # Use passed ai_enabled flag if provided, otherwise check setting
+                if ai_enabled is None:
+                    ai_enabled = user.get_setting('ai_features.enabled', True)
+                
+                if not ai_enabled:
+                    self.logger.info("AI features disabled, skipping analysis")
+                    # Return basic metadata for all emails
+                    processed_emails = []
+                    for parsed_email in parsed_emails:
+                        email_date = self._ensure_utc_date(parsed_email.date)
+                        processed_email = ProcessedEmail(
+                            id=parsed_email.id,
+                            subject=parsed_email.subject,
+                            sender=parsed_email.sender,
+                            body=parsed_email.body,
+                            date=email_date,
+                            urgency=False,
+                            entities={},
+                            key_phrases=[],
+                            sentence_count=0,
+                            sentiment_indicators={},
+                            structural_elements={},
+                            needs_action=False,
+                            category='Informational',
+                            action_items=[],
+                            summary='No summary available',
+                            priority=30,
+                            priority_level='LOW'
+                        )
+                        processed_emails.append(processed_email)
+                    return processed_emails
+                
+                priority_threshold = user.get_setting('ai_features.priority_threshold', 50)
+                self.priority_calculator.set_priority_threshold(priority_threshold)
+        
         processed_emails = []
         
         for parsed_email in parsed_emails:

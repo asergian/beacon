@@ -151,10 +151,13 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         # Initialize analyzers
         text_analyzer = ContentAnalyzer(nlp_model)
         llm_analyzer = SemanticAnalyzer()
+        
+        # Create priority calculator
         priority_calculator = PriorityScorer(
             vip_senders=set(app.config.get('VIP_SENDERS', [])),
             config=ProcessingConfig()
         )
+        priority_calculator.set_priority_threshold(50)  # Set default threshold to medium
 
         # Create Gmail client and parser
         gmail_client = GmailClient()

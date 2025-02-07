@@ -10,7 +10,7 @@ The pipeline uses two time-based parameters:
 
 from dataclasses import dataclass
 from typing import List, Optional, Dict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 from flask import session
 import time
@@ -93,6 +93,11 @@ class EmailPipeline:
             if not user:
                 raise ValueError("User not found in database")
             
+            # Check AI features once at the pipeline level
+            ai_enabled = user.get_setting('ai_features.enabled', True)
+            if not ai_enabled:
+                self.logger.info("AI features disabled for this pipeline run")
+            
             # Get cache duration from settings
             cache_duration = user.get_setting('email_preferences.cache_duration_days', 7)
             
@@ -128,33 +133,72 @@ class EmailPipeline:
                 if new_raw_emails:
                     parsed_emails = [email for email in [self.parser.extract_metadata(email) for email in new_raw_emails] if email is not None]
                     
-                    # Process in batches if specified
-                    if command.batch_size:
-                        analyzed_batch = []
-                        batch_count = (len(parsed_emails) + command.batch_size - 1) // command.batch_size
-                        
-                        self.logger.info(
-                            "Starting Batch Processing\n"
-                            f"    Total Emails: {len(parsed_emails)}\n"
-                            f"    Batch Size: {command.batch_size}\n"
-                            f"    Total Batches: {batch_count}"
-                        )
-                        
-                        for i in range(0, len(parsed_emails), command.batch_size):
-                            batch = parsed_emails[i:i + command.batch_size]
-                            batch_results = await self.processor.analyze_parsed_emails(batch, user_id=user_id)
-                            analyzed_batch.extend(batch_results)
-                            self.logger.info(f"Completed batch {(i//command.batch_size)+1}/{batch_count}")
-                        analyzed_emails = analyzed_batch
+                    # If AI is disabled, create basic metadata without batch processing
+                    if not ai_enabled:
+                        self.logger.info("AI features disabled, skipping batch analysis")
+                        for parsed_email in parsed_emails:
+                            email_date = parsed_email.date
+                            if email_date.tzinfo is None:
+                                email_date = email_date.replace(tzinfo=timezone.utc)
+                            else:
+                                email_date = email_date.astimezone(timezone.utc)
+                                
+                            processed_email = ProcessedEmail(
+                                id=parsed_email.id,
+                                subject=parsed_email.subject,
+                                sender=parsed_email.sender,
+                                body=parsed_email.body,
+                                date=email_date,
+                                urgency=False,
+                                entities={},
+                                key_phrases=[],
+                                sentence_count=0,
+                                sentiment_indicators={},
+                                structural_elements={},
+                                needs_action=False,
+                                category='Informational',
+                                action_items=[],
+                                summary='No summary available',
+                                priority=30,
+                                priority_level='LOW'
+                            )
+                            analyzed_emails.append(processed_email)
+                            
+                        stats.update({
+                            "successfully_analyzed": len(analyzed_emails),
+                            "successfully_parsed": len(parsed_emails),
+                            "failed_parsing": len(new_raw_emails) - len(parsed_emails),
+                            "failed_analysis": 0
+                        })
+                    
+                    # Only do batch processing if AI is enabled
                     else:
-                        analyzed_emails = await self.processor.analyze_parsed_emails(parsed_emails, user_id=user_id)
+                        if command.batch_size:
+                            analyzed_batch = []
+                            batch_count = (len(parsed_emails) + command.batch_size - 1) // command.batch_size
+                            
+                            self.logger.info(
+                                "Starting Batch Processing\n"
+                                f"    Total Emails: {len(parsed_emails)}\n"
+                                f"    Batch Size: {command.batch_size}\n"
+                                f"    Total Batches: {batch_count}"
+                            )
+                            
+                            for i in range(0, len(parsed_emails), command.batch_size):
+                                batch = parsed_emails[i:i + command.batch_size]
+                                batch_results = await self.processor.analyze_parsed_emails(batch, user_id=user_id, ai_enabled=ai_enabled)
+                                analyzed_batch.extend(batch_results)
+                                self.logger.info(f"Completed batch {(i//command.batch_size)+1}/{batch_count}")
+                            analyzed_emails = analyzed_batch
+                        else:
+                            analyzed_emails = await self.processor.analyze_parsed_emails(parsed_emails, user_id=user_id, ai_enabled=ai_enabled)
 
-                    stats.update({
-                        "successfully_analyzed": len(analyzed_emails),
-                        "successfully_parsed": len(parsed_emails),
-                        "failed_parsing": len(new_raw_emails) - len(parsed_emails),
-                        "failed_analysis": len(parsed_emails) - len(analyzed_emails)
-                    })
+                        stats.update({
+                            "successfully_analyzed": len(analyzed_emails),
+                            "successfully_parsed": len(parsed_emails),
+                            "failed_parsing": len(new_raw_emails) - len(parsed_emails),
+                            "failed_analysis": len(parsed_emails) - len(analyzed_emails)
+                        })
 
                     # Cache new results if cache available
                     if self.cache and analyzed_emails:
