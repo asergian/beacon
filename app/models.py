@@ -78,16 +78,16 @@ class User(db.Model):
     DEFAULT_SETTINGS = {
         'theme': 'light',
         'email_preferences': {
-            'priority_threshold': 50,
             'days_to_analyze': 3,  # Default to 3 days for a good initial view
-            'cache_duration_days': 7,  # Default to 7 days for good caching
-            'vip_senders': [],
-            'urgency_keywords': ['urgent', 'asap', 'deadline', 'immediate', 'priority']
+            'cache_duration_days': 7  # Default to 7 days for good caching
         },
         'ai_features': {
-            'enable_ai_summarization': True,
-            'summary_length': 'medium',
-            'action_item_detection': True
+            'enabled': True,  # Main AI toggle
+            'model_type': 'gpt-4o-mini',  # Default to standard model
+            'context_length': '1000',  # Default to medium context
+            'priority_threshold': 50,  # Default to Medium (50)
+            'summary_length': 'medium',  # Default summary length
+            'custom_categories': []  # List of custom category objects
         }
     }
     
