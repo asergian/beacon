@@ -25,10 +25,42 @@ class GmailClient:
     the Gmail API instead of IMAP for better integration with Google's services.
     """
     
+    # Token refresh threshold (5 minutes before expiry)
+    TOKEN_REFRESH_THRESHOLD = 300
+    
     def __init__(self):
         """Initialize the Gmail API client."""
         self.logger = logging.getLogger(__name__)
         self._service = None
+        self._credentials = None
+        self._token_expiry = None
+    
+    def _should_refresh_token(self) -> bool:
+        """Check if token should be refreshed based on expiry time."""
+        if not self._token_expiry:
+            return True
+        return (self._token_expiry - datetime.now(timezone.utc)).total_seconds() < self.TOKEN_REFRESH_THRESHOLD
+    
+    async def _refresh_token_if_needed(self):
+        """Refresh the access token if it's close to expiring."""
+        try:
+            if self._should_refresh_token() and self._credentials:
+                self.logger.debug("Proactively refreshing token")
+                self._credentials.refresh()
+                self._token_expiry = datetime.now(timezone.utc) + timedelta(seconds=3600)  # 1 hour
+                
+                # Update session with new token
+                session['credentials'].update({
+                    'token': self._credentials.token,
+                    'refresh_token': self._credentials.refresh_token
+                })
+                self.logger.info("OAuth token refreshed")
+        except Exception as e:
+            self.logger.error(f"Token refresh failed: {e}")
+            # Force reconnection on next operation
+            self._service = None
+            self._credentials = None
+            self._token_expiry = None
     
     async def connect(self):
         """
@@ -36,6 +68,10 @@ class GmailClient:
         
         Uses the credentials stored in the Flask session during OAuth flow.
         """
+        if self._service and not self._should_refresh_token():
+            await self._refresh_token_if_needed()
+            return
+            
         try:
             self.logger.info("Connecting to Gmail API")
             
@@ -53,7 +89,7 @@ class GmailClient:
                 session.pop('credentials', None)
                 raise GmailAPIError(f"Authentication incomplete - missing: {', '.join(missing_fields)}")
             
-            credentials = Credentials(
+            self._credentials = Credentials(
                 token=creds_dict['token'],
                 refresh_token=creds_dict['refresh_token'],
                 token_uri=creds_dict['token_uri'],
@@ -62,26 +98,20 @@ class GmailClient:
                 scopes=creds_dict['scopes']
             )
             
-            # Build the Gmail API service
-            self._service = build('gmail', 'v1', credentials=credentials)
+            # Set initial token expiry (1 hour from now)
+            self._token_expiry = datetime.now(timezone.utc) + timedelta(seconds=3600)
             
-            # Check if token was refreshed and update session
-            if credentials.token != creds_dict['token']:
-                session['credentials'] = {
-                    'token': credentials.token,
-                    'refresh_token': credentials.refresh_token,
-                    'token_uri': credentials.token_uri,
-                    'client_id': credentials.client_id,
-                    'client_secret': credentials.client_secret,
-                    'scopes': credentials.scopes
-                }
-                self.logger.info("OAuth token refreshed")
+            # Build the Gmail API service
+            self._service = build('gmail', 'v1', credentials=self._credentials)
             
             self.logger.info("Gmail API connection established")
             
         except Exception as e:
             # Clear invalid session credentials
             session.pop('credentials', None)
+            self._service = None
+            self._credentials = None
+            self._token_expiry = None
             raise GmailAPIError(f"Connection error: {e}")
     
     async def fetch_emails(self, days_back: int = 1) -> List[Dict]:
@@ -98,7 +128,9 @@ class GmailClient:
             GmailAPIError: If fetching emails fails
         """
         if not self._service:
-            raise GmailAPIError("Gmail client must be connected before fetching emails")
+            await self.connect()
+        
+        await self._refresh_token_if_needed()
             
         try:
             # Calculate the time range using local timezone
@@ -130,57 +162,68 @@ class GmailClient:
             
             # Fetch full message data for each email and filter by local date
             for message in messages:
-                msg = self._service.users().messages().get(
-                    userId='me',
-                    id=message['id'],
-                    format='raw'
-                ).execute()
-                
-                # Decode the raw message
-                raw_msg = base64.urlsafe_b64decode(msg['raw'])
-                email_msg = message_from_bytes(raw_msg)
-                
-                # Parse the email date and convert to local timezone
-                date_str = email_msg.get('date')
-                if date_str:
-                    try:
-                        # Remove the "(UTC)" part if it exists
-                        date_str = date_str.split(' (')[0].strip()
-                        
-                        # Try parsing with timezone offset format
+                try:
+                    msg = self._service.users().messages().get(
+                        userId='me',
+                        id=message['id'],
+                        format='raw'
+                    ).execute()
+                    
+                    # Decode the raw message
+                    raw_msg = base64.urlsafe_b64decode(msg['raw'])
+                    email_msg = message_from_bytes(raw_msg)
+                    
+                    # Parse the email date and convert to local timezone
+                    date_str = email_msg.get('date')
+                    if date_str:
                         try:
-                            email_date = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
-                        except ValueError:
-                            # Try parsing GMT format
+                            # Remove the "(UTC)" part if it exists
+                            date_str = date_str.split(' (')[0].strip()
+                            
+                            # Try parsing with timezone offset format
                             try:
-                                email_date = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S GMT")
-                                # Convert GMT to UTC
-                                email_date = email_date.replace(tzinfo=timezone.utc)
+                                email_date = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S %z")
                             except ValueError:
-                                self.logger.debug(f"Skipping email {message['id']}: invalid date format '{date_str}'")
-                                continue
-                        
-                        local_email_date = email_date.astimezone(local_tz)
-                        
-                        # Only include emails after local_midnight
-                        if local_email_date >= local_midnight:
-                            emails.append({
-                                'id': message['id'],
-                                'raw_message': raw_msg,
-                                'Message-ID': email_msg.get('Message-ID'),
-                                'subject': email_msg.get('subject'),
-                                'from': email_msg.get('from'),
-                                'to': email_msg.get('to'),
-                                'date': date_str
-                            })
-                    except ValueError as e:
-                        self.logger.debug(f"Skipping email {message['id']}: {e}")
-                        continue
+                                # Try parsing GMT format
+                                try:
+                                    email_date = datetime.strptime(date_str, "%a, %d %b %Y %H:%M:%S GMT")
+                                    # Convert GMT to UTC
+                                    email_date = email_date.replace(tzinfo=timezone.utc)
+                                except ValueError:
+                                    self.logger.debug(f"Skipping email {message['id']}: invalid date format '{date_str}'")
+                                    continue
+                            
+                            local_email_date = email_date.astimezone(local_tz)
+                            
+                            # Only include emails after local_midnight
+                            if local_email_date >= local_midnight:
+                                emails.append({
+                                    'id': message['id'],
+                                    'raw_message': raw_msg,
+                                    'Message-ID': email_msg.get('Message-ID'),
+                                    'subject': email_msg.get('subject'),
+                                    'from': email_msg.get('from'),
+                                    'to': email_msg.get('to'),
+                                    'date': date_str
+                                })
+                        except ValueError as e:
+                            self.logger.debug(f"Skipping email {message['id']}: {e}")
+                            continue
+                except Exception as e:
+                    # Log individual message fetch errors but continue processing
+                    self.logger.error(f"Error fetching message {message['id']}: {e}")
+                    continue
             
             self.logger.info(f"Retrieved {len(emails)} emails from Gmail API")
             return emails
             
         except Exception as e:
+            # Check if token needs refresh
+            if "401" in str(e):
+                self.logger.info("Token expired during fetch, refreshing...")
+                await self._refresh_token_if_needed()
+                # Retry the fetch once
+                return await self.fetch_emails(days_back)
             raise GmailAPIError(f"Failed to fetch emails: {e}")
     
     async def close(self):

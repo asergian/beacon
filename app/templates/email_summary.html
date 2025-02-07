@@ -133,12 +133,9 @@
 
 {% block scripts %}
 {{ super() }}
+<script src="{{ url_for('static', filename='js/email.js') }}"></script>
 <script src="https://cdn.tiny.cloud/1/{{ tiny_mce_api_key }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
-    // Initialize empty emails array and map
-    window.emails = [];
-    window.emailMap = new Map();
-    
     // Initialize TinyMCE after DOM loads
     document.addEventListener('DOMContentLoaded', () => {
         console.log('DOM loaded, initializing TinyMCE...');
