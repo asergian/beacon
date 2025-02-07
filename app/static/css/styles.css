@@ -1457,3 +1457,65 @@ footer {
         justify-content: center;
     }
 }
+
+/* Number input styling */
+.form-input[type="number"] {
+    padding-right: 0.5rem;  /* Reduce right padding to better align with buttons */
+    text-align: center;     /* Center the number */
+    font-size: 1rem;        /* Increase font size */
+    min-width: 80px;        /* Ensure enough width for the number */
+}
+
+/* Custom number input for dark theme */
+[data-theme="dark"] .form-input[type="number"] {
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    border-color: var(--input-border);
+}
+
+/* Button group styling */
+.button-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.value-button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.value-button:hover {
+    border-color: var(--accent-color);
+    background-color: var(--bg-color);
+}
+
+.value-button.selected {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+/* Dark theme button styles */
+[data-theme="dark"] .value-button {
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    border-color: var(--input-border);
+}
+
+[data-theme="dark"] .value-button:hover {
+    border-color: var(--accent-color);
+    background-color: var(--card-bg);
+}
+
+[data-theme="dark"] .value-button.selected {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}

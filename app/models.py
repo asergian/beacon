@@ -79,8 +79,8 @@ class User(db.Model):
         'theme': 'light',
         'email_preferences': {
             'priority_threshold': 50,
-            'days_to_analyze': 1,
-            'cache_duration_days': 7,
+            'days_to_analyze': 3,  # Default to 3 days for a good initial view
+            'cache_duration_days': 7,  # Default to 7 days for good caching
             'vip_senders': [],
             'urgency_keywords': ['urgent', 'asap', 'deadline', 'immediate', 'priority']
         },

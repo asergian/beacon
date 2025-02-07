@@ -39,13 +39,28 @@
                         <span class="setting-title">Email History</span>
                         <span class="setting-description">Number of days of email history to fetch</span>
                     </div>
-                    <input type="number" 
-                           name="email_preferences.days_to_analyze" 
-                           id="days_to_analyze"
-                           min="1" 
-                           max="7" 
-                           value="{{ user_settings.email_preferences.days_to_analyze }}"
-                           class="form-input">
+                    <div class="button-group">
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze == 1 %}selected{% endif %}"
+                                data-value="1" 
+                                data-setting="email_preferences.days_to_analyze">1d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze == 3 %}selected{% endif %}"
+                                data-value="3" 
+                                data-setting="email_preferences.days_to_analyze">3d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze == 5 %}selected{% endif %}"
+                                data-value="5" 
+                                data-setting="email_preferences.days_to_analyze">5d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze == 7 %}selected{% endif %}"
+                                data-value="7" 
+                                data-setting="email_preferences.days_to_analyze">7d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze == 14 %}selected{% endif %}"
+                                data-value="14" 
+                                data-setting="email_preferences.days_to_analyze">14d</button>
+                    </div>
                 </div>
             </div>
 
@@ -55,13 +70,28 @@
                         <span class="setting-title">Cache Duration</span>
                         <span class="setting-description">Number of days to store emails in cache</span>
                     </div>
-                    <input type="number" 
-                           name="email_preferences.cache_duration_days" 
-                           id="cache_duration_days"
-                           min="1" 
-                           max="30" 
-                           value="{{ user_settings.email_preferences.cache_duration_days }}"
-                           class="form-input">
+                    <div class="button-group">
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days == 1 %}selected{% endif %}"
+                                data-value="1" 
+                                data-setting="email_preferences.cache_duration_days">1d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days == 3 %}selected{% endif %}"
+                                data-value="3" 
+                                data-setting="email_preferences.cache_duration_days">3d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days == 7 %}selected{% endif %}"
+                                data-value="7" 
+                                data-setting="email_preferences.cache_duration_days">7d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days == 14 %}selected{% endif %}"
+                                data-value="14" 
+                                data-setting="email_preferences.cache_duration_days">14d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days == 30 %}selected{% endif %}"
+                                data-value="30" 
+                                data-setting="email_preferences.cache_duration_days">30d</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -388,6 +418,29 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Add click handlers for value buttons
+    document.querySelectorAll('.value-button').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const value = parseInt(e.target.dataset.value, 10);
+            const setting = e.target.dataset.setting;
+            
+            // Update visual state
+            e.target.closest('.button-group').querySelectorAll('.value-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            e.target.classList.add('selected');
+            
+            // Update setting
+            try {
+                await updateSetting(setting, value);
+            } catch (error) {
+                console.error('Failed to update setting:', error);
+                // Revert visual state on error
+                e.target.classList.remove('selected');
+            }
+        });
+    });
+
     // Theme switching function
     function setTheme(isDark) {
         const theme = isDark ? 'dark' : 'light';
