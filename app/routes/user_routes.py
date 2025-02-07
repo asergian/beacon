@@ -4,8 +4,8 @@ from flask import Blueprint, jsonify, request, session, render_template
 from ..models import User, UserActivity, log_activity
 from ..auth.decorators import login_required, admin_required
 import logging
-from datetime import datetime, timedelta
-from .. import db, cache
+from datetime import datetime
+from .. import db
 
 user_bp = Blueprint('user', __name__)
 logger = logging.getLogger(__name__)
