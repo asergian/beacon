@@ -87,7 +87,13 @@ class User(db.Model):
             'context_length': '1000',  # Default to medium context
             'priority_threshold': 50,  # Default to Medium (50)
             'summary_length': 'medium',  # Default summary length
-            'custom_categories': []  # List of custom category objects
+            'custom_categories': []  # List of custom category objects with format:
+                                   # {
+                                   #   'name': str,
+                                   #   'description': str,
+                                   #   'values': List[str],
+                                   #   'color': str  # Hex color code
+                                   # }
         }
     }
     
@@ -108,9 +114,13 @@ class User(db.Model):
         # Get the setting from the database
         setting = UserSetting.get_setting(self.id, key, None)
         
-        # Log all AI feature settings retrievals
+        # Only log AI settings once per session using a class variable
         if key.startswith('ai_features.'):
-            logging.info(f"Getting setting {key} - DB value: {setting}, Default: {default_value}")
+            if not hasattr(User, '_logged_settings'):
+                User._logged_settings = set()
+            if key not in User._logged_settings:
+                logging.debug(f"AI Setting {key} - DB value: {setting}, Default: {default_value}")
+                User._logged_settings.add(key)
             
         return setting if setting is not None else default_value
     
@@ -229,7 +239,8 @@ def log_activity(user_id: int, activity_type: str, description: str = None, meta
         raise ValueError("user_id cannot be None")
     
     try:
-        logging.info(f"Logging activity for user ID: {user_id} (type: {type(user_id)}) and activity type: {activity_type}")
+        # Only log at debug level for detailed activity tracking
+        logging.debug(f"Activity: {activity_type} for user {user_id}")
         activity = UserActivity(
             user_id=user_id,
             activity_type=activity_type,

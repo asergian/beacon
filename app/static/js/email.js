@@ -5,6 +5,7 @@ let isLoadingAnalysis = false;
 let hasInitialized = false;
 let selectedEmailId = null;
 let updateEmailListTimeout = null;
+let userSettings = null;
 
 // Update config with email-specific defaults
 config.days_back = 1;  // Default value, will be updated from user settings
@@ -15,10 +16,11 @@ async function fetchUserSettings() {
     try {
         const response = await fetch('/email/api/user/settings');
         if (response.ok) {
-            const settings = await response.json();
-            if (settings.status === 'success' && settings.settings) {
-                config.days_back = settings.settings.email_preferences.days_to_analyze;
-                console.log('Updated days_back from user settings:', config.days_back);
+            const data = await response.json();
+            if (data.status === 'success' && data.settings) {
+                userSettings = data.settings;
+                config.days_back = userSettings.email_preferences.days_to_analyze;
+                console.log('Updated user settings:', userSettings);
             }
         }
     } catch (error) {
@@ -235,22 +237,34 @@ function updateEmailList() {
                 loadEmailDetails(email.id);
             };
 
-    if (email.needs_action) {
+            if (email.needs_action) {
                 li.classList.add('needs-action');
-    }
-    
+            }
+            
             const formatTagText = (text) => {
                 if (!text) return '';
                 return text.toLowerCase().split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
             };
+            
+            // Get custom category colors from user settings
+            const customCategoriesConfig = userSettings?.ai_features?.custom_categories || [];
+            const customCategoriesHtml = email.custom_categories ? 
+                Object.entries(email.custom_categories)
+                    .filter(([name, value]) => value !== null)
+                    .map(([name, value]) => {
+                        const categoryConfig = customCategoriesConfig.find(c => c.name === name);
+                        const color = categoryConfig?.color || '#8B5CF6';
+                        return `<span class="tag custom-category" data-category="${name}" style="background-color: ${color}">${formatTagText(value)}</span>`;
+                    }).join('') : '';
     
             li.innerHTML = `
-            <div class="email-header">
+                <div class="email-header">
                     <span class="email-subject">${email.subject || 'No Subject'}</span>
                     <div class="tags-container">
                         <span class="tag priority-${(email.priority_level || 'pending').toLowerCase()}">${formatTagText(email.priority_level) || 'Pending'}</span>
                         <span class="tag category" data-category="${email.category || 'Informational'}">${formatTagText(email.category) || 'Pending'}</span>
                         ${email.needs_action ? '<span class="tag action-required">Action Required</span>' : ''}
+                        ${customCategoriesHtml}
                     </div>
                 </div>
                 <span class="sender-name">${(email.sender || '').split('<')[0].trim() || 'Unknown Sender'}</span>
@@ -285,6 +299,7 @@ function loadEmailDetails(emailId) {
         priority: document.getElementById('details-priority'),
         category: document.getElementById('details-category'),
         actionRequired: document.getElementById('details-action-required'),
+        customCategories: document.getElementById('details-custom-categories'),
         summary: document.getElementById('details-summary'),
         keyDates: document.getElementById('key-dates-list'),
         emailBody: document.getElementById('email-body')
@@ -319,6 +334,22 @@ function loadEmailDetails(emailId) {
             detailsElements.actionRequired.style.display = 'inline-flex';
         } else {
             detailsElements.actionRequired.style.display = 'none';
+        }
+        
+        // Handle custom categories with colors from user settings
+        if (email.custom_categories && Object.keys(email.custom_categories).length > 0) {
+            const customCategoriesConfig = userSettings?.ai_features?.custom_categories || [];
+            detailsElements.customCategories.innerHTML = Object.entries(email.custom_categories)
+                .filter(([name, value]) => value !== null)
+                .map(([name, value]) => {
+                    const categoryConfig = customCategoriesConfig.find(c => c.name === name);
+                    const color = categoryConfig?.color || '#8B5CF6';  // Default to purple if no color set
+                    return `<span class="tag custom-category" data-category="${name}" style="background-color: ${color}">${formatTagText(value)}</span>`;
+                })
+                .join('');
+            detailsElements.customCategories.style.display = 'inline-flex';
+        } else {
+            detailsElements.customCategories.style.display = 'none';
         }
         
         detailsElements.summary.textContent = email.summary || 'No summary available';

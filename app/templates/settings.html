@@ -220,6 +220,11 @@
                                            value="{{ category.get('name', '') }}"
                                            placeholder="e.g., Project Status"
                                            class="form-input category-name">
+                                    <input type="color"
+                                           name="ai_features.custom_categories[{{ loop.index0 }}].color"
+                                           value="{{ category.color if category.color is defined else category.get('color', '#8B5CF6') }}"
+                                           class="form-input category-color"
+                                           title="Choose category color">
                                     <button type="button" class="delete-category-btn" title="Delete category">×</button>
                                 </div>
                                 <textarea name="ai_features.custom_categories[{{ loop.index0 }}].description" 
@@ -850,6 +855,11 @@ document.addEventListener('DOMContentLoaded', function() {
                            name="ai_features.custom_categories[${categoryItems.length}].name" 
                            placeholder="e.g., Project Status"
                            class="form-input category-name">
+                    <input type="color"
+                           name="ai_features.custom_categories[${categoryItems.length}].color"
+                           value="#8B5CF6"
+                           class="form-input category-color"
+                           title="Choose category color">
                     <button type="button" class="delete-category-btn" title="Delete category">×</button>
                 </div>
                 <textarea name="ai_features.custom_categories[${categoryItems.length}].description" 
@@ -935,6 +945,7 @@ document.addEventListener('DOMContentLoaded', function() {
             categories.push({
                 name: item.querySelector('.category-name').value,
                 description: item.querySelector('.category-description').value,
+                color: item.querySelector('.category-color').value,
                 values: item.querySelector('.category-values-input').value
                     .split(',')
                     .map(v => v.trim())
@@ -953,6 +964,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update custom categories when inputs change (now debounced)
     document.addEventListener('input', function(e) {
         if (e.target.closest('.custom-category-item')) {
+            debouncedUpdateCategories();
+        }
+    });
+
+    // Add specific handler for color changes
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('category-color')) {
             debouncedUpdateCategories();
         }
     });

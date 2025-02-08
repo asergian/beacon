@@ -145,6 +145,7 @@ class SemanticAnalyzer:
             if hasattr(g, 'user') and hasattr(g.user, 'settings'):
                 user_settings = g.user.settings
                 ai_settings = g.user.get_settings_group('ai_features')
+                # Log AI config once during initialization
                 self.logger.debug(
                     "AI Configuration:\n"
                     f"    Enabled: {ai_settings.get('enabled', True)}\n"
@@ -271,13 +272,8 @@ Example format: "Quarterly strategy review for APAC expansion. Team reports 30% 
             )
             prompt_tokens = self.count_tokens(prompt)
             
-            self.logger.info(
-                "Starting Email Analysis\n"
-                f"    Email ID: {email_data.id}\n"
-                f"    Model: {self.model}\n"
-                f"    Prompt Tokens: {prompt_tokens}\n"
-                f"    Max Response: {max_response_tokens} tokens"
-            )
+            # Condense email analysis logging to one line
+            self.logger.info(f"Processing email {email_data.id} - Model: {self.model}, Prompt Tokens: {prompt_tokens}, Max Response: {max_response_tokens}")
             
             # Get OpenAI client using the app's getter function
             try:
@@ -329,15 +325,8 @@ Example format: "Quarterly strategy review for APAC expansion. Team reports 30% 
             output_cost = (completion_tokens / 1000) * cost_per_1k["output"]
             total_cost = input_cost + output_cost
             
-            self.logger.info(
-                "Analysis Complete\n"
-                f"    Email ID: {email_data.id}\n"
-                f"    Token Usage:\n"
-                f"        Input: {prompt_tokens}\n"
-                f"        Output: {completion_tokens}\n"
-                f"        Total: {total_tokens}\n"
-                f"    Cost: ${total_cost:.4f}"
-            )
+            # Condense completion logging to one line
+            self.logger.info(f"Completed email {email_data.id} - Tokens: {prompt_tokens}/{completion_tokens}/{total_tokens} (in/out/total), Cost: ${total_cost:.4f}")
             
             # Parse the response
             analysis = self._parse_response(response.choices[0].message.content)
@@ -391,6 +380,29 @@ Example format: "Quarterly strategy review for APAC expansion. Team reports 30% 
                 self.logger.warning("NLP results are None, using empty dict")
                 nlp_results = {}
             
+            # Get user settings from current app context
+            user_settings = {}
+            if hasattr(g, 'user') and hasattr(g.user, 'settings'):
+                user_settings = g.user.settings
+
+            # Get custom categories from user settings
+            custom_categories = g.user.get_setting('ai_features.custom_categories', []) if hasattr(g, 'user') else []
+            
+            # Format custom categories for prompt if they exist
+            custom_categories_prompt = ""
+            if custom_categories:
+                custom_categories_prompt = "\n6. custom_categories (object with string values):\n"
+                custom_categories_prompt += "    For each category below, assign either:\n"
+                custom_categories_prompt += "    - One of the specified values if the category applies to this email\n"
+                custom_categories_prompt += "    - null if the category does not apply to this email\n\n"
+                for category in custom_categories:
+                    name = category.get('name', '').strip()
+                    values = category.get('values', [])
+                    if name and values:
+                        valid_values = [v.strip() for v in values if v.strip()]
+                        if valid_values:
+                            custom_categories_prompt += f"    - {name}: exactly one of {valid_values} or null\n"
+
             # Ensure all expected NLP result sections exist with defaults
             nlp_results = {
                 'entities': nlp_results.get('entities', {}),
@@ -423,11 +435,6 @@ Example format: "Quarterly strategy review for APAC expansion. Team reports 30% 
                     'time_references': []
                 })
             }
-
-            # Get user settings from current app context
-            user_settings = {}
-            if hasattr(g, 'user') and hasattr(g.user, 'settings'):
-                user_settings = g.user.settings
 
             # Get summary length preference and set constraints
             summary_length = g.user.get_setting('ai_features.summary_length', 'medium')
@@ -600,6 +607,8 @@ Analyze this email and provide a JSON response with the following fields:
     - Sentiment: {"Strong" if sentiment_analysis.get('is_strong_sentiment', False) else "Neutral"}
     - Email type: {"Automated" if email_patterns.get('is_automated', False) else ""}{"Bulk" if email_patterns.get('is_bulk', False) else ""}
 
+{custom_categories_prompt}
+
 OUTPUT FORMAT
 ------------
 Return only valid JSON matching this schema:
@@ -608,7 +617,7 @@ Return only valid JSON matching this schema:
     "category": string,
     "action_items": array,
     "summary": string,
-    "priority": integer
+    "priority": integer{',\n    "custom_categories": object' if custom_categories_prompt else ''}
 }}"""
             return prompt
 
@@ -669,6 +678,20 @@ Return only valid JSON matching this schema:
                             'due_date': item.get('due_date')
                         })
                 result['action_items'] = formatted_items
+            
+            # Validate custom categories if present
+            if 'custom_categories' in result and hasattr(g, 'user'):
+                user_categories = g.user.get_setting('ai_features.custom_categories', [])
+                valid_categories = {}
+                for category in user_categories:
+                    name = category.get('name', '').strip()
+                    values = category.get('values', [])
+                    if name and name in result['custom_categories']:
+                        value = result['custom_categories'][name]
+                        # Only keep the value if it's in the allowed values
+                        if value in values:
+                            valid_categories[name] = value
+                result['custom_categories'] = valid_categories
             
             # Validate required fields with defaults
             defaults = {

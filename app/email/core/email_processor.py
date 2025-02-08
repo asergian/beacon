@@ -81,7 +81,8 @@ class EmailProcessor:
                                     action_items=[],
                                     summary='No summary available',
                                     priority=30,
-                                    priority_level='LOW'
+                                    priority_level='LOW',
+                                    custom_categories={}
                                 )
                                 processed_emails.append(processed_email)
                         return processed_emails
@@ -223,7 +224,8 @@ class EmailProcessor:
                                     action_items=llm_results.get('action_items', []),
                                     summary=llm_results.get('summary'),
                                     priority=priority_score,
-                                    priority_level=priority_level
+                                    priority_level=priority_level,
+                                    custom_categories=llm_results.get('custom_categories', {})
                                 )
                                 processed_emails.append(processed_email)
                                 
@@ -291,7 +293,7 @@ class EmailProcessor:
 
     async def analyze_parsed_emails(self, parsed_emails: List[EmailMetadata], user_id: Optional[int] = None, ai_enabled: Optional[bool] = None) -> List[ProcessedEmail]:
         """Analyze a list of already parsed emails."""
-        self.logger.info(f"Analyzing parsed emails for user ID: {user_id} (type: {type(user_id)})")
+        self.logger.info(f"Starting batch analysis of {len(parsed_emails)} emails for user {user_id}")
         
         # Get user settings if user_id is provided
         if user_id:
@@ -325,7 +327,8 @@ class EmailProcessor:
                             action_items=[],
                             summary='No summary available',
                             priority=30,
-                            priority_level='LOW'
+                            priority_level='LOW',
+                            custom_categories={}
                         )
                         processed_emails.append(processed_email)
                     return processed_emails
@@ -343,7 +346,6 @@ class EmailProcessor:
                 nlp_processing_time = time.time() - nlp_start_time
                 
                 if user_id:
-                    self.logger.info(f"Logging NLP activity for user ID: {user_id} (type: {type(user_id)})")
                     log_activity(
                         user_id=user_id,
                         activity_type='nlp_processing',
@@ -370,28 +372,15 @@ class EmailProcessor:
                             activity_type='llm_request',
                             description=f"LLM analysis for email {parsed_email.id}",
                             metadata={
-                                # Model info
                                 'model': llm_results.get('model', 'unknown'),
-                                
-                                # Token metrics
                                 'total_tokens': llm_results.get('total_tokens', 0),
-                                
-                                # Performance metrics
                                 'processing_time_ms': round(llm_processing_time * 1000),
-                                
-                                # Cost tracking (in cents for easier display)
                                 'cost_cents': round(llm_results.get('cost', 0) * 100, 2),
-                                
-                                # Email categorization
                                 'category': llm_results.get('category', 'Informational'),
                                 'priority_level': self._get_priority_level(llm_results.get('priority', 0)),
                                 'needs_action': llm_results.get('needs_action', False),
                                 'action_items': llm_results.get('action_items', []),
-                                
-                                # Status for monitoring
                                 'status': 'success',
-                                
-                                # Timestamp for time-series
                                 'timestamp': datetime.now().isoformat()
                             }
                         )
@@ -429,7 +418,8 @@ class EmailProcessor:
                         action_items=llm_results.get('action_items', []),
                         summary=llm_results.get('summary'),
                         priority=priority_score,
-                        priority_level=priority_level
+                        priority_level=priority_level,
+                        custom_categories=llm_results.get('custom_categories', {})
                     )
                     processed_emails.append(processed_email)
                     
@@ -441,6 +431,7 @@ class EmailProcessor:
                 self.logger.error(f"Email processing failed for {parsed_email.id}: {e}")
                 continue
         
+        self.logger.info(f"Completed batch analysis of {len(processed_emails)} emails")
         return processed_emails
 
     def _get_priority_level(self, score: int) -> str:

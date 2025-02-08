@@ -574,6 +574,37 @@ header {
     color: white !important;
 }
 
+/* Custom category colors */
+.tag.custom-category {
+    opacity: 0.9;
+    transition: opacity 0.2s ease;
+}
+
+.tag.custom-category:hover {
+    opacity: 1;
+}
+
+/* Custom category colors based on name */
+.tag.custom-category[data-category="Project Status"] {
+    background-color: #7C3AED !important;  /* Violet */
+}
+
+.tag.custom-category[data-category="Response Time"] {
+    background-color: #9333EA !important;  /* Purple */
+}
+
+.tag.custom-category[data-category="Department"] {
+    background-color: #A855F7 !important;  /* Fuchsia */
+}
+
+.tag.custom-category[data-category="Client Tier"] {
+    background-color: #C084FC !important;  /* Light purple */
+}
+
+.tag.custom-category[data-category="Meeting Type"] {
+    background-color: #D946EF !important;  /* Pink */
+}
+
 /* Summary and Actions Box */
 .summary-actions-box {
     background-color: var(--card-bg);
@@ -1592,4 +1623,39 @@ footer {
     margin: 2rem auto;
     padding: 0 1rem;
     margin-bottom: calc(var(--footer-height) + 2rem);  /* Consistent bottom margin */
+}
+
+/* Color picker styling */
+.category-color {
+    width: 40px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: transparent;
+}
+
+.category-color::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.category-color::-webkit-color-swatch {
+    border: none;
+    border-radius: 2px;
+}
+
+.category-color::-moz-color-swatch {
+    border: none;
+    border-radius: 2px;
+}
+
+/* Dark theme color picker */
+[data-theme="dark"] .category-color {
+    border-color: var(--input-border);
+    background-color: var(--input-bg);
+}
+
+[data-theme="dark"] .category-color:hover {
+    border-color: var(--accent-color);
 }
