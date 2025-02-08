@@ -25,6 +25,7 @@ class ProcessedEmail:
     category: Optional[str] = "Informational"
     action_items: Optional[List[Dict[str, Optional[str]]]] = None
     summary: Optional[str] = None
+    custom_categories: Optional[Dict[str, Optional[str]]] = None
 
     # Priority and classification
     priority: Optional[int] = 50
@@ -42,6 +43,8 @@ class ProcessedEmail:
             self.structural_elements = {}
         if self.action_items is None:
             self.action_items = []
+        if self.custom_categories is None:
+            self.custom_categories = {}
             
         # Ensure date is datetime with timezone
         if isinstance(self.date, str):

@@ -16,17 +16,15 @@ Functions:
     create_app: Factory function that creates and configures the Flask application.
 """
 
-from flask import Flask, g, current_app
+from flask import Flask, g, current_app, session
 import logging
-from logging.handlers import RotatingFileHandler
 from openai import AsyncOpenAI
 from typing import Optional
 import os
 from datetime import timedelta
-import asyncio
 
-from .config import Config
-from .models import db
+from .config import Config, configure_logging
+from .models import db, User
 from flask_migrate import Migrate
 from .email.core.email_processor import EmailProcessor
 from .email.core.email_connection import EmailConnection
@@ -42,39 +40,6 @@ from .email.storage.cache import RedisEmailCache
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
 from .utils.async_utils import async_manager
-
-def init_logging(app: Flask) -> None:
-    """Initialize logging configuration for the application.
-    
-    Args:
-        app: Flask application instance
-    """
-    # Ensure the logs directory exists
-    if not os.path.exists('logs'):
-        os.makedirs('logs')
-        
-    # Set up file handler
-    file_handler = RotatingFileHandler(
-        'logs/beacon.log',
-        maxBytes=10240000,  # 10MB
-        backupCount=10
-    )
-    file_handler.setFormatter(logging.Formatter(
-        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-    ))
-    
-    # Set logging level from config
-    file_handler.setLevel(app.config.get('LOGGING_LEVEL', logging.INFO))
-    app.logger.addHandler(file_handler)
-    
-    # Also log to console in development
-    if app.debug:
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-        app.logger.addHandler(console_handler)
-    
-    app.logger.setLevel(app.config.get('LOGGING_LEVEL', logging.INFO))
-    app.logger.info('Beacon startup')
 
 def init_openai_client(app):
     """Initializes the AsyncOpenAI client with configuration from the Flask app.
@@ -144,6 +109,9 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     """Create and configure the Flask application."""
     app = Flask(__name__)
     
+    # Disable Flask's default logging
+    app.logger.handlers.clear()
+    
     # Load configuration
     if isinstance(config_class, type):
         app.config.from_object(config_class())
@@ -166,8 +134,9 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     except OSError:
         pass
         
-    # Initialize logging
-    init_logging(app)
+    # Initialize logging first, before any other operations
+    configure_logging()
+    logger = logging.getLogger(__name__)
     
     # Initialize OpenAI client
     with app.app_context():
@@ -175,16 +144,22 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     
     # Initialize components
     try:
+        # Initialize NLP model
+        logger.info("Initializing application components...")
         nlp_model = create_nlp_model()
         
+        # Initialize analyzers
         text_analyzer = ContentAnalyzer(nlp_model)
         llm_analyzer = SemanticAnalyzer()
+        
+        # Create priority calculator
         priority_calculator = PriorityScorer(
             vip_senders=set(app.config.get('VIP_SENDERS', [])),
             config=ProcessingConfig()
         )
+        priority_calculator.set_priority_threshold(50)  # Set default threshold to medium
 
-        # Create Gmail client
+        # Create Gmail client and parser
         gmail_client = GmailClient()
         parser = EmailParser()
         
@@ -198,20 +173,18 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         )
         
         # Initialize Redis connection pool
+        logger.info("Initializing Redis connection pool...")
         from redis.asyncio import ConnectionPool, Redis
         redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379')
         
-        # Create a connection pool with proper configuration
         pool = ConnectionPool.from_url(
             redis_url,
-            max_connections=10,  # Adjust based on your needs
-            decode_responses=True  # Automatically decode responses to strings
+            max_connections=10,
+            decode_responses=True
         )
-        
-        # Store the pool in the app config
         app.config['REDIS_POOL'] = pool
         
-        # Create Redis client with connection pool and async context
+        # Create Redis client getter
         def get_redis_client():
             if 'redis_client' not in g:
                 loop = async_manager.ensure_loop()
@@ -221,7 +194,6 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
                 )
             return g.redis_client
         
-        # Simple cleanup that doesn't try to close connections
         def close_redis_client(e=None):
             if 'redis_client' in g:
                 del g.redis_client
@@ -240,18 +212,23 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
             cache=cache
         )
         
-        app.logger.info("Email components initialized successfully")
+        logger.info("Application components initialized successfully")
         
     except Exception as e:
-        app.logger.error(f"Failed to initialize email components: {str(e)}")
+        logger.error(f"Failed to initialize application components: {e}")
         raise
 
     # Register blueprints
     try:
         init_routes(app)
-        app.logger.info("Routes initialized successfully")
     except Exception as e:
-        app.logger.error(f"Failed to initialize routes: {str(e)}")
+        logger.error(f"Failed to initialize routes: {e}")
         raise
         
+    @app.before_request
+    def load_user():
+        g.user = None
+        if 'user' in session:
+            g.user = User.query.get(session['user']['id'])
+    
     return app

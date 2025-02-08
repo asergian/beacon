@@ -7,11 +7,11 @@ from google.auth.transport import requests
 import os
 import pathlib
 from datetime import datetime
-from ..utils.logging_config import setup_logging
+import logging
 from ..models import db, User, log_activity
 
 # Set up logger
-logger = setup_logging()
+logger = logging.getLogger(__name__)
 auth_bp = Blueprint('auth', __name__)
 
 # OAuth 2.0 configuration

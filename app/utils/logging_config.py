@@ -1,6 +1,4 @@
-import logging
+"""Logging utilities for the application."""
 
-def setup_logging():
-    logging.basicConfig(level=logging.INFO)  # Set the desired logging level
-    logger = logging.getLogger(__name__)
-    return logger
+# This file is kept for backwards compatibility but logging configuration
+# is now handled in app.config.configure_logging()

@@ -11,6 +11,7 @@ Raises:
     Exception: Any unexpected errors during application startup.
 """
 from app import create_app
+from app.config import configure_logging
 import asyncio
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
@@ -19,12 +20,14 @@ from asgiref.wsgi import WsgiToAsgi
 import os
 import pathlib
 
-# Set up basic logging before app creation
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Initialize logging with our custom configuration
+configure_logging()
 logger = logging.getLogger(__name__)
+
+# Configure Hypercorn's logger to use our format
+hypercorn_logger = logging.getLogger('hypercorn.error')
+hypercorn_logger.handlers = []  # Remove default handlers
+hypercorn_logger.propagate = True  # Use root logger's handlers
 
 def setup_https_config() -> Config:
     """Set up Hypercorn configuration with HTTPS support."""
@@ -43,10 +46,13 @@ def setup_https_config() -> Config:
         logger.info("SSL certificates generated successfully")
     
     # Configure HTTPS
-    #config.bind = ["localhost:5000"]
     config.bind = ["127.0.0.1:5000"]
     config.certfile = os.path.join(cert_dir, "cert.pem")
     config.keyfile = os.path.join(cert_dir, "key.pem")
+    
+    # Configure Hypercorn logging
+    config.accesslog = None  # Disable access log
+    config.errorlog = None  # Disable error log (we'll use our logger)
     
     return config
 
@@ -65,7 +71,7 @@ except Exception as e:
 
 if __name__ == "__main__":
     try:
-        logger.info('App starting with Hypercorn (HTTPS enabled)...')
+        logger.info("App starting with Hypercorn (HTTPS enabled)...")
         config = setup_https_config()
         asyncio.run(serve(app, config))
     except Exception as e:
