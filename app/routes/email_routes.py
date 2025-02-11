@@ -129,7 +129,7 @@ async def get_email_analysis():
         command = AnalysisCommand(
             days_back=days_back,
             cache_duration_days=cache_duration,
-            batch_size=10  # Process in small batches
+            batch_size=20  # Process in small batches
         )
         result = await current_app.pipeline.get_analyzed_emails(command)
         
