@@ -22,6 +22,8 @@ from openai import AsyncOpenAI
 from typing import Optional
 import os
 from datetime import timedelta
+from asgiref.wsgi import WsgiToAsgi
+import multiprocessing
 
 from .config import Config, configure_logging
 from .models import db, User
@@ -40,6 +42,9 @@ from .email.storage.cache import RedisEmailCache
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
 from .utils.async_utils import async_manager
+
+# This will be our ASGI application instance
+application = None
 
 def init_openai_client(app):
     """Initializes the AsyncOpenAI client with configuration from the Flask app.
@@ -94,7 +99,9 @@ def init_openai_client(app):
         # Store the getter function in the app
         app.get_openai_client = get_openai_client
         
-        logger.info("OpenAI client initialized successfully")
+        # Log initialization status based on process type
+        if multiprocessing.parent_process():
+            logger.debug(f"OpenAI client initialized successfully for worker process (PID: {os.getpid()})")
         
     except ValueError as e:
         logger = getattr(current_app, 'logger', logging.getLogger(__name__))
@@ -107,45 +114,36 @@ def init_openai_client(app):
 
 def create_app(config_class: Optional[object] = Config) -> Flask:
     """Create and configure the Flask application."""
-    app = Flask(__name__)
+    flask_app = Flask(__name__)
     
-    # Disable Flask's default logging
-    app.logger.handlers.clear()
-    
-    # Load configuration
-    if isinstance(config_class, type):
-        app.config.from_object(config_class())
-    else:
-        app.config.from_object(config_class)
-    
-    # Set up session configuration
-    app.secret_key = app.config.get('FLASK_SECRET_KEY') or os.urandom(24)
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
-    app.config['SESSION_PERMANENT'] = True
-    
-    # Initialize extensions
-    db.init_app(app)
-    migrate = Migrate(app, db)
-    
-    # Ensure the instance folder exists
-    try:
-        os.makedirs(app.instance_path)
-    except OSError:
-        pass
-        
-    # Initialize logging first, before any other operations
-    configure_logging()
+    # Get worker information
+    worker_id = os.environ.get('HYPERCORN_WORKER_ID')
+    is_worker = bool(worker_id)
     logger = logging.getLogger(__name__)
     
-    # Initialize OpenAI client
-    with app.app_context():
-        init_openai_client(app)
+    # Basic setup (no logging needed)
+    flask_app.logger.handlers.clear()
+    flask_app.config.from_object(config_class() if isinstance(config_class, type) else config_class)
+    flask_app.secret_key = flask_app.config.get('FLASK_SECRET_KEY') or os.urandom(24)
+    flask_app.config['SESSION_TYPE'] = 'filesystem'
+    flask_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+    flask_app.config['SESSION_PERMANENT'] = True
     
-    # Initialize components
+    # Initialize extensions (no logging needed)
+    db.init_app(flask_app)
+    Migrate(flask_app, db)
+    
     try:
+        os.makedirs(flask_app.instance_path)
+    except OSError:
+        pass
+    
+    try:
+        # Initialize components
+        with flask_app.app_context():
+            init_openai_client(flask_app)
+            
         # Initialize NLP model
-        logger.info("Initializing application components...")
         nlp_model = create_nlp_model()
         
         # Initialize analyzers
@@ -154,10 +152,10 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         
         # Create priority calculator
         priority_calculator = PriorityScorer(
-            vip_senders=set(app.config.get('VIP_SENDERS', [])),
+            vip_senders=set(flask_app.config.get('VIP_SENDERS', [])),
             config=ProcessingConfig()
         )
-        priority_calculator.set_priority_threshold(50)  # Set default threshold to medium
+        priority_calculator.set_priority_threshold(50)
 
         # Create Gmail client and parser
         gmail_client = GmailClient()
@@ -172,24 +170,21 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
             parser=parser
         )
         
-        # Initialize Redis connection pool
-        logger.info("Initializing Redis connection pool...")
+        # Redis setup
         from redis.asyncio import ConnectionPool, Redis
-        redis_url = app.config.get('REDIS_URL', 'redis://localhost:6379')
-        
         pool = ConnectionPool.from_url(
-            redis_url,
+            flask_app.config.get('REDIS_URL', 'redis://localhost:6379'),
             max_connections=10,
             decode_responses=True
         )
-        app.config['REDIS_POOL'] = pool
+        flask_app.config['REDIS_POOL'] = pool
         
         # Create Redis client getter
         def get_redis_client():
             if 'redis_client' not in g:
                 loop = async_manager.ensure_loop()
                 g.redis_client = Redis(
-                    connection_pool=app.config['REDIS_POOL'],
+                    connection_pool=flask_app.config['REDIS_POOL'],
                     decode_responses=True
                 )
             return g.redis_client
@@ -198,37 +193,44 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
             if 'redis_client' in g:
                 del g.redis_client
         
-        app.teardown_appcontext(close_redis_client)
-        app.get_redis_client = get_redis_client
+        flask_app.teardown_appcontext(close_redis_client)
+        flask_app.get_redis_client = get_redis_client
         
         # Create cache with function to get Redis client
         cache = RedisEmailCache(get_redis_client)
         
         # Create and store pipeline
-        app.pipeline = create_pipeline(
+        flask_app.pipeline = create_pipeline(
             connection=gmail_client,
             parser=parser,
             processor=processor,
             cache=cache
         )
         
-        logger.info("Application components initialized successfully")
+        # Register blueprints
+        init_routes(flask_app)
         
+        # Log initialization status based on process type
+        if multiprocessing.parent_process():
+            logger.info(f"Worker process initialized (PID: {os.getpid()})")
+        else:
+            logger.info("Main application initialized")
+            
     except Exception as e:
-        logger.error(f"Failed to initialize application components: {e}")
-        raise
-
-    # Register blueprints
-    try:
-        init_routes(app)
-    except Exception as e:
-        logger.error(f"Failed to initialize routes: {e}")
+        logger.error(f"Failed to initialize application: {e}")
         raise
         
-    @app.before_request
+    @flask_app.before_request
     def load_user():
         g.user = None
         if 'user' in session:
             g.user = User.query.get(session['user']['id'])
     
-    return app
+    # Create and store the ASGI application globally
+    global application
+    application = WsgiToAsgi(flask_app)
+    
+    return flask_app
+
+# Create the application instance when the package is imported
+#create_app()

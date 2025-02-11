@@ -154,7 +154,7 @@ class User(db.Model):
             
         # Log AI features group retrieval
         if prefix == 'ai_features':
-            logging.info(f"Getting complete AI features group: {settings}")
+            logging.debug(f"Getting complete AI features group: {settings}")
             
         return settings
     

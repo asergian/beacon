@@ -339,33 +339,36 @@ class EmailProcessor:
         processed_emails = []
         
         try:
-            # Process all emails with NLP first
-            email_nlp_results = []
-            for parsed_email in parsed_emails:
-                try:
-                    nlp_start_time = time.time()
-                    nlp_results = self.text_analyzer.analyze(parsed_email.body)
-                    nlp_processing_time = time.time() - nlp_start_time
-                    
-                    if user_id:
-                        log_activity(
-                            user_id=user_id,
-                            activity_type='nlp_processing',
-                            description=f"NLP analysis for email {parsed_email.id}",
-                            metadata={
-                                'processing_time': nlp_processing_time,
-                                'entities': nlp_results.get('entities', {}),
-                                'sentence_count': nlp_results.get('sentence_count', 0),
-                                'is_urgent': nlp_results.get('urgency', False),
-                                'sentiment_indicators': nlp_results.get('sentiment_indicators', {}),
-                                'structural_elements': nlp_results.get('structural_elements', {})
-                            }
-                        )
-                    
-                    email_nlp_results.append((parsed_email, nlp_results))
-                except Exception as e:
-                    self.logger.error(f"NLP analysis failed for email {parsed_email.id}: {e}")
-                    continue
+            # Process all emails with NLP in parallel
+            nlp_start_time = time.time()
+            email_texts = [email.body for email in parsed_emails]
+            nlp_results = await self.text_analyzer.analyze_batch(email_texts)
+            nlp_processing_time = time.time() - nlp_start_time
+            
+            self.logger.info(
+                f"Batch NLP processing completed in {nlp_processing_time:.2f} seconds\n"
+                f"    Average time per email: {nlp_processing_time/len(parsed_emails):.2f} seconds"
+            )
+            
+            # Create list of email-nlp pairs
+            email_nlp_results = list(zip(parsed_emails, nlp_results))
+            
+            # Log NLP activities
+            if user_id:
+                for email, nlp_result in email_nlp_results:
+                    log_activity(
+                        user_id=user_id,
+                        activity_type='nlp_processing',
+                        description=f"NLP analysis for email {email.id}",
+                        metadata={
+                            'processing_time': nlp_processing_time / len(parsed_emails),
+                            'entities': nlp_result.get('entities', {}),
+                            'sentence_count': nlp_result.get('sentence_count', 0),
+                            'is_urgent': nlp_result.get('urgency', False),
+                            'sentiment_indicators': nlp_result.get('sentiment_indicators', {}),
+                            'structural_elements': nlp_result.get('structural_elements', {})
+                        }
+                    )
             
             # Batch process with LLM
             if email_nlp_results:

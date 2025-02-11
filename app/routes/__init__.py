@@ -6,7 +6,8 @@ from ..auth.routes import auth_bp
 from .email_routes import email_bp
 from .test_routes import test_bp
 from .user_routes import user_bp
-
+import multiprocessing
+import os
 logger = logging.getLogger(__name__)
 
 def init_routes(app: Flask):
@@ -17,7 +18,8 @@ def init_routes(app: Flask):
         app.register_blueprint(user_bp, url_prefix='/user')
         if app.debug:  # Only register test routes in debug mode
             app.register_blueprint(test_bp, url_prefix='/test')
-        logger.info("Routes initialized")
+        #if multiprocessing.parent_process():
+        #    logger.info(f"Routes initialized for worker process (PID: {os.getpid()})" )
     except Exception as e:
         logger.error(f"Failed to register routes: {str(e)}")
         raise
