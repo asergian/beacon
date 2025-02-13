@@ -277,7 +277,8 @@ def stream_email_analysis():
                     cached_emails = loop.run_until_complete(
                         current_app.pipeline.cache.get_recent(
                             command.cache_duration_days,
-                            command.days_back
+                            command.days_back,
+                            user_email
                         )
                     )
                     

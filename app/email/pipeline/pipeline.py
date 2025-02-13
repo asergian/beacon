@@ -106,8 +106,8 @@ class EmailPipeline:
             cached_ids = set()
             if self.cache:
                 await self.cache.set_user(user_email)
-                await self.cache.clear_old_entries(cache_duration)
-                cached_emails = await self.cache.get_recent(cache_duration, command.days_back)
+                await self.cache.clear_old_entries(cache_duration, user_email)
+                cached_emails = await self.cache.get_recent(cache_duration, command.days_back, user_email)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_emails)
             
@@ -202,7 +202,7 @@ class EmailPipeline:
 
                     # Cache new results if cache available
                     if self.cache and analyzed_emails:
-                        await self.cache.store_many(analyzed_emails, ttl_days=cache_duration)
+                        await self.cache.store_many(analyzed_emails, user_email, ttl_days=cache_duration)
                 
                 # Combine cached and newly analyzed emails
                 all_emails = cached_emails + analyzed_emails
@@ -373,8 +373,8 @@ class EmailPipeline:
             cached_ids = set()
             if self.cache:
                 await self.cache.set_user(user_email)
-                await self.cache.clear_old_entries(cache_duration)
-                cached_emails = await self.cache.get_recent(command.cache_duration_days, command.days_back)
+                await self.cache.clear_old_entries(cache_duration, user_email)
+                cached_emails = await self.cache.get_recent(command.cache_duration_days, command.days_back, user_email)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_ids)
                 
@@ -446,7 +446,7 @@ class EmailPipeline:
                             
                             # Cache each email as we process it
                             if self.cache:
-                                await self.cache.store(processed_email, ttl_days=cache_duration)
+                                await self.cache.store(processed_email, user_email, ttl_days=cache_duration)
                         
                         # Yield all basic emails at once since no real processing needed
                         if basic_emails:
@@ -479,7 +479,7 @@ class EmailPipeline:
                                 
                                 # Cache batch results
                                 if self.cache and batch_results:
-                                    await self.cache.store_many(batch_results, ttl_days=cache_duration)
+                                    await self.cache.store_many(batch_results, user_email, ttl_days=cache_duration)
                                 
                                 # Yield each batch as it's processed
                                 if batch_results:
@@ -498,7 +498,7 @@ class EmailPipeline:
                             
                             # Cache results
                             if self.cache and analyzed_emails:
-                                await self.cache.store_many(analyzed_emails, ttl_days=cache_duration)
+                                await self.cache.store_many(analyzed_emails, user_email, ttl_days=cache_duration)
                             
                             # Yield all results at once
                             if analyzed_emails:

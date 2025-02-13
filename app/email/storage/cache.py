@@ -23,43 +23,37 @@ class EmailCache(ABC):
 class RedisEmailCache(EmailCache):
     """Redis implementation of email cache"""
     
-    def __init__(self, get_redis_client, ttl_days: int = 7, user_email: str = None):
+    def __init__(self, get_redis_client, ttl_days: int = 7):
         """Initialize Redis cache with a function to get the Redis client
         
         Args:
             get_redis_client: Function that returns a Redis client instance
             ttl_days: Number of days to keep emails in cache
-            user_email: Optional user email to initialize the cache for
         """
         if not callable(get_redis_client):
             raise ValueError("get_redis_client must be a callable")
         self.get_redis_client = get_redis_client
         self.ttl = timedelta(days=ttl_days)
-        self.user_email = user_email.lower() if user_email else None
         self._base_prefix = "email:"
         self.logger = logging.getLogger(__name__)
         
-    @property
-    def key_prefix(self) -> str:
-        """Get the cache key prefix for the current user"""
-        if not self.user_email:
-            raise ValueError("user_email must be set to access cache")
-        return f"{self._base_prefix}{self.user_email}:"
-
-    async def set_user(self, user_email: str) -> None:
-        """Set the current user for the cache"""
+    def _get_key_prefix(self, user_email: str) -> str:
+        """Get the cache key prefix for a specific user"""
         if not user_email:
             raise ValueError("user_email cannot be empty")
-            
-        new_email = user_email.lower()
-        if new_email != self.user_email:
-            self.logger.info(f"Switching cache user to: {new_email}")
-        self.user_email = new_email
-        
-    async def _ensure_redis_connection(self) -> Redis:
+        return f"{self._base_prefix}{user_email.lower()}:"
+
+    async def set_user(self, user_email: str) -> None:
+        """Validate user email format - no longer stores the email"""
+        if not user_email:
+            raise ValueError("user_email cannot be empty")
+        # Just validate the email format but don't store it
+        user_email.lower()
+
+    async def _ensure_redis_connection(self, user_email: str) -> Redis:
         """Ensure Redis connection is active and working"""
-        if not self.user_email:
-            raise ValueError("user_email must be set before accessing cache")
+        if not user_email:
+            raise ValueError("user_email must be provided for cache operations")
         try:
             redis = self.get_redis_client()
             if not redis:
@@ -71,10 +65,10 @@ class RedisEmailCache(EmailCache):
             self.logger.error(f"Redis connection check failed: {e}")
             raise
 
-    async def get_recent(self, cache_duration_days: int, days_back: int) -> List[ProcessedEmail]:
-        """Get recent emails from cache"""
+    async def get_recent(self, cache_duration_days: int, days_back: int, user_email: str) -> List[ProcessedEmail]:
+        """Get recent emails from cache for a specific user"""
         try:
-            redis = await self._ensure_redis_connection()
+            redis = await self._ensure_redis_connection(user_email)
             
             # Calculate the cutoff times in UTC
             now = datetime.now()  # Local time
@@ -98,13 +92,13 @@ class RedisEmailCache(EmailCache):
                 f"Cutoff: {cache_cutoff.isoformat()}, Days back: {days_back}"
             )
             
-            # Get all keys for the current user
-            pattern = f"{self.key_prefix}*"
+            # Get all keys for the specific user
+            pattern = f"{self._get_key_prefix(user_email)}*"
             keys = []
             try:
                 async for key in redis.scan_iter(match=pattern):
                     key_parts = key.split(':')
-                    if len(key_parts) != 3 or key_parts[1] != self.user_email:
+                    if len(key_parts) != 3 or key_parts[1] != user_email:
                         self.logger.warning(f"Invalid cache key format: {key}")
                         continue
                     keys.append(key)
@@ -112,7 +106,7 @@ class RedisEmailCache(EmailCache):
                 self.logger.error(f"Failed to scan Redis keys: {e}")
                 return []
             
-            self.logger.info(f"Found {len(keys)} cached entries for user {self.user_email}")
+            self.logger.info(f"Found {len(keys)} cached entries for user {user_email}")
             emails = []
             skipped = 0
             deleted = 0
@@ -122,7 +116,7 @@ class RedisEmailCache(EmailCache):
                 try:
                     # Skip keys that don't match the expected format or user
                     key_parts = key.split(':')
-                    if len(key_parts) != 3 or key_parts[1] != self.user_email:
+                    if len(key_parts) != 3 or key_parts[1] != user_email:
                         continue
                         
                     email_data = await redis.get(key)
@@ -200,15 +194,15 @@ class RedisEmailCache(EmailCache):
             self.logger.error(f"Error fetching emails from Redis: {e}")
             return []
 
-    async def store_many(self, emails: List[ProcessedEmail], ttl_days: Optional[int] = None) -> None:
-        """Store multiple emails in cache"""
+    async def store_many(self, emails: List[ProcessedEmail], user_email: str, ttl_days: Optional[int] = None) -> None:
+        """Store multiple emails in cache for a specific user"""
         if not emails:
             return
             
         try:
-            redis = await self._ensure_redis_connection()
+            redis = await self._ensure_redis_connection(user_email)
             
-            self.logger.info(f"Storing {len(emails)} emails in cache")
+            self.logger.info(f"Storing {len(emails)} emails in cache for user {user_email}")
             stored_count = 0
             failed_count = 0
             
@@ -222,7 +216,7 @@ class RedisEmailCache(EmailCache):
                         failed_count += 1
                         continue
                         
-                    key = f"{self.key_prefix}{email_id}"
+                    key = f"{self._get_key_prefix(user_email)}{email_id}"
                     email_dict = email.dict()
                     
                     # Ensure date is properly formatted in UTC
@@ -257,16 +251,16 @@ class RedisEmailCache(EmailCache):
             self.logger.error(f"Error in store_many: {e}")
             raise
 
-    async def clear_cache(self) -> None:
-        """Flush the cache"""
-        if not self.user_email:
+    async def clear_cache(self, user_email: str) -> None:
+        """Flush the cache for a specific user"""
+        if not user_email:
             return
             
         try:
-            redis = await self._ensure_redis_connection()
+            redis = await self._ensure_redis_connection(user_email)
             
-            # Only clear keys for the current user
-            pattern = f"{self.key_prefix}*"
+            # Only clear keys for the specific user
+            pattern = f"{self._get_key_prefix(user_email)}*"
             deleted_count = 0
             failed_count = 0
             
@@ -290,7 +284,7 @@ class RedisEmailCache(EmailCache):
     async def clear_all_cache(self) -> None:
         """Flush the cache for all users"""
         try:
-            redis = await self._ensure_redis_connection()
+            redis = await self._ensure_redis_connection(None)
             
             pattern = f"{self._base_prefix}*"  # Match all user keys
             deleted_count = 0
@@ -313,16 +307,16 @@ class RedisEmailCache(EmailCache):
             self.logger.error(f"Error clearing all caches: {e}")
             raise
 
-    async def clear_old_entries(self, cache_duration_days: int) -> None:
-        """Proactively clear old cache entries"""
+    async def clear_old_entries(self, cache_duration_days: int, user_email: str) -> None:
+        """Proactively clear old cache entries for a specific user"""
         try:
-            redis = await self._ensure_redis_connection()
+            redis = await self._ensure_redis_connection(user_email)
             
             now = datetime.now()
             local_tz = now.astimezone().tzinfo
             cache_cutoff = (now - timedelta(days=cache_duration_days)).astimezone(timezone.utc)
             
-            pattern = f"{self.key_prefix}*"
+            pattern = f"{self._get_key_prefix(user_email)}*"
             deleted_count = 0
             failed_count = 0
             invalid_count = 0
