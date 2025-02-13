@@ -82,26 +82,16 @@ class RedisEmailCache(EmailCache):
             
             cache_cutoff = (now - timedelta(days=cache_duration_days)).astimezone(timezone.utc)
             
-            # For days_back=0, use today's start (local midnight)
-            if days_back == 0:
-                # Make it timezone-aware in local time first
-                start_date = now.replace(tzinfo=local_tz)
-                
-                # Get local midnight
-                start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-                
-                # Then convert to UTC
-                start_date = start_date.astimezone(timezone.utc)
-            else:
-                # Make it timezone-aware in local time first
-                start_date = now.replace(tzinfo=local_tz)
-                
-                # For other days_back, get midnight of that day in local time
-                start_date = (start_date - timedelta(days=days_back))
-                start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-                
-                # Then convert to UTC
-                start_date = start_date.astimezone(timezone.utc)
+            # Make it timezone-aware in local time first
+            start_date = now.replace(tzinfo=local_tz)
+            
+            # Calculate start date using days_back-1 to match Gmail logic
+            # where days_back=1 means today, days_back=2 means today and yesterday
+            start_date = (start_date - timedelta(days=days_back - 1))
+            start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # Then convert to UTC
+            start_date = start_date.astimezone(timezone.utc)
             
             self.logger.debug(
                 f"Cache parameters - Start: {start_date.isoformat()}, "

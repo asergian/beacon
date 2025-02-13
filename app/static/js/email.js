@@ -6,6 +6,10 @@ let hasInitialized = false;
 let selectedEmailId = null;
 let updateEmailListTimeout = null;
 let userSettings = null;
+let eventSource = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 3;
+const RECONNECT_DELAY = 2000; // 2 seconds
 
 // Update config with email-specific defaults
 config.days_back = 1;  // Default value, will be updated from user settings
@@ -97,44 +101,220 @@ async function initializePage() {
     emailDetails.style.display = 'none';
     
     try {
-        updateLoadingText('cache');
-        let hasCachedData = false;
-        
-        try {
-            const cacheResponse = await fetch(`/email/api/emails/cached?days_back=${config.days_back}`);
-            if (cacheResponse.ok) {
-                const cacheData = await cacheResponse.json();
-                if (cacheData.status === 'success' && cacheData.emails.length > 0) {
-                    emailMap.clear();
-                    cacheData.emails.forEach(email => emailMap.set(email.id, { ...email, isAnalyzed: true }));
-                    updateEmailList();
-                    loadFirstEmail();
-                    hasCachedData = true;
-                    
-                    emailList.style.display = 'block';
-                    emailDetails.style.display = 'block';
-                }
-            }
-        } catch (cacheError) {
-            console.warn('Failed to load cached emails:', cacheError);
-        }
-        
-        updateLoadingText('analyze');
-        await loadEmailAnalysis();
-        
-        updateEmailList();
-        loadFirstEmail();
-        
-        emailList.style.display = 'block';
-        emailDetails.style.display = 'block';
-        
+        await setupSSEConnection();
     } catch (error) {
         console.error('Error loading emails:', error);
         showError('Failed to load emails. Please try again.');
         hasInitialized = false;
-    } finally {
-        emailList.style.display = 'block';
-        emailDetails.style.display = 'block';
+    }
+}
+
+async function setupSSEConnection() {
+    // Close existing connection if any
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+    
+    try {
+        // Create new EventSource with credentials
+        eventSource = new EventSource('/email/api/emails/stream', {
+            withCredentials: true  // Include cookies for auth
+        });
+        
+        // Set up event handlers
+        eventSource.addEventListener('connected', (event) => {
+            console.log('SSE connection established');
+            showLoadingBar('Loading emails...');
+            reconnectAttempts = 0; // Reset reconnect counter on successful connection
+        });
+        
+        eventSource.addEventListener('status', (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Status update:', data.message);
+            // Only show loading bar for messages we want to display
+            if (data.message.includes('Loading') || 
+                data.message.includes('Found') || 
+                data.message.includes('Processing') || 
+                data.message.includes('Processed') || 
+                data.message.includes('Analysis complete')) {
+                showLoadingBar(data.message);
+            }
+        });
+        
+        eventSource.addEventListener('cached', (event) => {
+            const data = JSON.parse(event.data);
+            if (data.emails && data.emails.length > 0) {
+                console.log(`Received ${data.emails.length} cached emails`);
+                emailMap.clear();
+                data.emails.forEach(email => emailMap.set(email.id, { ...email, isAnalyzed: true }));
+                updateEmailList();
+                loadFirstEmail();
+                
+                emailList.style.display = 'block';
+                emailDetails.style.display = 'block';
+            }
+        });
+        
+        eventSource.addEventListener('batch', (event) => {
+            const data = JSON.parse(event.data);
+            if (data.emails && data.emails.length > 0) {
+                console.log(`Received batch of ${data.emails.length} analyzed emails`);
+                data.emails.forEach(email => emailMap.set(email.id, { ...email, isAnalyzed: true }));
+                updateEmailList();
+                
+                // Load first email if none selected yet
+                if (!selectedEmailId) {
+                    loadFirstEmail();
+                }
+                
+                const emailList = document.querySelector('.email-list');
+                if (emailList) {
+                    emailList.style.display = 'block';
+                }
+                
+                const emailDetails = document.getElementById('email-details');
+                if (emailDetails) {
+                    emailDetails.style.display = 'block';
+                }
+            }
+        });
+        
+        eventSource.addEventListener('stats', (event) => {
+            const stats = JSON.parse(event.data);
+            console.log('Processing complete:', stats);
+            hideLoadingBar();
+            
+            // Ensure email list is visible
+            const emailList = document.querySelector('.email-list');
+            if (emailList) {
+                emailList.style.display = 'block';
+            }
+            
+            // Close SSE connection
+            eventSource.close();
+            eventSource = null;
+        });
+        
+        eventSource.addEventListener('error', async (event) => {
+            console.error('SSE error:', event);
+            const target = event.target;
+            
+            // Check if we never connected or if the connection was closed
+            if (target.readyState === EventSource.CONNECTING) {
+                console.log('Connection attempting to establish...');
+                return; // Still trying to connect, let it try
+            }
+            
+            if (target.readyState === EventSource.CLOSED) {
+                console.log('SSE connection closed');
+                
+                // If we never got a successful connection, check SSL
+                if (!hasInitialized && window.location.protocol === 'https:') {
+                    hideLoadingBar();
+                    showError('Security certificate issue detected. Please accept the certificate warning if shown, then refresh the page.');
+                    return;
+                }
+                
+                // Attempt to reconnect if under max attempts
+                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    reconnectAttempts++;
+                    console.log(`Attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`);
+                    
+                    // Wait before reconnecting
+                    await new Promise(resolve => setTimeout(resolve, RECONNECT_DELAY));
+                    
+                    try {
+                        await setupSSEConnection();
+                    } catch (error) {
+                        console.error('Reconnection failed:', error);
+                        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                            hideLoadingBar();
+                            showError('Connection lost. Please refresh the page to try again.');
+                            hasInitialized = false;
+                        }
+                    }
+                } else {
+                    hideLoadingBar();
+                    showError('Connection lost. Please refresh the page to try again.');
+                    hasInitialized = false;
+                }
+            }
+        });
+        
+        // Return a promise that resolves when connected or rejects on error
+        return new Promise((resolve, reject) => {
+            let hasResolved = false;
+            
+            // Set up multiple timeouts for different stages
+            const timeouts = [
+                { time: 5000, message: 'Initial connection timeout' },
+                { time: 15000, message: 'Cache check timeout' },
+                { time: 45000, message: 'Analysis timeout' }
+            ];
+            
+            let currentTimeout = null;
+            
+            function setupNextTimeout(index) {
+                if (index >= timeouts.length) return;
+                
+                currentTimeout = setTimeout(() => {
+                    // Only timeout if we haven't received any data
+                    if (!hasResolved) {
+                        eventSource.close();
+                        reject(new Error(timeouts[index].message));
+                    }
+                }, timeouts[index].time);
+            }
+            
+            // Start the first timeout
+            setupNextTimeout(0);
+            
+            // Listen for successful connection
+            eventSource.addEventListener('connected', () => {
+                console.log('Connected to SSE');
+                clearTimeout(currentTimeout);
+                setupNextTimeout(1);
+            });
+            
+            // Listen for cache status
+            eventSource.addEventListener('status', (event) => {
+                const data = JSON.parse(event.data);
+                console.log('Status:', data.message);
+                
+                if (data.message.includes('Starting email analysis')) {
+                    clearTimeout(currentTimeout);
+                    setupNextTimeout(2);
+                }
+            });
+            
+            // Listen for successful data
+            const successEvents = ['cached', 'batch', 'stats'];
+            successEvents.forEach(eventName => {
+                eventSource.addEventListener(eventName, () => {
+                    if (!hasResolved) {
+                        hasResolved = true;
+                        clearTimeout(currentTimeout);
+                        resolve();
+                    }
+                });
+            });
+            
+            // Listen for errors
+            eventSource.addEventListener('error', (event) => {
+                if (!hasResolved && event.target.readyState === EventSource.CLOSED) {
+                    hasResolved = true;
+                    clearTimeout(currentTimeout);
+                    reject(new Error('Connection failed'));
+                }
+            });
+        });
+        
+    } catch (error) {
+        console.error('Connection setup failed:', error);
+        hideLoadingBar();
+        showError('Failed to connect. Please refresh the page to try again.');
+        throw error;
     }
 }
 
@@ -201,6 +381,7 @@ function updateEmailList() {
         const emailList = document.querySelector('.email-list');
         if (!emailList) return;
         
+        // Clear existing content
         emailList.innerHTML = '';
         
         const fragment = document.createDocumentFragment();
@@ -226,19 +407,25 @@ function updateEmailList() {
                 return new Date(b.date) - new Date(a.date);
             });
         
-        const updates = sortedEmails.map(email => () => {
+        sortedEmails.forEach(email => {
             const li = document.createElement('li');
             li.className = `email-item ${!email.isAnalyzed ? 'analyzing' : ''}`;
             li.dataset.emailId = email.id;
-            li.onclick = () => {
+            
+            // Add click handler
+            li.addEventListener('click', () => {
                 document.querySelectorAll('.email-item').forEach(item => item.classList.remove('active'));
                 li.classList.add('active');
                 selectedEmailId = email.id;
                 loadEmailDetails(email.id);
-            };
+            });
 
             if (email.needs_action) {
                 li.classList.add('needs-action');
+            }
+            
+            if (email.id === selectedEmailId) {
+                li.classList.add('active');
             }
             
             const formatTagText = (text) => {
@@ -270,17 +457,21 @@ function updateEmailList() {
                 <span class="sender-name">${(email.sender || '').split('<')[0].trim() || 'Unknown Sender'}</span>
                 <p class="email-summary-preview">${email.summary || 'Analysis in progress...'}</p>
             `;
+            
             fragment.appendChild(li);
-            return li;
         });
 
-        batchUpdate(updates, 50).then(() => {
-            emailList.appendChild(fragment);
-            if (sortedEmails.length > 0 && !selectedEmailId) {
-                selectedEmailId = sortedEmails[0].id;
-                loadEmailDetails(sortedEmails[0].id);
+        emailList.appendChild(fragment);
+        
+        // If we have emails but none selected, select the first one
+        if (sortedEmails.length > 0 && !selectedEmailId) {
+            selectedEmailId = sortedEmails[0].id;
+            loadEmailDetails(sortedEmails[0].id);
+            const firstItem = emailList.querySelector('.email-item');
+            if (firstItem) {
+                firstItem.classList.add('active');
             }
-        });
+        }
     }, 100);
 }
 
@@ -501,6 +692,30 @@ function loadFirstEmail() {
         loadEmailDetails(firstEmail.id);
     }
 }
+
+function showLoadingBar(message) {
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingText = document.getElementById('loading-text');
+    if (loadingBar && loadingText) {
+        loadingBar.style.display = 'block';
+        loadingBar.classList.add('visible');
+        loadingText.textContent = message;
+        loadingText.classList.add('visible');
+    }
+}
+
+function hideLoadingBar() {
+    const loadingBar = document.getElementById('loading-bar');
+    const loadingText = document.getElementById('loading-text');
+    if (loadingBar && loadingText) {
+        loadingBar.classList.remove('visible');
+        loadingText.classList.remove('visible');
+        setTimeout(() => {
+            loadingBar.style.display = 'none';
+        }, 300);
+    }
+}
+
 
 // Initialize the page when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializePage); 

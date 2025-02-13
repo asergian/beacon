@@ -39,11 +39,19 @@ def setup_https_config() -> Config:
     config.bind = ["127.0.0.1:5000"]
     config.certfile = os.path.join(cert_dir, "cert.pem")
     config.keyfile = os.path.join(cert_dir, "key.pem")
+    config.verify_mode = None  # Don't verify client certs
+    config.ciphers = "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256"  # Modern cipher suite
     
     # Worker configuration
     config.worker_class = "asyncio"
     config.workers = max(1, min(4, os.cpu_count() - 1))
     config.worker_connections = 1000
+    
+    # SSE-specific configuration
+    config.keep_alive_timeout = 120  # Increase keep-alive timeout for SSE
+    config.h11_max_incomplete_size = 0  # Disable max incomplete size limit
+    config.websocket_ping_interval = 20  # Keep connections alive
+    config.graceful_timeout = 120  # Allow more time for graceful shutdowns
     
     # Application configuration
     config.application_path = "app:create_app()"

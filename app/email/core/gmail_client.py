@@ -355,4 +355,11 @@ class GmailClient:
     def __del__(self):
         """Ensure resources are cleaned up."""
         if self._service:
-            self._service.close() 
+            self._service.close()
+
+    async def disconnect(self):
+        """Cleanup method to close any open connections."""
+        # Currently a no-op since the Gmail API client doesn't require explicit cleanup
+        # But we provide this method for consistency with other clients
+        self.logger.info("Gmail client disconnected")
+        return True 
