@@ -271,7 +271,6 @@ def stream_email_analysis():
             yield 'event: status\ndata: {"message": "Checking cache..."}\n\n'
             
             # Check cache first
-            cached_emails = []
             if current_app.pipeline.cache:
                 try:
                     loop.run_until_complete(current_app.pipeline.cache.set_user(user_email))
@@ -284,7 +283,11 @@ def stream_email_analysis():
                     
                     if cached_emails:
                         yield f'event: cached\ndata: {json.dumps({"emails": [email.dict() for email in cached_emails]})}\n\n'
-                        yield f'event: status\ndata: {{"message": "Loading {len(cached_emails)} emails from cache"}}\n\n'
+                        yield f'event: status\ndata: {{"message": "Loading {len(cached_emails)} cached emails"}}\n\n'
+                        # If we have no new emails to process, send close event
+                        if not current_app.pipeline.connection or not hasattr(current_app.pipeline.connection, 'fetch_emails'):
+                            yield 'event: close\ndata: {"message": "Loading complete"}\n\n'
+                            return
                     else:
                         yield 'event: status\ndata: {"message": "No cached emails found"}\n\n'
                         
@@ -292,55 +295,48 @@ def stream_email_analysis():
                     current_app.logger.error(f"Cache error: {cache_error}")
                     yield f'event: status\ndata: {{"message": "Cache check failed, proceeding with analysis..."}}\n\n'
             
-            # Start email analysis
-            yield 'event: status\ndata: {"message": "Starting email analysis..."}\n\n'
-            
             try:
-                # Get the email analysis generator
+                # Get the email analysis generator before showing any analysis messages
                 analysis_gen = current_app.pipeline.get_analyzed_emails_stream(command)
                 
-                # Process each batch
-                total_processed = 0
-                total_to_process = None  # Initialize as None until we get initial stats
-                
-                while True:
-                    try:
-                        # Get next batch using the event loop
-                        batch = loop.run_until_complete(analysis_gen.__anext__())
-                        
-                        if isinstance(batch, dict):
-                            if 'initial_stats' in batch:
-                                # Update total_to_process when we get initial stats
-                                new_emails = batch['initial_stats'].get('new_emails', 0)
-                                if new_emails > 0:
-                                    yield f'event: status\ndata: {{"message": "Found {new_emails} new emails to process"}}\n\n'
-                                total_to_process = new_emails
-                                continue
-                            elif 'stats' in batch:
-                                # Final stats
-                                yield f'event: stats\ndata: {json.dumps(batch)}\n\n'
-                                break
-                        else:
-                            # Email batch
-                            total_processed += len(batch)
-                            
-                            # Send batch data
-                            yield f'event: batch\ndata: {json.dumps({"emails": [email.dict() for email in batch]})}\n\n'
-                            
-                            # Only show processing progress if we have new emails to process
-                            if total_to_process and total_to_process > 0:
-                                yield f'event: status\ndata: {{"message": "Processed {total_processed} of {total_to_process} emails"}}\n\n'
-                            
-                    except StopAsyncIteration:
-                        break
-                    except Exception as batch_error:
-                        current_app.logger.error(f"Batch processing error: {batch_error}")
-                        yield f'event: error\ndata: {{"message": "Error processing batch: {str(batch_error)}"}}\n\n'
-                        break
+                # Get the first yield to check if we have new emails
+                first_batch = loop.run_until_complete(analysis_gen.__anext__())
+                if isinstance(first_batch, dict) and 'initial_stats' in first_batch:
+                    new_emails = first_batch['initial_stats'].get('new_emails', 0)
+                    if new_emails > 0:
+                        # Only show analysis messages if we have new emails to process
+                        yield 'event: status\ndata: {"message": "Starting email analysis..."}\n\n'
+                        yield f'event: status\ndata: {{"message": "Found {new_emails} new emails to process"}}\n\n'
                     
-                # Only show completion message if we processed new emails
-                if total_to_process and total_to_process > 0:
-                    yield f'event: status\ndata: {{"message": "Analysis complete - {total_processed} emails processed"}}\n\n'
+                    # Process the rest of the batches
+                    total_processed = 0
+                    total_to_process = new_emails
+                    
+                    while True:
+                        try:
+                            batch = loop.run_until_complete(analysis_gen.__anext__())
+                            
+                            if isinstance(batch, dict):
+                                if 'stats' in batch:
+                                    if total_processed > 0:
+                                        yield f'event: status\ndata: {{"message": "Analysis complete - {total_processed} emails processed"}}\n\n'
+                                    yield f'event: stats\ndata: {json.dumps(batch)}\n\n'
+                                    yield 'event: close\ndata: {"message": "Processing complete"}\n\n'
+                                    break
+                            else:
+                                # Email batch
+                                if len(batch) > 0:
+                                    total_processed += len(batch)
+                                    yield f'event: batch\ndata: {json.dumps({"emails": [email.dict() for email in batch]})}\n\n'
+                                    if total_to_process > 0:
+                                        yield f'event: status\ndata: {{"message": "Processed {total_processed} of {total_to_process} emails"}}\n\n'
+                                    
+                        except StopAsyncIteration:
+                            break
+                        except Exception as batch_error:
+                            current_app.logger.error(f"Batch processing error: {batch_error}")
+                            yield f'event: error\ndata: {{"message": "Error processing batch: {str(batch_error)}"}}\n\n'
+                            break
                 
             except Exception as analysis_error:
                 current_app.logger.error(f"Analysis error: {analysis_error}")
@@ -361,7 +357,7 @@ def stream_email_analysis():
                 loop.close()
             
             # Send a final event to ensure the client knows we're done
-            yield 'event: status\ndata: {"message": "Connection closed"}\n\n'
+            yield 'event: close\ndata: {"message": "Connection closed"}\n\n'
 
     response = Response(
         stream_with_context(generate()),

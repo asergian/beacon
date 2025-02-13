@@ -116,6 +116,14 @@ async function setupSSEConnection() {
         eventSource = null;
     }
     
+    // Add connection cooldown
+    const now = Date.now();
+    if (window.lastSSEConnection && (now - window.lastSSEConnection) < 5000) {
+        console.log('Connection attempt too soon, waiting...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+    window.lastSSEConnection = now;
+    
     try {
         // Create new EventSource with credentials
         eventSource = new EventSource('/email/api/emails/stream', {
@@ -132,7 +140,8 @@ async function setupSSEConnection() {
         eventSource.addEventListener('status', (event) => {
             const data = JSON.parse(event.data);
             console.log('Status update:', data.message);
-            // Only show loading bar for messages we want to display
+            
+            // Show all relevant status messages
             if (data.message.includes('Loading') || 
                 data.message.includes('Found') || 
                 data.message.includes('Processing') || 
@@ -151,8 +160,10 @@ async function setupSSEConnection() {
                 updateEmailList();
                 loadFirstEmail();
                 
-                emailList.style.display = 'block';
-                emailDetails.style.display = 'block';
+                const emailList = document.querySelector('.email-list');
+                const emailDetails = document.getElementById('email-details');
+                if (emailList) emailList.style.display = 'block';
+                if (emailDetails) emailDetails.style.display = 'block';
             }
         });
         
@@ -191,7 +202,19 @@ async function setupSSEConnection() {
                 emailList.style.display = 'block';
             }
             
+            // Mark initialization as complete before closing
+            hasInitialized = true;
+            
             // Close SSE connection
+            eventSource.close();
+            eventSource = null;
+        });
+        
+        eventSource.addEventListener('close', (event) => {
+            console.log('Server closed connection (no more emails to process)');
+            hasInitialized = true;
+            hideLoadingBar();  // Hide loading bar when connection closes
+
             eventSource.close();
             eventSource = null;
         });
@@ -199,6 +222,12 @@ async function setupSSEConnection() {
         eventSource.addEventListener('error', async (event) => {
             console.error('SSE error:', event);
             const target = event.target;
+            
+            // If we're already initialized, don't attempt to reconnect
+            if (hasInitialized) {
+                console.log('Connection closed after successful initialization');
+                return;
+            }
             
             // Check if we never connected or if the connection was closed
             if (target.readyState === EventSource.CONNECTING) {
@@ -690,32 +719,21 @@ function loadFirstEmail() {
     if (firstEmail) {
         selectedEmailId = firstEmail.id;
         loadEmailDetails(firstEmail.id);
+        
+        // Ensure the first email is marked as selected in the list
+        const firstEmailElement = document.querySelector(`.email-item[data-email-id="${firstEmail.id}"]`);
+        if (firstEmailElement) {
+            document.querySelectorAll('.email-item').forEach(item => item.classList.remove('active'));
+            firstEmailElement.classList.add('active');
+        }
+        
+        // Ensure email details are visible
+        const emailDetails = document.getElementById('email-details');
+        if (emailDetails) {
+            emailDetails.style.display = 'block';
+        }
     }
 }
-
-function showLoadingBar(message) {
-    const loadingBar = document.getElementById('loading-bar');
-    const loadingText = document.getElementById('loading-text');
-    if (loadingBar && loadingText) {
-        loadingBar.style.display = 'block';
-        loadingBar.classList.add('visible');
-        loadingText.textContent = message;
-        loadingText.classList.add('visible');
-    }
-}
-
-function hideLoadingBar() {
-    const loadingBar = document.getElementById('loading-bar');
-    const loadingText = document.getElementById('loading-text');
-    if (loadingBar && loadingText) {
-        loadingBar.classList.remove('visible');
-        loadingText.classList.remove('visible');
-        setTimeout(() => {
-            loadingBar.style.display = 'none';
-        }, 300);
-    }
-}
-
 
 // Initialize the page when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializePage); 
