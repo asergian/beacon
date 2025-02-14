@@ -1,6 +1,6 @@
 """Email processing and viewing routes."""
 
-from flask import Blueprint, current_app, render_template, jsonify, request, redirect, url_for, session
+from flask import Blueprint, current_app, render_template, jsonify, request, redirect, url_for, session, Response, stream_with_context
 import logging
 from ..auth.decorators import login_required
 from ..email.models.analysis_command import AnalysisCommand
@@ -8,11 +8,18 @@ from ..models import log_activity
 import asyncio
 from functools import wraps
 from ..models import User
+import json
+import time
 
 def async_route(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        return asyncio.run(f(*args, **kwargs))
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        return loop.run_until_complete(f(*args, **kwargs))
     return wrapper
 
 # Set up logger
@@ -21,8 +28,7 @@ email_bp = Blueprint('email', __name__)
 
 @email_bp.route('/')
 @login_required
-@async_route
-async def home():
+def home():
     """Home page that loads email UI without waiting for data."""
     return render_template('email_summary.html', 
                          emails=[],
@@ -68,13 +74,15 @@ async def get_cached_emails():
                 'message': 'Cache not available'
             }), 404
             
-        # Ensure user email is set in cache
+        # Ensure user context
         if 'user' not in session or 'email' not in session['user']:
             return jsonify({
                 'status': 'error',
                 'message': 'No user found in session'
             }), 401
             
+        user_email = session['user']['email']
+        
         # Get user settings
         user = User.query.get(session['user']['id'])
         if not user:
@@ -82,6 +90,13 @@ async def get_cached_emails():
                 'status': 'error',
                 'message': 'User not found'
             }), 404
+            
+        # Verify user email matches database
+        if user.email != user_email:
+            return jsonify({
+                'status': 'error',
+                'message': 'User email mismatch between session and database'
+            }), 401
             
         # Get settings
         days_back = user.get_setting('email_preferences.days_to_analyze', 1)
@@ -93,11 +108,12 @@ async def get_cached_emails():
             cache_duration_days=cache_duration
         )
             
-        # Set user email in cache
-        await current_app.pipeline.cache.set_user(session['user']['email'])
-            
-        # Get cached emails only using command
-        cached_emails = await current_app.pipeline.cache.get_recent(command.cache_duration_days, command.days_back)
+        # Get cached emails using command
+        cached_emails = await current_app.pipeline.cache.get_recent(
+            command.cache_duration_days,
+            command.days_back,
+            user_email
+        )
         
         return jsonify({
             'status': 'success',
@@ -129,7 +145,7 @@ async def get_email_analysis():
         command = AnalysisCommand(
             days_back=days_back,
             cache_duration_days=cache_duration,
-            batch_size=10  # Process in small batches
+            batch_size=20  # Process in small batches
         )
         result = await current_app.pipeline.get_analyzed_emails(command)
         
@@ -141,6 +157,19 @@ async def get_email_analysis():
     except Exception as e:
         logger.error(f"Failed to fetch email analysis: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@email_bp.route('/stream')
+def email_stream():
+    def generate():
+        for i in range(10):  # Simulating a stream
+            yield f"data: Message {i}\n\n"
+            time.sleep(1)  # Simulate processing delay
+
+    response = Response(stream_with_context(generate()), content_type='text/event-stream')
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["X-Accel-Buffering"] = "no"  # Important for Nginx setups
+    response.headers["Connection"] = "keep-alive"
+    return response
 
 # Deprecated routes below - will be removed in future versions
 @email_bp.route('/emails')
@@ -206,3 +235,115 @@ def get_current_user():
             'status': 'error',
             'message': str(e)
         }), 500
+
+@email_bp.route('/api/emails/stream')
+@login_required
+def stream_email_analysis():
+    """Stream analyzed emails as Server-Sent Events."""
+    
+    def generate():
+        loop = None
+        try:
+            # Send initial connection message
+            yield 'event: connected\ndata: {"status": "connected"}\n\n'
+            
+            # Check user context
+            if 'user' not in session:
+                yield 'event: error\ndata: {"message": "No user found in session"}\n\n'
+                return
+                
+            user_id = int(session['user'].get('id'))
+            user_email = session['user'].get('email')
+            if not user_email:
+                yield 'event: error\ndata: {"message": "No user email found in session"}\n\n'
+                return
+            
+            # Get user settings
+            user = User.query.get(user_id)
+            if not user:
+                yield 'event: error\ndata: {"message": "User not found in database"}\n\n'
+                return
+                
+            # Get user settings for email analysis
+            cache_duration = user.get_setting('email_preferences.cache_duration_days', 7)
+            days_back = user.get_setting('email_preferences.days_to_analyze', 1)
+            
+            command = AnalysisCommand(
+                days_back=days_back,
+                cache_duration_days=cache_duration,
+                batch_size=5  # Process in smaller batches for streaming
+            )
+            
+            # Create event loop for async operations
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            try:
+                # Get the email analysis generator
+                analysis_gen = current_app.pipeline.get_analyzed_emails_stream(command)
+                
+                # Process all yields from the generator
+                while True:
+                    try:
+                        result = loop.run_until_complete(analysis_gen.__anext__())
+                        
+                        # Handle different message types
+                        if isinstance(result, dict):
+                            msg_type = result.get('type')
+                            msg_data = result.get('data', {})
+                            
+                            if msg_type == 'status':
+                                yield f'event: status\ndata: {json.dumps(msg_data)}\n\n'
+                            elif msg_type == 'cached':
+                                yield f'event: cached\ndata: {json.dumps(msg_data)}\n\n'
+                            elif msg_type == 'batch':
+                                yield f'event: batch\ndata: {json.dumps(msg_data)}\n\n'
+                            elif msg_type == 'initial_stats':
+                                yield f'event: initial_stats\ndata: {json.dumps(msg_data)}\n\n'
+                            elif msg_type == 'stats':
+                                yield f'event: stats\ndata: {json.dumps(msg_data)}\n\n'
+                                yield 'event: close\ndata: {"message": "Processing complete"}\n\n'
+                                break
+                            elif msg_type == 'error':
+                                yield f'event: error\ndata: {json.dumps(msg_data)}\n\n'
+                                break
+                            
+                    except StopAsyncIteration:
+                        break
+                    except Exception as batch_error:
+                        current_app.logger.error(f"Batch processing error: {batch_error}")
+                        yield f'event: error\ndata: {{"message": "Error processing batch: {str(batch_error)}"}}\n\n'
+                        break
+                
+            except Exception as analysis_error:
+                current_app.logger.error(f"Analysis error: {analysis_error}")
+                yield f'event: error\ndata: {{"message": "Email analysis failed: {str(analysis_error)}"}}\n\n'
+            
+        except Exception as e:
+            current_app.logger.error(f"Error in generator: {e}")
+            yield f'event: error\ndata: {{"message": "Internal server error: {str(e)}"}}\n\n'
+        finally:
+            # Clean up resources
+            try:
+                if loop and hasattr(current_app.pipeline.connection, 'disconnect'):
+                    loop.run_until_complete(current_app.pipeline.connection.disconnect())
+            except Exception as disconnect_error:
+                current_app.logger.warning(f"Failed to disconnect Gmail client: {disconnect_error}")
+            
+            if loop:
+                loop.close()
+            
+            # Send a final event to ensure the client knows we're done
+            yield 'event: close\ndata: {"message": "Connection closed"}\n\n'
+
+    response = Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache, no-transform',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no',
+            'Content-Type': 'text/event-stream; charset=utf-8'
+        }
+    )
+    return response

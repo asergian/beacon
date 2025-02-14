@@ -338,98 +338,120 @@ class EmailProcessor:
         
         processed_emails = []
         
-        for parsed_email in parsed_emails:
-            try:
-                # Track NLP processing
-                nlp_start_time = time.time()
-                nlp_results = self.text_analyzer.analyze(parsed_email.body)
-                nlp_processing_time = time.time() - nlp_start_time
-                
-                if user_id:
+        try:
+            # Process all emails with NLP in parallel
+            nlp_start_time = time.time()
+            email_texts = [email.body for email in parsed_emails]
+            nlp_results = await self.text_analyzer.analyze_batch(email_texts)
+            nlp_processing_time = time.time() - nlp_start_time
+            
+            self.logger.info(
+                f"Batch NLP processing completed in {nlp_processing_time:.2f} seconds\n"
+                f"    Average time per email: {nlp_processing_time/len(parsed_emails):.2f} seconds"
+            )
+            
+            # Create list of email-nlp pairs
+            email_nlp_results = list(zip(parsed_emails, nlp_results))
+            
+            # Log NLP activities
+            if user_id:
+                for email, nlp_result in email_nlp_results:
                     log_activity(
                         user_id=user_id,
                         activity_type='nlp_processing',
-                        description=f"NLP analysis for email {parsed_email.id}",
+                        description=f"NLP analysis for email {email.id}",
                         metadata={
-                            'processing_time': nlp_processing_time,
-                            'entities': nlp_results.get('entities', {}),
-                            'sentence_count': nlp_results.get('sentence_count', 0),
-                            'is_urgent': nlp_results.get('urgency', False),
-                            'sentiment_indicators': nlp_results.get('sentiment_indicators', {}),
-                            'structural_elements': nlp_results.get('structural_elements', {})
+                            'processing_time': nlp_processing_time / len(parsed_emails),
+                            'entities': nlp_result.get('entities', {}),
+                            'sentence_count': nlp_result.get('sentence_count', 0),
+                            'is_urgent': nlp_result.get('urgency', False),
+                            'sentiment_indicators': nlp_result.get('sentiment_indicators', {}),
+                            'structural_elements': nlp_result.get('structural_elements', {})
                         }
                     )
-                
-                # LLM Analysis
+            
+            # Batch process with LLM
+            if email_nlp_results:
                 try:
-                    llm_start_time = time.time()
-                    llm_results = await self.llm_analyzer.analyze(parsed_email, nlp_results)
-                    llm_processing_time = time.time() - llm_start_time
+                    batch_start_time = time.time()
+                    llm_results = await self.llm_analyzer.analyze_batch(email_nlp_results)
+                    batch_processing_time = time.time() - batch_start_time
                     
-                    if user_id:
-                        log_activity(
-                            user_id=user_id,
-                            activity_type='llm_request',
-                            description=f"LLM analysis for email {parsed_email.id}",
-                            metadata={
-                                'model': llm_results.get('model', 'unknown'),
-                                'total_tokens': llm_results.get('total_tokens', 0),
-                                'processing_time_ms': round(llm_processing_time * 1000),
-                                'cost_cents': round(llm_results.get('cost', 0) * 100, 2),
-                                'category': llm_results.get('category', 'Informational'),
-                                'priority_level': self._get_priority_level(llm_results.get('priority', 0)),
-                                'needs_action': llm_results.get('needs_action', False),
-                                'action_items': llm_results.get('action_items', []),
-                                'status': 'success',
-                                'timestamp': datetime.now().isoformat()
-                            }
-                        )
-                    
-                    # Calculate priority
-                    try:
-                        priority_score, priority_level = self.priority_calculator.score(
-                            parsed_email.sender,  # Pass just the sender string
-                            nlp_results,
-                            llm_results
-                        )
-                    except Exception as e:
-                        self.logger.warning(f"Priority calculation failed for email {parsed_email.id}, using defaults: {e}")
-                        priority_score = 0
-                        priority_level = "LOW"
-                    
-                    # Ensure date is in UTC
-                    email_date = self._ensure_utc_date(parsed_email.date)
-                    
-                    # Create ProcessedEmail object
-                    processed_email = ProcessedEmail(
-                        id=parsed_email.id,
-                        subject=parsed_email.subject,
-                        sender=parsed_email.sender,
-                        body=parsed_email.body,
-                        date=email_date,
-                        urgency=nlp_results.get('is_urgent', False),
-                        entities=nlp_results.get('entities', {}),
-                        key_phrases=nlp_results.get('key_phrases', []),
-                        sentence_count=nlp_results.get('sentence_count'),
-                        sentiment_indicators=nlp_results.get('sentiment_indicators', {}),
-                        structural_elements=nlp_results.get('structural_elements', {}),
-                        needs_action=llm_results.get('needs_action', False),
-                        category=llm_results.get('category'),
-                        action_items=llm_results.get('action_items', []),
-                        summary=llm_results.get('summary'),
-                        priority=priority_score,
-                        priority_level=priority_level,
-                        custom_categories=llm_results.get('custom_categories', {})
+                    self.logger.info(
+                        f"Batch LLM processing completed in {batch_processing_time:.2f} seconds\n"
+                        f"    Average time per email: {batch_processing_time/len(email_nlp_results):.2f} seconds"
                     )
-                    processed_emails.append(processed_email)
+                    
+                    # Process results and create ProcessedEmail objects
+                    for i, (email_data, nlp_results) in enumerate(email_nlp_results):
+                        try:
+                            llm_result = llm_results[i]
+                            
+                            if user_id:
+                                log_activity(
+                                    user_id=user_id,
+                                    activity_type='llm_request',
+                                    description=f"LLM analysis for email {email_data.id}",
+                                    metadata={
+                                        'model': llm_result.get('model', 'unknown'),
+                                        'total_tokens': llm_result.get('total_tokens', 0),
+                                        'cost_cents': round(llm_result.get('cost', 0) * 100, 2),
+                                        'category': llm_result.get('category', 'Informational'),
+                                        'needs_action': llm_result.get('needs_action', False),
+                                        'action_items': llm_result.get('action_items', []),
+                                        'status': 'success',
+                                        'timestamp': datetime.now().isoformat()
+                                    }
+                                )
+                            
+                            # Calculate priority
+                            try:
+                                priority_score, priority_level = self.priority_calculator.score(
+                                    email_data.sender,
+                                    nlp_results,
+                                    llm_result
+                                )
+                            except Exception as e:
+                                self.logger.warning(f"Priority calculation failed for email {email_data.id}, using defaults: {e}")
+                                priority_score = 0
+                                priority_level = "LOW"
+                            
+                            # Ensure date is in UTC
+                            email_date = self._ensure_utc_date(email_data.date)
+                            
+                            # Create ProcessedEmail object
+                            processed_email = ProcessedEmail(
+                                id=email_data.id,
+                                subject=email_data.subject,
+                                sender=email_data.sender,
+                                body=email_data.body,
+                                date=email_date,
+                                urgency=nlp_results.get('is_urgent', False),
+                                entities=nlp_results.get('entities', {}),
+                                key_phrases=nlp_results.get('key_phrases', []),
+                                sentence_count=nlp_results.get('sentence_count'),
+                                sentiment_indicators=nlp_results.get('sentiment_indicators', {}),
+                                structural_elements=nlp_results.get('structural_elements', {}),
+                                needs_action=llm_result.get('needs_action', False),
+                                category=llm_result.get('category'),
+                                action_items=llm_result.get('action_items', []),
+                                summary=llm_result.get('summary'),
+                                priority=priority_score,
+                                priority_level=priority_level,
+                                custom_categories=llm_result.get('custom_categories', {})
+                            )
+                            processed_emails.append(processed_email)
+                            
+                        except Exception as e:
+                            self.logger.error(f"Failed to process LLM result for email {email_data.id}: {e}")
+                            continue
                     
                 except Exception as e:
-                    self.logger.error(f"LLM analysis failed for email {parsed_email.id}: {e}")
-                    continue
-                    
-            except Exception as e:
-                self.logger.error(f"Email processing failed for {parsed_email.id}: {e}")
-                continue
+                    self.logger.error(f"Batch LLM processing failed: {e}")
+            
+        except Exception as e:
+            self.logger.error(f"Email batch processing failed: {e}")
+            raise
         
         self.logger.info(f"Completed batch analysis of {len(processed_emails)} emails")
         return processed_emails

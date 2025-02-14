@@ -19,7 +19,7 @@ def create_nlp_model(model_name: str = "en_core_web_sm") -> Optional[spacy.langu
         RuntimeError: If model loading fails
     """
     try:
-        logger.info(f"Loading spaCy model: {model_name}")
+        logger.debug(f"Loading spaCy model: {model_name}")
         return spacy.load(model_name)
     except Exception as e:
         logger.error(f"Failed to load spaCy model {model_name}: {e}")

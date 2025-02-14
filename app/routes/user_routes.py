@@ -197,7 +197,7 @@ def get_analytics():
                         )
                     
                     # Model tracking
-                    model = metadata.get('model', 'unknown')
+                    model = str(metadata.get('model', 'unknown'))  # Ensure model is a string
                     llm_stats['models_used'].add(model)
                     llm_stats['requests_by_model'][model] = llm_stats['requests_by_model'].get(model, 0) + 1
                     
@@ -222,13 +222,19 @@ def get_analytics():
                     # Success rate - count requests that completed without errors
                     successes = sum(1 for a in activities 
                         if a.activity_type == 'llm_request' and 
-                        (a.activity_metadata.get('status') == 'success' or 
-                         'error' not in a.activity_metadata))
+                        (a.activity_metadata or {}).get('status') == 'success' or 
+                        'error' not in (a.activity_metadata or {}))
                     llm_stats['success_rate'] = round((successes * 100 / n), 1) if n > 0 else 0
                     logger.debug(f"LLM success rate: {llm_stats['success_rate']}% ({successes}/{n})")
                 
-                elif activity.activity_type in ['email_processing', 'pipeline_processing']:
-                    stats = metadata.get('stats', {})
+                elif activity.activity_type in ['email_processing', 'pipeline_processing', 'email_analysis']:
+                    # Handle both old and new metadata structures
+                    if 'analysis_stats' in metadata:
+                        stats = metadata['analysis_stats']
+                    elif 'stats' in metadata:
+                        stats = metadata['stats']
+                    else:
+                        stats = metadata
                     
                     # Update email stats
                     for key in ['total_fetched', 'new_emails', 'successfully_parsed', 'successfully_analyzed', 
@@ -236,13 +242,17 @@ def get_analytics():
                         email_stats[key] += stats.get(key, 0)
                     
                     # Update category and priority distributions
-                    for category, count in stats.get('categories', {}).items():
-                        if category in email_stats['categories']:
-                            email_stats['categories'][category] += count
+                    categories = stats.get('categories', {})
+                    if isinstance(categories, dict):
+                        for category, count in categories.items():
+                            if category and category in email_stats['categories']:
+                                email_stats['categories'][category] += count
                     
-                    for level, count in stats.get('priority_levels', {}).items():
-                        if level in email_stats['priority_levels']:
-                            email_stats['priority_levels'][level] += count
+                    priority_levels = stats.get('priority_levels', {})
+                    if isinstance(priority_levels, dict):
+                        for level, count in priority_levels.items():
+                            if level and level in email_stats['priority_levels']:
+                                email_stats['priority_levels'][level] += count
                 
                 elif activity.activity_type == 'nlp_processing':
                     nlp_stats['total_processed'] += 1
@@ -266,9 +276,11 @@ def get_analytics():
                             )
                     
                     # Update entity types
-                    for entity_type in metadata.get('entities', {}).keys():
-                        if entity_type in nlp_stats['entity_types']:
-                            nlp_stats['entity_types'][entity_type] += 1
+                    entities = metadata.get('entities', {})
+                    if isinstance(entities, dict):
+                        for entity_type in entities:
+                            if entity_type and entity_type in nlp_stats['entity_types']:
+                                nlp_stats['entity_types'][entity_type] += 1
                             
             except Exception as e:
                 logger.error(f"Error processing activity {activity.id}: {e}")
@@ -298,7 +310,7 @@ def get_analytics():
                     'type': activity.activity_type,
                     'description': activity.description,
                     'created_at': activity.created_at.isoformat(),
-                    'metadata': activity.activity_metadata,
+                    'metadata': activity.activity_metadata or {},
                     'user_email': activity.user.email,
                     'user_name': activity.user.name
                 }
