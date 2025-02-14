@@ -399,6 +399,17 @@ class EmailPipeline:
                     f"    New Emails: {len(new_raw_emails)} emails"
                 )
                 
+                # If we have no new emails to process, yield stats and return
+                if not new_raw_emails:
+                    yield {
+                        'stats': {
+                            'total_fetched': stats['emails_fetched'],
+                            'new_emails': 0,
+                            'cached': len(cached_ids)
+                        }
+                    }
+                    return
+                
                 # Send initial stats so UI can show total emails to process
                 yield {
                     'initial_stats': {

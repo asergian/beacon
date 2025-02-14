@@ -6,6 +6,7 @@ import json
 import logging
 from redis.asyncio import Redis
 from app.utils.async_utils import async_manager
+from app.models import User
 
 from ..models.processed_email import ProcessedEmail
 
@@ -281,11 +282,25 @@ class RedisEmailCache(EmailCache):
             self.logger.error(f"Error clearing cache: {e}")
             raise
 
-    async def clear_all_cache(self) -> None:
-        """Flush the cache for all users"""
-        try:
-            redis = await self._ensure_redis_connection(None)
+    async def clear_all_cache(self, user_email: str) -> None:
+        """Clear all caches for all users. Only admins can perform this operation.
+        
+        Args:
+            user_email: Email of the admin user attempting the operation
             
+        Raises:
+            ValueError: If user_email is not provided or user is not an admin
+        """
+        if not user_email:
+            raise ValueError("user_email must be provided for cache operations")
+            
+        # Get user from database to check role
+        user = User.query.filter_by(email=user_email).first()
+        if not user or not user.has_role('admin'):
+            raise ValueError("Only admin users can clear all caches")
+            
+        try:
+            redis = await self._ensure_redis_connection(user_email)
             pattern = f"{self._base_prefix}*"  # Match all user keys
             deleted_count = 0
             failed_count = 0
@@ -302,9 +317,9 @@ class RedisEmailCache(EmailCache):
                 self.logger.error(f"Failed to scan Redis keys during clear: {e}")
                 raise
                 
-            self.logger.info(f"All caches cleared - Deleted: {deleted_count}, Failed: {failed_count}")
+            self.logger.info(f"All caches cleared by admin {user_email} - Deleted: {deleted_count}, Failed: {failed_count}")
         except Exception as e:
-            self.logger.error(f"Error clearing all caches: {e}")
+            self.logger.error(f"Failed to clear all caches: {e}")
             raise
 
     async def clear_old_entries(self, cache_duration_days: int, user_email: str) -> None:

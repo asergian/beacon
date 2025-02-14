@@ -1,5 +1,5 @@
 """Test and development routes"""
-from flask import Blueprint, current_app, jsonify, render_template
+from flask import Blueprint, current_app, jsonify, render_template, session
 from ..auth.decorators import login_required
 import logging
 import asyncio
@@ -193,7 +193,14 @@ async def flush_cache():
 @async_route
 async def flush_all_cache():
     try:
-        await current_app.pipeline.cache.clear_all_cache()
+        # Clear cache
+        if current_app.pipeline.cache:
+            if 'user' not in session or 'email' not in session['user']:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'No user found in session'
+                }), 401
+            await current_app.pipeline.cache.clear_all_cache(session['user']['email'])
         return jsonify({
             'status': 'success',
             'message': 'All caches successfully cleared'
