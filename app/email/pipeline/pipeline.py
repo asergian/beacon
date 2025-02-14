@@ -79,7 +79,7 @@ class EmailPipeline:
             user_id = int(session['user'].get('id'))
             user_email = session['user'].get('email')
             if not user_email:
-                raise ValueError("No user found in session")
+                raise ValueError("No user email found in session")
                 
             self.logger.info(
                 "Starting Email Pipeline\n"
@@ -92,6 +92,10 @@ class EmailPipeline:
             user = User.query.get(user_id)
             if not user:
                 raise ValueError("User not found in database")
+                
+            # Verify user email matches database
+            if user.email != user_email:
+                raise ValueError("User email mismatch between session and database")
             
             # Check AI features once at the pipeline level
             ai_enabled = user.get_setting('ai_features.enabled', True)
@@ -105,16 +109,14 @@ class EmailPipeline:
             cached_emails = []
             cached_ids = set()
             if self.cache:
-                await self.cache.set_user(user_email)
-                await self.cache.clear_old_entries(cache_duration, user_email)
                 cached_emails = await self.cache.get_recent(cache_duration, command.days_back, user_email)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_emails)
             
-            # Now that user context is set up, connect to Gmail
-            await self.connection.connect()
+            # Now that user context is set up, connect to Gmail with user email
+            await self.connection.connect(user_email)
             try:
-                raw_emails = await self.connection.fetch_emails(command.days_back)
+                raw_emails = await self.connection.fetch_emails(command.days_back, user_email)
                 stats["emails_fetched"] = len(raw_emails)
                 
                 # Filter out already cached emails
@@ -315,18 +317,7 @@ class EmailPipeline:
         await self.get_analyzed_emails(command)
 
     async def get_analyzed_emails_stream(self, command: AnalysisCommand):
-        """Streaming version of get_analyzed_emails that yields results as they are processed
-        
-        Args:
-            command: AnalysisCommand containing:
-                - days_back: Number of days to fetch
-                - cache_duration_days: Number of days to keep in cache
-                - other filtering parameters
-                
-        Yields:
-            - List[ProcessedEmail]: Batches of processed emails
-            - Dict: Final statistics
-        """
+        """Streaming version of get_analyzed_emails that yields results as they are processed"""
         errors = []
         stats = {
             "emails_fetched": 0,
@@ -336,7 +327,7 @@ class EmailPipeline:
             "failed_parsing": 0,
             "failed_analysis": 0,
             "cached": 0,
-            "batches": 0  # Initialize batches in stats
+            "batches": 0
         }
 
         try:
@@ -347,7 +338,7 @@ class EmailPipeline:
             user_id = int(session['user'].get('id'))
             user_email = session['user'].get('email')
             if not user_email:
-                raise ValueError("No user found in session")
+                raise ValueError("No user email found in session")
                 
             self.logger.info(
                 "Starting Email Pipeline (Streaming)\n"
@@ -360,6 +351,10 @@ class EmailPipeline:
             user = User.query.get(user_id)
             if not user:
                 raise ValueError("User not found in database")
+                
+            # Verify user email matches database
+            if user.email != user_email:
+                raise ValueError("User email mismatch between session and database")
             
             # Check AI features once at the pipeline level
             ai_enabled = user.get_setting('ai_features.enabled', True)
@@ -372,20 +367,31 @@ class EmailPipeline:
             # Set up cache and get cached emails
             cached_ids = set()
             if self.cache:
-                await self.cache.set_user(user_email)
-                await self.cache.clear_old_entries(cache_duration, user_email)
+                # Send status update as dictionary
+                yield {
+                    'type': 'status',
+                    'data': {'message': 'Checking cache...'}
+                }
+                
                 cached_emails = await self.cache.get_recent(command.cache_duration_days, command.days_back, user_email)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_ids)
                 
                 # Yield cached emails first if we have any
                 if cached_emails:
-                    yield cached_emails
+                    yield {
+                        'type': 'cached',
+                        'data': {'emails': [email.dict() for email in cached_emails]}
+                    }
+                    yield {
+                        'type': 'status',
+                        'data': {'message': f'Loading {len(cached_emails)} cached emails'}
+                    }
             
             # Now that user context is set up, connect to Gmail
-            await self.connection.connect()
+            await self.connection.connect(user_email)
             try:
-                raw_emails = await self.connection.fetch_emails(command.days_back)
+                raw_emails = await self.connection.fetch_emails(command.days_back, user_email)
                 stats["emails_fetched"] = len(raw_emails)
                 
                 # Filter out already cached emails
@@ -402,7 +408,8 @@ class EmailPipeline:
                 # If we have no new emails to process, yield stats and return
                 if not new_raw_emails:
                     yield {
-                        'stats': {
+                        'type': 'stats',
+                        'data': {
                             'total_fetched': stats['emails_fetched'],
                             'new_emails': 0,
                             'cached': len(cached_ids)
@@ -412,15 +419,24 @@ class EmailPipeline:
                 
                 # Send initial stats so UI can show total emails to process
                 yield {
-                    'initial_stats': {
+                    'type': 'initial_stats',
+                    'data': {
                         'total_fetched': stats['emails_fetched'],
                         'new_emails': stats['new_emails'],
                         'cached': len(cached_ids)
                     }
                 }
                 
-                # Only process new emails if there are any
                 if new_raw_emails:
+                    yield {
+                        'type': 'status',
+                        'data': {'message': 'Starting email analysis...'}
+                    }
+                    yield {
+                        'type': 'status',
+                        'data': {'message': f'Found {len(new_raw_emails)} new emails to process'}
+                    }
+                    
                     parsed_emails = [email for email in [self.parser.extract_metadata(email) for email in new_raw_emails] if email is not None]
                     
                     # If AI is disabled, create basic metadata without batch processing
@@ -457,12 +473,15 @@ class EmailPipeline:
                             
                             # Cache each email as we process it
                             if self.cache:
-                                await self.cache.store(processed_email, user_email, ttl_days=cache_duration)
+                                await self.cache.store_many([processed_email], user_email, ttl_days=cache_duration)
                         
                         # Yield all basic emails at once since no real processing needed
                         if basic_emails:
                             stats["batches"] = 1
-                            yield basic_emails
+                            yield {
+                                'type': 'batch',
+                                'data': {'emails': [email.dict() for email in basic_emails]}
+                            }
                             
                         stats.update({
                             "successfully_analyzed": len(basic_emails),
@@ -494,10 +513,16 @@ class EmailPipeline:
                                 
                                 # Yield each batch as it's processed
                                 if batch_results:
-                                    yield batch_results
-                                
-                                processed_so_far = i + len(batch_results)
-                                self.logger.info(f"Progress: {processed_so_far} / {len(parsed_emails)} emails processed")
+                                    yield {
+                                        'type': 'batch',
+                                        'data': {'emails': [email.dict() for email in batch_results]}
+                                    }
+                                    
+                                    processed_so_far = i + len(batch_results)
+                                    yield {
+                                        'type': 'status',
+                                        'data': {'message': f'Processed {processed_so_far} of {len(parsed_emails)} emails'}
+                                    }
                                 
                                 # Update stats
                                 stats["successfully_analyzed"] += len(batch_results)
@@ -513,7 +538,10 @@ class EmailPipeline:
                             
                             # Yield all results at once
                             if analyzed_emails:
-                                yield analyzed_emails
+                                yield {
+                                    'type': 'batch',
+                                    'data': {'emails': [email.dict() for email in analyzed_emails]}
+                                }
                             
                             stats.update({
                                 "successfully_analyzed": len(analyzed_emails),
@@ -539,16 +567,10 @@ class EmailPipeline:
                     f"        Analysis: {success_rate_analyze}"
                 )
 
-                if stats['failed_parsing'] > 0 or stats['failed_analysis'] > 0:
-                    self.logger.warning(
-                        "Processing Failures:\n"
-                        f"    Failed Parsing: {stats['failed_parsing']} emails\n"
-                        f"    Failed Analysis: {stats['failed_analysis']} emails"
-                    )
-
                 # Yield final stats as a dictionary
                 yield {
-                    'stats': {
+                    'type': 'stats',
+                    'data': {
                         'total_processed': stats['emails_fetched'],
                         'new_emails': stats['new_emails'],
                         'successfully_parsed': stats['successfully_parsed'],
@@ -557,7 +579,7 @@ class EmailPipeline:
                         'failed_analysis': stats['failed_analysis'],
                         'success_rate_parse': success_rate_parse,
                         'success_rate_analyze': success_rate_analyze,
-                        'batches': stats['batches']  # Use stats batches instead of local variable
+                        'batches': stats['batches']
                     }
                 }
 
@@ -567,6 +589,10 @@ class EmailPipeline:
                 
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")
+            yield {
+                'type': 'error',
+                'data': {'message': str(e)}
+            }
             raise
 
 def create_pipeline(

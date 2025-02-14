@@ -74,13 +74,15 @@ async def get_cached_emails():
                 'message': 'Cache not available'
             }), 404
             
-        # Ensure user email is set in cache
+        # Ensure user context
         if 'user' not in session or 'email' not in session['user']:
             return jsonify({
                 'status': 'error',
                 'message': 'No user found in session'
             }), 401
             
+        user_email = session['user']['email']
+        
         # Get user settings
         user = User.query.get(session['user']['id'])
         if not user:
@@ -88,6 +90,13 @@ async def get_cached_emails():
                 'status': 'error',
                 'message': 'User not found'
             }), 404
+            
+        # Verify user email matches database
+        if user.email != user_email:
+            return jsonify({
+                'status': 'error',
+                'message': 'User email mismatch between session and database'
+            }), 401
             
         # Get settings
         days_back = user.get_setting('email_preferences.days_to_analyze', 1)
@@ -99,11 +108,12 @@ async def get_cached_emails():
             cache_duration_days=cache_duration
         )
             
-        # Set user email in cache
-        await current_app.pipeline.cache.set_user(session['user']['email'])
-            
-        # Get cached emails only using command
-        cached_emails = await current_app.pipeline.cache.get_recent(command.cache_duration_days, command.days_back)
+        # Get cached emails using command
+        cached_emails = await current_app.pipeline.cache.get_recent(
+            command.cache_duration_days,
+            command.days_back,
+            user_email
+        )
         
         return jsonify({
             'status': 'success',
@@ -268,8 +278,6 @@ def stream_email_analysis():
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             
-            yield 'event: status\ndata: {"message": "Checking cache..."}\n\n'
-            
             try:
                 # Get the email analysis generator
                 analysis_gen = current_app.pipeline.get_analyzed_emails_stream(command)
@@ -279,32 +287,27 @@ def stream_email_analysis():
                     try:
                         result = loop.run_until_complete(analysis_gen.__anext__())
                         
+                        # Handle different message types
                         if isinstance(result, dict):
-                            if 'initial_stats' in result:
-                                new_emails = result['initial_stats'].get('new_emails', 0)
-                                if new_emails > 0:
-                                    yield 'event: status\ndata: {"message": "Starting email analysis..."}\n\n'
-                                    yield f'event: status\ndata: {{"message": "Found {new_emails} new emails to process"}}\n\n'
-                            elif 'stats' in result:
-                                if result['stats'].get('total_processed', 0) > 0:
-                                    yield f'event: status\ndata: {{"message": "Analysis complete - {result["stats"]["total_processed"]} emails processed"}}\n\n'
-                                yield f'event: stats\ndata: {json.dumps(result)}\n\n'
+                            msg_type = result.get('type')
+                            msg_data = result.get('data', {})
+                            
+                            if msg_type == 'status':
+                                yield f'event: status\ndata: {json.dumps(msg_data)}\n\n'
+                            elif msg_type == 'cached':
+                                yield f'event: cached\ndata: {json.dumps(msg_data)}\n\n'
+                            elif msg_type == 'batch':
+                                yield f'event: batch\ndata: {json.dumps(msg_data)}\n\n'
+                            elif msg_type == 'initial_stats':
+                                yield f'event: initial_stats\ndata: {json.dumps(msg_data)}\n\n'
+                            elif msg_type == 'stats':
+                                yield f'event: stats\ndata: {json.dumps(msg_data)}\n\n'
                                 yield 'event: close\ndata: {"message": "Processing complete"}\n\n'
                                 break
-                        else:
-                            # Must be a list of emails
-                            if len(result) > 0:
-                                if 'cached' not in locals():  # First batch must be cached emails
-                                    yield f'event: cached\ndata: {json.dumps({"emails": [email.dict() for email in result]})}\n\n'
-                                    yield f'event: status\ndata: {{"message": "Loading {len(result)} cached emails"}}\n\n'
-                                    cached = True
-                                else:  # Subsequent batches are new emails
-                                    if 'total_processed' not in locals():
-                                        total_processed = 0
-                                    total_processed += len(result)
-                                    yield f'event: batch\ndata: {json.dumps({"emails": [email.dict() for email in result]})}\n\n'
-                                    yield f'event: status\ndata: {{"message": "Processed {total_processed} of {new_emails} emails"}}\n\n'
-                                    
+                            elif msg_type == 'error':
+                                yield f'event: error\ndata: {json.dumps(msg_data)}\n\n'
+                                break
+                            
                     except StopAsyncIteration:
                         break
                     except Exception as batch_error:

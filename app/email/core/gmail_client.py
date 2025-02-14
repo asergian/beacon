@@ -13,12 +13,14 @@ from email.utils import parsedate_to_datetime
 from googleapiclient.discovery import build
 from googleapiclient.discovery_cache.base import Cache
 from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
+from google.auth.transport.requests import Request as AuthRequest
 from flask import session
 import time
 import random
 import asyncio
 from functools import lru_cache
+import requests
+from google.oauth2 import id_token
 
 class GmailAPIError(Exception):
     """Exception raised for Gmail API-related errors."""
@@ -51,19 +53,23 @@ class GmailClient:
         self.logger = logging.getLogger(__name__)
         self._service = None
         self._credentials = None
+        self._user_email = None  # Track the authenticated user's email
         self._batch_size = 20
         self._request_count = 0
         self._last_request_time = 0
-        self._min_request_interval = 0.25  # Reduced from 1.0
+        self._min_request_interval = 0.25
         self._max_retries = 5
         self._base_delay = 2
-        self._quota_window = 1.0  # 1 second window for quota tracking
-        self._quota_limit = 250   # Gmail API quota limit per user per second
-        self._quota_cost_get = 5  # Cost for message.get request
-        self._quota_usage = []    # Track quota usage timestamps
+        self._quota_window = 1.0
+        self._quota_limit = 250
+        self._quota_cost_get = 5
+        self._quota_usage = []
     
     def _create_credentials(self, creds_dict: Dict) -> Credentials:
         """Create a Credentials object from session dictionary."""
+        if not creds_dict.get('token') or not creds_dict.get('refresh_token'):
+            raise ValueError("Invalid credentials: missing token or refresh token")
+            
         return Credentials(
             token=creds_dict['token'],
             refresh_token=creds_dict['refresh_token'],
@@ -73,26 +79,71 @@ class GmailClient:
             scopes=creds_dict['scopes']
         )
     
-    def _update_session_credentials(self):
+    def _update_session_credentials(self, user_email: str):
         """Update session with current credential state."""
-        if self._credentials:
-            session['credentials'].update({
+        if self._credentials and user_email:
+            session['credentials'] = {
                 'token': self._credentials.token,
                 'refresh_token': self._credentials.refresh_token,
                 'token_uri': self._credentials.token_uri,
                 'client_id': self._credentials.client_id,
                 'client_secret': self._credentials.client_secret,
-                'scopes': self._credentials.scopes
-            })
+                'scopes': self._credentials.scopes,
+                'id_token': self._credentials.id_token  # Make sure to store the ID token
+            }
     
-    async def _ensure_valid_credentials(self):
+    async def _ensure_valid_credentials(self, user_email: str):
         """Ensure credentials are valid, refreshing if necessary."""
         try:
+            if not user_email:
+                raise ValueError("user_email is required")
+                
+            # If we have credentials, verify they're for the right user
+            if self._credentials and self._user_email != user_email:
+                self._credentials = None
+                self._service = None
+                
             if not self._credentials:
                 if 'credentials' not in session:
                     raise GmailAPIError("No credentials found. Please authenticate first.")
                 
                 creds_dict = session['credentials']
+                
+                # Get user info from ID token to verify email
+                try:
+                    id_info = id_token.verify_oauth2_token(
+                        creds_dict.get('id_token'),
+                        AuthRequest(),  # Use the correct Request class from google.auth.transport
+                        creds_dict.get('client_id')
+                    )
+                    token_email = id_info.get('email', '').lower()
+                    
+                    # Verify credentials belong to the right user
+                    if token_email != user_email.lower():
+                        self.logger.error(f"Email mismatch - Token: {token_email}, Requested: {user_email}")
+                        raise GmailAPIError("Credentials don't match the requested user")
+                except ValueError as e:
+                    self.logger.error(f"Failed to verify ID token: {e}")
+                    # If token verification fails, try to refresh credentials
+                    if creds_dict.get('refresh_token'):
+                        self.logger.info("Token verification failed, attempting refresh")
+                        temp_creds = self._create_credentials(creds_dict)
+                        temp_creds.refresh(AuthRequest())  # Use the correct Request class from google.auth.transport
+                        creds_dict['token'] = temp_creds.token
+                        creds_dict['id_token'] = temp_creds.id_token
+                        session['credentials'] = creds_dict
+                        # Try verification again
+                        id_info = id_token.verify_oauth2_token(
+                            temp_creds.id_token,
+                            AuthRequest(),  # Use the correct Request class from google.auth.transport
+                            creds_dict.get('client_id')
+                        )
+                        token_email = id_info.get('email', '').lower()
+                        if token_email != user_email.lower():
+                            raise GmailAPIError("Credentials don't match the requested user")
+                    else:
+                        raise GmailAPIError("Unable to verify user credentials")
+                
                 required_fields = ['token', 'refresh_token', 'token_uri', 'client_id', 'client_secret', 'scopes']
                 missing_fields = [field for field in required_fields if field not in creds_dict]
                 
@@ -101,13 +152,14 @@ class GmailClient:
                     raise GmailAPIError(f"Authentication incomplete - missing: {', '.join(missing_fields)}")
                 
                 self._credentials = self._create_credentials(creds_dict)
+                self._user_email = user_email
             
             # Check if credentials need refresh
             if not self._credentials.valid:
                 if self._credentials.expired and self._credentials.refresh_token:
                     self.logger.debug("Refreshing expired credentials")
-                    self._credentials.refresh(Request())
-                    self._update_session_credentials()
+                    self._credentials.refresh(AuthRequest())
+                    self._update_session_credentials(user_email)
                     self.logger.debug("Credentials refreshed successfully")
                 else:
                     raise GmailAPIError("Credentials invalid and cannot be refreshed")
@@ -116,9 +168,10 @@ class GmailClient:
             self.logger.error(f"Credential error: {e}")
             self._service = None
             self._credentials = None
+            self._user_email = None
             session.pop('credentials', None)
             raise GmailAPIError(f"Failed to ensure valid credentials: {e}")
-    
+
     @lru_cache(maxsize=128)
     def _parse_date(self, date_str: str) -> Optional[datetime]:
         """Parse email date string with caching.
@@ -138,28 +191,25 @@ class GmailClient:
         except Exception:
             return None
 
-    async def connect(self):
-        """
-        Establish a connection to Gmail API using OAuth credentials.
-        
-        Uses the credentials stored in the Flask session during OAuth flow.
-        """
+    async def connect(self, user_email: str):
+        """Establish a connection to Gmail API using OAuth credentials."""
         try:
-            # First ensure we have valid credentials
-            await self._ensure_valid_credentials()
+            # First ensure we have valid credentials for this user
+            await self._ensure_valid_credentials(user_email)
             
-            # Only create service if we don't have one
-            if not self._service:
-                self.logger.info("Connecting to Gmail API")
-                # Use cached discovery document
+            # Only create service if we don't have one or if user changed
+            if not self._service or self._user_email != user_email:
+                self.logger.info(f"Connecting to Gmail API for user {user_email}")
                 self._service = build('gmail', 'v1', 
                                     credentials=self._credentials,
                                     cache=MemoryCache())
+                self._user_email = user_email
                 self.logger.info("Gmail API connection established")
             
         except Exception as e:
             self._service = None
             self._credentials = None
+            self._user_email = None
             session.pop('credentials', None)
             raise GmailAPIError(f"Connection error: {e}")
     
@@ -205,12 +255,13 @@ class GmailClient:
             self._quota_usage.clear()
         self._quota_usage.append(current_time)
 
-    async def fetch_emails(self, days_back: int = 1) -> List[Dict]:
+    async def fetch_emails(self, days_back: int = 1, user_email: str = None) -> List[Dict]:
         """
         Fetch emails from Gmail using the API with rate limiting and retries.
         
         Args:
             days_back: Number of days to fetch emails for (1 = today, 2 = today and yesterday, etc.)
+            user_email: Email of the user to fetch emails for
             
         Returns:
             List of dictionaries containing email data
@@ -218,12 +269,15 @@ class GmailClient:
         Raises:
             GmailAPIError: If fetching emails fails
         """
+        if not user_email:
+            raise ValueError("user_email is required to fetch emails")
+            
         try:
-            # Only connect if no service exists
-            if not self._service:
-                await self.connect()
+            # Only connect if no service exists or if user changed
+            if not self._service or self._user_email != user_email:
+                await self.connect(user_email)
             elif self._credentials and self._credentials.expired:
-                await self._ensure_valid_credentials()
+                await self._ensure_valid_credentials(user_email)
             
             # Calculate the time range using local timezone
             local_tz = datetime.now().astimezone().tzinfo
@@ -337,9 +391,9 @@ class GmailClient:
         except Exception as e:
             if "401" in str(e):
                 self.logger.info("Token expired during fetch, attempting refresh...")
-                await self._ensure_valid_credentials()
+                await self._ensure_valid_credentials(user_email)
                 # Retry the fetch once
-                return await self.fetch_emails(days_back)
+                return await self.fetch_emails(days_back, user_email)
             raise GmailAPIError(f"Failed to fetch emails: {e}")
     
     async def close(self):

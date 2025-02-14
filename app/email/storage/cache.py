@@ -7,6 +7,7 @@ import logging
 from redis.asyncio import Redis
 from app.utils.async_utils import async_manager
 from app.models import User
+import hashlib
 
 from ..models.processed_email import ProcessedEmail
 
@@ -42,14 +43,20 @@ class RedisEmailCache(EmailCache):
         """Get the cache key prefix for a specific user"""
         if not user_email:
             raise ValueError("user_email cannot be empty")
-        return f"{self._base_prefix}{user_email.lower()}:"
+        # Hash the email to prevent key injection and ensure consistent format
+        email_hash = hashlib.sha256(user_email.lower().encode()).hexdigest()[:12]
+        return f"{self._base_prefix}{email_hash}:"
 
-    async def set_user(self, user_email: str) -> None:
-        """Validate user email format - no longer stores the email"""
+    def _validate_user_email(self, user_email: str) -> None:
+        """Validate user email format and presence"""
         if not user_email:
             raise ValueError("user_email cannot be empty")
-        # Just validate the email format but don't store it
-        user_email.lower()
+        if not isinstance(user_email, str):
+            raise ValueError("user_email must be a string")
+        if '@' not in user_email:
+            raise ValueError("Invalid email format")
+        # Normalize email to lowercase
+        return user_email.lower()
 
     async def _ensure_redis_connection(self, user_email: str) -> Redis:
         """Ensure Redis connection is active and working"""
@@ -68,6 +75,7 @@ class RedisEmailCache(EmailCache):
 
     async def get_recent(self, cache_duration_days: int, days_back: int, user_email: str) -> List[ProcessedEmail]:
         """Get recent emails from cache for a specific user"""
+        self._validate_user_email(user_email)
         try:
             redis = await self._ensure_redis_connection(user_email)
             
@@ -98,10 +106,6 @@ class RedisEmailCache(EmailCache):
             keys = []
             try:
                 async for key in redis.scan_iter(match=pattern):
-                    key_parts = key.split(':')
-                    if len(key_parts) != 3 or key_parts[1] != user_email:
-                        self.logger.warning(f"Invalid cache key format: {key}")
-                        continue
                     keys.append(key)
             except Exception as e:
                 self.logger.error(f"Failed to scan Redis keys: {e}")
@@ -115,12 +119,6 @@ class RedisEmailCache(EmailCache):
             # Fetch and deserialize emails
             for key in keys:
                 try:
-                    # Skip keys that don't match the expected format or user
-                    key_parts = key.split(':')
-                    if len(key_parts) != 3 or key_parts[1] != user_email:
-                        continue
-                        
-                    email_data = await redis.get(key)
                     email_data = await redis.get(key)
                     if not email_data:
                         continue
@@ -197,6 +195,7 @@ class RedisEmailCache(EmailCache):
 
     async def store_many(self, emails: List[ProcessedEmail], user_email: str, ttl_days: Optional[int] = None) -> None:
         """Store multiple emails in cache for a specific user"""
+        self._validate_user_email(user_email)
         if not emails:
             return
             
@@ -254,9 +253,7 @@ class RedisEmailCache(EmailCache):
 
     async def clear_cache(self, user_email: str) -> None:
         """Flush the cache for a specific user"""
-        if not user_email:
-            return
-            
+        self._validate_user_email(user_email)
         try:
             redis = await self._ensure_redis_connection(user_email)
             
