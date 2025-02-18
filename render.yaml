@@ -2,43 +2,12 @@ services:
   - type: web
     name: beacon
     env: python
-    buildCommand: |
-      # Create and activate virtual environment
-      python -m venv .venv
-      . .venv/bin/activate
-      
-      # Install build dependencies first
-      pip install --no-cache-dir wheel setuptools pip --upgrade
-      
-      # Split requirements into core and ML
-      grep -v "torch\|transformers\|spacy\|sentence-transformers\|nvidia" requirements.txt > requirements.core.txt
-      grep "torch\|transformers\|spacy\|sentence-transformers\|nvidia" requirements.txt > requirements.ml.txt
-      
-      # Install core dependencies
-      pip install -r requirements.core.txt
-      
-      # Install ML dependencies with specific platform tags
-      pip install --no-cache-dir -r requirements.ml.txt --index-url https://download.pytorch.org/whl/cpu
-      
-      # Download spacy model explicitly
-      python -m spacy download en_core_web_sm
-    startCommand: |
-      # Start the application with proper worker configuration
-      hypercorn app:application \
-        --bind 0.0.0.0:$PORT \
-        --worker-class asyncio \
-        --workers 4 \
-        --access-logfile - \
-        --error-logfile - \
-        --keep-alive 120 \
-        --graceful-timeout 120 \
-        --h11-max-incomplete-size 0 \
-        --websocket-ping-interval 20
+    plan: starter
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: hypercorn app:application --bind 0.0.0.0:$PORT --worker-class asyncio --workers 4 --access-logfile - --error-logfile - --keep-alive 120 --graceful-timeout 120 --h11-max-incomplete-size 0 --websocket-ping-interval 20
     healthCheckPath: /health
-    buildFilter:
-      paths:
-      - requirements.txt
-      - "**/*.py"
+    healthCheckTimeout: 100
+    autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.11
@@ -49,9 +18,9 @@ services:
           name: beacon-db
           property: connectionString
       - key: REDIS_URL
-        value: "https://rare-dory-16482.upstash.io"  # Your Upstash Redis URL
+        value: "https://rare-dory-16482.upstash.io"
       - key: REDIS_TOKEN
-        sync: false  # This means it will use the value from Render's dashboard
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: FLASK_SECRET_KEY
@@ -63,9 +32,9 @@ services:
       - key: TINYMCE_API_KEY
         sync: false
       - key: RENDER
-        value: true
-      - key: PIP_NO_CACHE_DIR
         value: "true"
+      - key: PIP_NO_CACHE_DIR
+        value: "false"
       - key: TORCH_CPU_ONLY
         value: "true"
       - key: HYPERCORN_GRACEFUL_TIMEOUT
