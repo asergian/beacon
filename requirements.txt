@@ -60,7 +60,7 @@ sqlalchemy-utils>=0.41.0
 redis[hiredis]==5.0.1
 hiredis>=2.3.0
 async-timeout>=5.0.1
-upstash-redis==1.1.1  # Upstash Redis client for production
+upstash-redis==1.2.0
 
 # Async Support
 asyncio==3.4.3
