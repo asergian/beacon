@@ -19,6 +19,6 @@ pip install -r requirements.core.txt
 pip install -r requirements.ml.txt --index-url https://download.pytorch.org/whl/cpu
 
 # Download spacy model explicitly (only if not already downloaded)
-if [ ! -d ".venv/lib/python3.11/site-packages/en_core_web_sm" ]; then
+if [ ! -d ".venv/lib/python*/site-packages/en_core_web_sm" ]; then
     python -m spacy download en_core_web_sm
 fi
