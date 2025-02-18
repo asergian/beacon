@@ -171,22 +171,62 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         )
         
         # Redis setup
-        from redis.asyncio import ConnectionPool, Redis
-        pool = ConnectionPool.from_url(
-            flask_app.config.get('REDIS_URL', 'redis://localhost:6379'),
-            max_connections=10,
-            decode_responses=True
-        )
-        flask_app.config['REDIS_POOL'] = pool
+        redis_url = flask_app.config.get('REDIS_URL')
+        if not redis_url:
+            if os.environ.get('RENDER'):
+                raise ValueError("REDIS_URL environment variable is required in production")
+            redis_url = 'redis://localhost:6379'
+            logger.warning("No REDIS_URL configured, using default: %s", redis_url)
+
+        try:
+            if os.environ.get('RENDER'):
+                # Upstash Redis in production
+                from upstash_redis.asyncio import Redis as UpstashRedis
+                # Extract token from URL if present, otherwise use separate env var
+                upstash_token = flask_app.config.get('REDIS_TOKEN')
+                if not upstash_token:
+                    raise ValueError("REDIS_TOKEN environment variable is required for Upstash Redis")
+                
+                redis_client = UpstashRedis(url=redis_url, token=upstash_token)
+                # Test the connection
+                redis_client.set("_test_key", "test_value", ex=10)
+                test_result = redis_client.get("_test_key")
+                if test_result != "test_value":
+                    raise ValueError("Redis connection test failed")
+                
+                logger.info("Upstash Redis connection initialized successfully")
+                flask_app.config['REDIS_CLIENT'] = redis_client
+            else:
+                # Standard Redis for development
+                from redis.asyncio import ConnectionPool, Redis
+                pool = ConnectionPool.from_url(
+                    redis_url,
+                    max_connections=10,
+                    decode_responses=True
+                )
+                flask_app.config['REDIS_POOL'] = pool
+                logger.info("Local Redis connection pool initialized successfully")
+
+        except Exception as e:
+            logger.error("Failed to initialize Redis: %s", str(e))
+            if os.environ.get('RENDER'):
+                raise  # Re-raise in production
+            # In development, we'll continue without Redis
+            logger.warning("Continuing without Redis in development mode")
         
         # Create Redis client getter
         def get_redis_client():
             if 'redis_client' not in g:
-                loop = async_manager.ensure_loop()
-                g.redis_client = Redis(
-                    connection_pool=flask_app.config['REDIS_POOL'],
-                    decode_responses=True
-                )
+                if os.environ.get('RENDER'):
+                    # In production, use the Upstash client directly
+                    g.redis_client = flask_app.config['REDIS_CLIENT']
+                else:
+                    # In development, use async Redis
+                    loop = async_manager.ensure_loop()
+                    g.redis_client = Redis(
+                        connection_pool=flask_app.config.get('REDIS_POOL'),
+                        decode_responses=True
+                    )
             return g.redis_client
         
         def close_redis_client(e=None):

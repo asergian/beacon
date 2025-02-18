@@ -2,15 +2,46 @@ services:
   - type: web
     name: beacon
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: hypercorn app:application --bind 0.0.0.0:$PORT --worker-class asyncio --access-logfile - --error-logfile - --workers 4
+    buildCommand: |
+      # Create and activate virtual environment
+      python -m venv .venv
+      . .venv/bin/activate
+      
+      # Install build dependencies first
+      pip install --no-cache-dir wheel setuptools pip --upgrade
+      
+      # Split requirements into core and ML
+      grep -v "torch\|transformers\|spacy\|sentence-transformers\|nvidia" requirements.txt > requirements.core.txt
+      grep "torch\|transformers\|spacy\|sentence-transformers\|nvidia" requirements.txt > requirements.ml.txt
+      
+      # Install core dependencies
+      pip install -r requirements.core.txt
+      
+      # Install ML dependencies with specific platform tags
+      pip install --no-cache-dir -r requirements.ml.txt --index-url https://download.pytorch.org/whl/cpu
+      
+      # Download spacy model explicitly
+      python -m spacy download en_core_web_sm
+    startCommand: |
+      # Start the application with proper worker configuration
+      hypercorn app:application \
+        --bind 0.0.0.0:$PORT \
+        --worker-class asyncio \
+        --workers 4 \
+        --access-logfile - \
+        --error-logfile - \
+        --keep-alive 120 \
+        --graceful-timeout 120 \
+        --h11-max-incomplete-size 0 \
+        --websocket-ping-interval 20
     healthCheckPath: /health
     buildFilter:
       paths:
       - requirements.txt
+      - "**/*.py"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11.11
       - key: FLASK_ENV
         value: production
       - key: DATABASE_URL
@@ -18,21 +49,33 @@ services:
           name: beacon-db
           property: connectionString
       - key: REDIS_URL
-        sync: false  # You'll add this manually in Render dashboard
+        value: false
+      - key: REDIS_TOKEN
+        sync: false  # Add your Upstash Redis token in Render dashboard
       - key: OPENAI_API_KEY
-        sync: false  # You'll add this manually in Render dashboard
+        sync: false
       - key: FLASK_SECRET_KEY
-        generateValue: true  # Render will generate a random value
+        generateValue: true
       - key: EMAIL
-        sync: false  # Add manually
+        sync: false
       - key: IMAP_PASSWORD
-        sync: false  # Add manually
+        sync: false
       - key: TINYMCE_API_KEY
-        sync: false  # Add manually
+        sync: false
       - key: RENDER
         value: true
+      - key: PIP_NO_CACHE_DIR
+        value: "true"
+      - key: TORCH_CPU_ONLY
+        value: "true"
+      - key: HYPERCORN_GRACEFUL_TIMEOUT
+        value: "120"
+      - key: HYPERCORN_WORKER_CLASS
+        value: "asyncio"
+      - key: HYPERCORN_KEEP_ALIVE_TIMEOUT
+        value: "120"
 
 databases:
   - name: beacon-db
     databaseName: beacon
-    plan: free  # Free PostgreSQL database (1GB) 
+    plan: free 
