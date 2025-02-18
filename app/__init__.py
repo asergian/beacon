@@ -232,5 +232,14 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     
     return flask_app
 
-# Create the application instance when the package is imported
-#create_app()
+# Initialize the application
+if os.environ.get('RENDER'):
+    # Only initialize if we're on Render
+    flask_app = create_app()
+    application = WsgiToAsgi(flask_app)
+else:
+    # Just declare the variable for local dev
+    application = None
+
+# Export for ASGI servers
+__all__ = ['application', 'create_app']
