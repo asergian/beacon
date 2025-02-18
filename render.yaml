@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: beacon
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: hypercorn app:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: beacon-db
+          property: connectionString
+      - key: REDIS_URL
+        sync: false  # You'll add this manually in Render dashboard
+      - key: OPENAI_API_KEY
+        sync: false  # You'll add this manually in Render dashboard
+      - key: FLASK_SECRET_KEY
+        generateValue: true  # Render will generate a random value
+      - key: EMAIL
+        sync: false  # Add manually
+      - key: IMAP_PASSWORD
+        sync: false  # Add manually
+      - key: TINYMCE_API_KEY
+        sync: false  # Add manually
+
+databases:
+  - name: beacon-db
+    databaseName: beacon
+    plan: free  # Free PostgreSQL database (1GB) 
