@@ -615,13 +615,13 @@ Analyze this email and provide a JSON response with the following fields:
 OUTPUT FORMAT
 ------------
 Return only valid JSON matching this schema:
-{
+{{
     "needs_action": boolean,
     "category": string,
     "action_items": array,
     "summary": string,
-    "priority": integer%s
-}""" % (',\n    "custom_categories": object' if custom_categories_prompt else '')
+    "priority": integer{',\n    "custom_categories": object' if custom_categories_prompt else ''}
+}}"""
             return prompt
 
         except Exception as e:

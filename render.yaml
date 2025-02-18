@@ -4,6 +4,9 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: hypercorn app:application --bind 0.0.0.0:$PORT
+    buildFilter:
+      paths:
+      - requirements.txt
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
