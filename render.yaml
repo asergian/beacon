@@ -49,9 +49,9 @@ services:
           name: beacon-db
           property: connectionString
       - key: REDIS_URL
-        value: false
+        value: "https://rare-dory-16482.upstash.io"  # Your Upstash Redis URL
       - key: REDIS_TOKEN
-        sync: false  # Add your Upstash Redis token in Render dashboard
+        sync: false  # This means it will use the value from Render's dashboard
       - key: OPENAI_API_KEY
         sync: false
       - key: FLASK_SECRET_KEY
