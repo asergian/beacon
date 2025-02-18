@@ -3,7 +3,8 @@ services:
     name: beacon
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: hypercorn app:application --bind 0.0.0.0:$PORT
+    startCommand: hypercorn app:application --bind 0.0.0.0:$PORT --worker-class asyncio --access-logfile - --error-logfile - --workers 4
+    healthCheckPath: /health
     buildFilter:
       paths:
       - requirements.txt
@@ -28,6 +29,8 @@ services:
         sync: false  # Add manually
       - key: TINYMCE_API_KEY
         sync: false  # Add manually
+      - key: RENDER
+        value: true
 
 databases:
   - name: beacon-db

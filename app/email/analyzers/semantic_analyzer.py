@@ -614,14 +614,8 @@ Analyze this email and provide a JSON response with the following fields:
 
 OUTPUT FORMAT
 ------------
-Return only valid JSON matching this schema:
-{{
-    "needs_action": boolean,
-    "category": string,
-    "action_items": array,
-    "summary": string,
-    "priority": integer{',\n    "custom_categories": object' if custom_categories_prompt else ''}
-}}"""
+{self._get_schema_template(bool(custom_categories_prompt))}
+"""
             return prompt
 
         except Exception as e:
@@ -721,6 +715,22 @@ Return only valid JSON matching this schema:
         except Exception as e:
             self.logger.error(f"Error parsing LLM response: {e}")
             raise LLMProcessingError(f"Error parsing response: {e}")
+
+    def _get_schema_template(self, custom_categories_prompt: bool) -> str:
+        """Get the JSON schema template."""
+        base_schema = {
+            "needs_action": "boolean",
+            "category": "string",
+            "action_items": "array",
+            "summary": "string",
+            "priority": "integer"
+        }
+        
+        if custom_categories_prompt:
+            base_schema["custom_categories"] = "object"
+            
+        schema_str = json.dumps(base_schema, indent=4)
+        return f"Return only valid JSON matching this schema:\n{schema_str}"
 
     async def analyze_batch(self, emails: List[Tuple[EmailMetadata, Dict]], max_batch_size: int = 20) -> List[Dict[str, Any]]:
         """Analyze a batch of emails using a single LLM request.

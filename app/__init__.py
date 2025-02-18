@@ -226,6 +226,11 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         if 'user' in session:
             g.user = User.query.get(session['user']['id'])
     
+    @flask_app.route('/health')
+    def health_check():
+        """Health check endpoint for Render."""
+        return {'status': 'healthy'}, 200
+
     # Create and store the ASGI application globally
     global application
     application = WsgiToAsgi(flask_app)
