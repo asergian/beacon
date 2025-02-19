@@ -188,12 +188,17 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
                     raise ValueError("REDIS_TOKEN environment variable is required for Upstash Redis")
                 
                 redis_client = UpstashRedis(url=redis_url, token=upstash_token)
-                # Test the connection
-                redis_client.set("_test_key", "test_value", ex=10)
-                test_result = redis_client.get("_test_key")
-                if test_result != "test_value":
-                    raise ValueError("Redis connection test failed")
                 
+                # Test the connection using async_manager
+                async def test_redis_connection():
+                    await redis_client.set("_test_key", "test_value", ex=10)
+                    test_result = await redis_client.get("_test_key")
+                    if test_result != "test_value":
+                        raise ValueError("Redis connection test failed")
+                    return True
+
+                # Run the test using our async manager
+                async_manager.run_async(test_redis_connection())
                 logger.info("Upstash Redis connection initialized successfully")
                 flask_app.config['REDIS_CLIENT'] = redis_client
             else:
