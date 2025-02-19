@@ -129,6 +129,19 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     flask_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     flask_app.config['SESSION_PERMANENT'] = True
     
+    # Trust proxy headers for HTTPS detection
+    if os.environ.get('RENDER'):
+        flask_app.config['PREFERRED_URL_SCHEME'] = 'https'
+        # Trust the X-Forwarded-Proto header from Render/Cloudflare
+        flask_app.config['PROXY_FIX_X_PROTO'] = 1
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        flask_app.wsgi_app = ProxyFix(
+            flask_app.wsgi_app,
+            x_proto=1,  # Number of proxy servers
+            x_host=1,
+            x_prefix=1
+        )
+    
     # Initialize extensions (no logging needed)
     db.init_app(flask_app)
     Migrate(flask_app, db)
