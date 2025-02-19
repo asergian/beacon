@@ -190,8 +190,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
                 redis_client = UpstashRedis(url=redis_url, token=upstash_token)
                 
                 # Test the connection using async_manager
-                @async_manager.run_async
-                async def test_redis_connection():
+                async def test_redis():
                     try:
                         await redis_client.set("_test_key", "test_value", ex=10)
                         test_result = await redis_client.get("_test_key")
@@ -202,8 +201,8 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
                         logger.error(f"Redis test failed: {e}")
                         raise
 
-                # Run the test using our async manager
-                test_redis_connection()
+                # Run the test using async_manager's run_async method directly
+                async_manager.run_async(test_redis)()
                 
                 logger.info("Upstash Redis connection initialized successfully")
                 flask_app.config['REDIS_CLIENT'] = redis_client
