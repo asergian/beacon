@@ -191,11 +191,15 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
                 
                 # Test the connection using async_manager
                 async def test_redis_connection():
-                    await redis_client.set("_test_key", "test_value", ex=10)
-                    test_result = await redis_client.get("_test_key")
-                    if test_result != "test_value":
-                        raise ValueError("Redis connection test failed")
-                    return True
+                    try:
+                        await redis_client.set("_test_key", "test_value", ex=10)
+                        test_result = await redis_client.get("_test_key")
+                        if test_result != "test_value":
+                            raise ValueError("Redis connection test failed")
+                        return True
+                    except Exception as e:
+                        logger.error(f"Redis test failed: {e}")
+                        raise
 
                 # Run the test using our async manager
                 async_manager.run_async(test_redis_connection())
@@ -287,7 +291,27 @@ if os.environ.get('RENDER'):
     try:
         # Only initialize if we're on Render
         flask_app = create_app()
-        application = WsgiToAsgi(flask_app)
+        
+        # Create ASGI application with lifespan support
+        class ASGIApp:
+            def __init__(self, app):
+                self.app = WsgiToAsgi(app)
+            
+            async def __call__(self, scope, receive, send):
+                if scope["type"] == "lifespan":
+                    while True:
+                        message = await receive()
+                        if message["type"] == "lifespan.startup":
+                            # Perform any startup tasks
+                            await send({"type": "lifespan.startup.complete"})
+                        elif message["type"] == "lifespan.shutdown":
+                            # Perform any cleanup
+                            await send({"type": "lifespan.shutdown.complete"})
+                            return
+                else:
+                    await self.app(scope, receive, send)
+        
+        application = ASGIApp(flask_app)
         
         # Log deployment environment and port binding
         logger = logging.getLogger(__name__)

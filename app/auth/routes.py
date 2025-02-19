@@ -9,6 +9,7 @@ import pathlib
 from datetime import datetime
 import logging
 from ..models import db, User, log_activity
+import json
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -21,6 +22,31 @@ SCOPES = [
     'https://www.googleapis.com/auth/userinfo.profile',
     'https://www.googleapis.com/auth/gmail.readonly'
 ]
+
+def _get_oauth_config():
+    """Get OAuth configuration from environment or file."""
+    # First try environment variables
+    if all(os.environ.get(key) for key in ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']):
+        config = {
+            'web': {
+                'client_id': os.environ['GOOGLE_CLIENT_ID'],
+                'client_secret': os.environ['GOOGLE_CLIENT_SECRET'],
+                'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
+                'token_uri': 'https://oauth2.googleapis.com/token',
+                'redirect_uris': [url_for('auth.oauth2callback', _external=True)]
+            }
+        }
+        # Write config to a temporary file for google-auth-oauthlib
+        config_path = '/tmp/oauth-config.json'
+        with open(config_path, 'w') as f:
+            json.dump(config, f)
+        return config_path
+    
+    # Fallback to JSON file
+    json_path = os.path.join(pathlib.Path(__file__).parent.parent.parent, 'beacon-gmail-client.json')
+    if not os.path.exists(json_path):
+        raise RuntimeError("OAuth credentials not found. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables or provide beacon-gmail-client.json")
+    return json_path
 
 @auth_bp.route('/')
 @auth_bp.route('/login')
@@ -35,9 +61,10 @@ def oauth_login():
     """Initiate the OAuth login flow."""
     logger.info("Starting OAuth login flow")
     try:
-        # Create flow instance to manage the OAuth 2.0 Authorization Grant Flow
+        # Get OAuth config and create flow
+        client_secrets_file = _get_oauth_config()
         flow = Flow.from_client_secrets_file(
-            os.path.join(pathlib.Path(__file__).parent.parent.parent, 'beacon-gmail-client.json'),
+            client_secrets_file,
             scopes=SCOPES,
             redirect_uri=url_for('auth.oauth2callback', _external=True)
         )
@@ -51,6 +78,13 @@ def oauth_login():
         
         # Store the state in the session for later validation
         session['state'] = state
+        
+        # Clean up temporary file if it was created
+        if client_secrets_file.startswith('/tmp/'):
+            try:
+                os.remove(client_secrets_file)
+            except:
+                pass
         
         # Redirect to Google's OAuth 2.0 server
         return redirect(authorization_url)
@@ -83,8 +117,9 @@ async def oauth2callback():
         
         # Get OAuth credentials
         try:
+            client_secrets_file = _get_oauth_config()
             flow = Flow.from_client_secrets_file(
-                os.path.join(pathlib.Path(__file__).parent.parent.parent, 'beacon-gmail-client.json'),
+                client_secrets_file,
                 scopes=SCOPES,
                 redirect_uri=request.base_url
             )
@@ -96,6 +131,13 @@ async def oauth2callback():
             )
             
             credentials = flow.credentials
+            
+            # Clean up temporary file if it was created
+            if client_secrets_file.startswith('/tmp/'):
+                try:
+                    os.remove(client_secrets_file)
+                except:
+                    pass
             
             # Get user info from ID token
             id_info = id_token.verify_oauth2_token(
