@@ -146,6 +146,9 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     db.init_app(flask_app)
     Migrate(flask_app, db)
     
+    # Log database connection info
+    logger.info(f"Initializing database connection to: {flask_app.config['SQLALCHEMY_DATABASE_URI'].split('@')[1] if '@' in flask_app.config['SQLALCHEMY_DATABASE_URI'] else 'localhost'}")
+    
     try:
         os.makedirs(flask_app.instance_path)
     except OSError:

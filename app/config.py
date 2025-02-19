@@ -52,7 +52,11 @@ class Config:
         self.REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
         
         # Database Configuration
-        self.SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://localhost/beacon')
+        database_url = os.environ.get('DATABASE_URL', 'postgresql://localhost/beacon')
+        # Handle Render's postgres:// URLs
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        self.SQLALCHEMY_DATABASE_URI = database_url
         self.SQLALCHEMY_TRACK_MODIFICATIONS = os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS', False)
         
         # Debug flag
@@ -86,13 +90,13 @@ def configure_logging():
                 'level': 'INFO',
                 'formatter': 'standard',
                 'class': 'app.config.SafeStreamHandler',
-                'stream': 'ext://sys.stderr',
+                'stream': 'ext://sys.stdout',
             },
             'operation': {
                 'level': 'INFO',
                 'formatter': 'operation',
                 'class': 'app.config.SafeStreamHandler',
-                'stream': 'ext://sys.stderr',
+                'stream': 'ext://sys.stdout',
             }
         },
         'loggers': {
