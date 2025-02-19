@@ -5,8 +5,9 @@ set -e  # Exit on error
 python -m venv .venv
 . .venv/bin/activate
 
-# Install build dependencies first
-pip install wheel setuptools pip --upgrade
+# Install and upgrade build dependencies
+python -m pip install --upgrade pip
+pip install --upgrade wheel setuptools
 
 # Split requirements into core and ML
 grep -v "torch\|transformers\|spacy\|sentence-transformers\|nvidia" requirements.txt > requirements.core.txt
