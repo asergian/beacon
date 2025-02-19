@@ -282,6 +282,11 @@ if os.environ.get('RENDER'):
     # Only initialize if we're on Render
     flask_app = create_app()
     application = WsgiToAsgi(flask_app)
+    
+    # Log the port binding for Render
+    port = int(os.environ.get('PORT', 10000))
+    logger = logging.getLogger(__name__)
+    logger.info(f"Initializing application for Render on port {port}")
 else:
     # Just declare the variable for local dev
     application = None
