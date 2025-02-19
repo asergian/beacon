@@ -33,6 +33,10 @@ class Config:
         self.EMAIL = os.environ.get('EMAIL') or 'your-email@example.com'
         self.IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD') or 'your-email-password'
         
+        # Load environment variables into config
+        self.REDIS_TOKEN = os.environ.get('REDIS_TOKEN')
+        self.REDIS_URL = os.environ.get('REDIS_URL')
+
         # OpenAI Configuration
         self.OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY') or 'your-default-openai-key'
         
