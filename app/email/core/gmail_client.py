@@ -123,10 +123,10 @@ class GmailClient:
                         self.logger.error(f"Email mismatch - Token: {token_email}, Requested: {user_email}")
                         raise GmailAPIError("Credentials don't match the requested user")
                 except ValueError as e:
-                    self.logger.error(f"Failed to verify ID token: {e}")
+                    self.logger.debug(f"Token needs refresh: {e}")  # Changed to debug since this is normal
                     # If token verification fails, try to refresh credentials
                     if creds_dict.get('refresh_token'):
-                        self.logger.info("Token verification failed, attempting refresh")
+                        self.logger.info("Refreshing expired token...")  # Updated message
                         temp_creds = self._create_credentials(creds_dict)
                         temp_creds.refresh(AuthRequest())  # Use the correct Request class from google.auth.transport
                         creds_dict['token'] = temp_creds.token
@@ -141,8 +141,9 @@ class GmailClient:
                         token_email = id_info.get('email', '').lower()
                         if token_email != user_email.lower():
                             raise GmailAPIError("Credentials don't match the requested user")
+                        self.logger.info("Token refreshed successfully")  # Added success message
                     else:
-                        raise GmailAPIError("Unable to verify user credentials")
+                        raise GmailAPIError("Unable to verify user credentials - no refresh token available")
                 
                 required_fields = ['token', 'refresh_token', 'token_uri', 'client_id', 'client_secret', 'scopes']
                 missing_fields = [field for field in required_fields if field not in creds_dict]

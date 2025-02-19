@@ -279,14 +279,31 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
 
 # Initialize the application
 if os.environ.get('RENDER'):
-    # Only initialize if we're on Render
-    flask_app = create_app()
-    application = WsgiToAsgi(flask_app)
-    
-    # Log the port binding for Render
-    port = int(os.environ.get('PORT', 10000))
-    logger = logging.getLogger(__name__)
-    logger.info(f"Initializing application for Render on port {port}")
+    try:
+        # Only initialize if we're on Render
+        flask_app = create_app()
+        application = WsgiToAsgi(flask_app)
+        
+        # Log deployment environment and port binding
+        logger = logging.getLogger(__name__)
+        port = int(os.environ.get('PORT', 10000))
+        
+        # Explicitly bind to port to help Render detect it
+        from hypercorn.config import Config
+        config = Config()
+        config.bind = [f"0.0.0.0:{port}"]
+        
+        logger.info(
+            "Initializing application for Render:\n"
+            f"    Environment: {os.environ.get('FLASK_ENV', 'production')}\n"
+            f"    Port: {port}\n"
+            f"    Workers: {os.environ.get('HYPERCORN_WORKERS', '1')}\n"
+            f"    Worker Class: {os.environ.get('HYPERCORN_WORKER_CLASS', 'asyncio')}"
+        )
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to initialize application on Render: {e}")
+        raise
 else:
     # Just declare the variable for local dev
     application = None

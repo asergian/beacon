@@ -4,8 +4,9 @@ services:
     env: python
     plan: starter
     buildCommand: chmod +x build.sh && ./build.sh
-    # Note: h11_max_incomplete_size can't be set via CLI, it's handled in app.py Config
-    startCommand: PORT=${PORT:-10000} && hypercorn app:application --bind "0.0.0.0:$PORT" --worker-class asyncio --workers 1 --access-logfile - --error-logfile - --keep-alive 120 --graceful-timeout 120 --websocket-ping-interval 20
+    # Render automatically provides PORT environment variable
+    # Hypercorn binds to this port and Render handles the routing
+    startCommand: hypercorn app:application --bind "0.0.0.0:$PORT" --worker-class asyncio --workers 1 --access-logfile - --error-logfile - --keep-alive 120 --graceful-timeout 120 --websocket-ping-interval 20
     healthCheckPath: /health
     healthCheckTimeout: 100
     autoDeploy: true

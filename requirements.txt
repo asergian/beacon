@@ -1,3 +1,6 @@
+# Core Dependencies
+numpy==1.24.3  # Must be installed first for spaCy compatibility
+
 # Web Framework and ASGI/WSGI
 Flask[async]==3.1.0
 hypercorn==0.17.3
@@ -32,7 +35,6 @@ tiktoken==0.6.0
 
 # Data Processing and Validation
 pydantic==2.10.5
-numpy==2.2.2
 python-dateutil==2.8.2
 python-dotenv==1.0.1
 tqdm==4.67.1
