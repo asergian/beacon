@@ -27,13 +27,20 @@ def _get_oauth_config():
     """Get OAuth configuration from environment or file."""
     # First try environment variables
     if all(os.environ.get(key) for key in ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET']):
+        # Set up redirect URIs for both dev and prod
+        redirect_uris = [
+            url_for('auth.oauth2callback', _external=True),  # Current environment's URL
+            'http://localhost:5000/auth/oauth2callback',     # Development
+            'https://beacon-is5i.onrender.com/auth/oauth2callback'  # Production
+        ]
+        
         config = {
             'web': {
                 'client_id': os.environ['GOOGLE_CLIENT_ID'],
                 'client_secret': os.environ['GOOGLE_CLIENT_SECRET'],
                 'auth_uri': 'https://accounts.google.com/o/oauth2/auth',
                 'token_uri': 'https://oauth2.googleapis.com/token',
-                'redirect_uris': [url_for('auth.oauth2callback', _external=True)]
+                'redirect_uris': redirect_uris
             }
         }
         # Write config to a temporary file for google-auth-oauthlib
