@@ -9,9 +9,9 @@ source .venv/bin/activate  # Make sure to activate the environment
 python -m pip install --upgrade pip
 pip install --upgrade wheel setuptools
 
-# Split requirements into core and ML
-grep -v "torch\|transformers\|spacy\|sentence-transformers\|nvidia" requirements.txt > requirements.core.txt
-grep "torch\|transformers\|spacy\|sentence-transformers\|nvidia" requirements.txt > requirements.ml.txt
+# Split requirements into core and ML (excluding spaCy model URL)
+grep -v "torch\|transformers\|spacy\|sentence-transformers\|nvidia\|en_core_web_sm@" requirements.txt > requirements.core.txt
+grep "torch\|transformers\|spacy\|sentence-transformers\|nvidia" requirements.txt | grep -v "en_core_web_sm@" > requirements.ml.txt
 
 # Install core dependencies
 pip install -r requirements.core.txt
