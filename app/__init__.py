@@ -16,7 +16,7 @@ Functions:
     create_app: Factory function that creates and configures the Flask application.
 """
 
-from flask import Flask, g, current_app, session
+from flask import Flask, g, current_app, session, request, redirect
 import logging
 from openai import AsyncOpenAI
 from typing import Optional
@@ -128,6 +128,16 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     flask_app.config['SESSION_TYPE'] = 'filesystem'
     flask_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     flask_app.config['SESSION_PERMANENT'] = True
+    
+    # Force HTTPS in production
+    if os.environ.get('RENDER'):
+        flask_app.config['PREFERRED_URL_SCHEME'] = 'https'
+        
+        @flask_app.before_request
+        def force_https():
+            if not request.is_secure and not current_app.debug:
+                url = request.url.replace('http://', 'https://', 1)
+                return redirect(url, code=301)
     
     # Initialize extensions (no logging needed)
     db.init_app(flask_app)

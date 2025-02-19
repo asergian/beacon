@@ -30,9 +30,12 @@ def _get_oauth_config():
         # Set up redirect URIs for both dev and prod
         redirect_uris = [
             url_for('auth.oauth2callback', _external=True),  # Current environment's URL
-            'http://localhost:5000/auth/oauth2callback',     # Development
-            'https://beacon-is5i.onrender.com/auth/oauth2callback'  # Production
+            'https://localhost:5000/auth/oauth2callback'      # Development
         ]
+        
+        # Add production URI if we're in production
+        if os.environ.get('RENDER'):
+            redirect_uris.append('https://beacon-is5i.onrender.com/auth/oauth2callback')
         
         config = {
             'web': {
