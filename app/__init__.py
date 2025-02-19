@@ -16,7 +16,7 @@ Functions:
     create_app: Factory function that creates and configures the Flask application.
 """
 
-from flask import Flask, g, current_app, session, request, redirect
+from flask import Flask, g, current_app, session
 import logging
 from openai import AsyncOpenAI
 from typing import Optional
@@ -129,16 +129,6 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     flask_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     flask_app.config['SESSION_PERMANENT'] = True
     
-    # Force HTTPS in production
-    if os.environ.get('RENDER'):
-        flask_app.config['PREFERRED_URL_SCHEME'] = 'https'
-        
-        @flask_app.before_request
-        def force_https():
-            if not request.is_secure and not current_app.debug:
-                url = request.url.replace('http://', 'https://', 1)
-                return redirect(url, code=301)
-    
     # Initialize extensions (no logging needed)
     db.init_app(flask_app)
     Migrate(flask_app, db)
@@ -200,20 +190,24 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
                 redis_client = UpstashRedis(url=redis_url, token=upstash_token)
                 
                 # Test the connection using async_manager
-                async def test_redis():
-                    try:
-                        await redis_client.set("_test_key", "test_value", ex=10)
-                        test_result = await redis_client.get("_test_key")
-                        if test_result != "test_value":
-                            raise ValueError("Redis connection test failed")
-                        return True
-                    except Exception as e:
-                        logger.error(f"Redis test failed: {e}")
-                        raise
+                async def init_redis():
+                    async def test_redis_connection():
+                        try:
+                            await redis_client.set("_test_key", "test_value", ex=10)
+                            test_result = await redis_client.get("_test_key")
+                            if test_result != "test_value":
+                                raise ValueError("Redis connection test failed")
+                            return True
+                        except Exception as e:
+                            logger.error(f"Redis test failed: {e}")
+                            raise
 
-                # Run the test using async_manager's run_async method directly
-                async_manager.run_async(test_redis)()
-                
+                    # Run the test using async_manager's run_in_loop method
+                    await async_manager.run_in_loop(test_redis_connection)
+                    return True
+
+                # Execute the initialization
+                async_manager.get_loop().run_until_complete(init_redis())
                 logger.info("Upstash Redis connection initialized successfully")
                 flask_app.config['REDIS_CLIENT'] = redis_client
             else:
