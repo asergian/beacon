@@ -105,8 +105,13 @@ class RedisEmailCache(EmailCache):
             pattern = f"{self._get_key_prefix(user_email)}*"
             keys = []
             try:
-                async for key in redis.scan_iter(match=pattern):
-                    keys.append(key)
+                # Use scan_iter through async_manager.run_in_loop
+                cursor = 0
+                while True:
+                    cursor, temp_keys = await async_manager.run_in_loop(redis.scan, cursor, match=pattern)
+                    keys.extend(temp_keys)
+                    if cursor == 0:
+                        break
             except Exception as e:
                 self.logger.error(f"Failed to scan Redis keys: {e}")
                 return []
@@ -252,7 +257,7 @@ class RedisEmailCache(EmailCache):
             raise
 
     async def clear_cache(self, user_email: str) -> None:
-        """Flush the cache for a specific user"""
+        """Flush all cached emails for a specific user"""
         self._validate_user_email(user_email)
         try:
             redis = await self._ensure_redis_connection(user_email)
@@ -263,13 +268,18 @@ class RedisEmailCache(EmailCache):
             failed_count = 0
             
             try:
-                async for key in redis.scan_iter(match=pattern):
-                    try:
-                        await async_manager.run_in_loop(redis.delete, key)
-                        deleted_count += 1
-                    except Exception as e:
-                        self.logger.error(f"Failed to delete key {key}: {e}")
-                        failed_count += 1
+                cursor = 0
+                while True:
+                    cursor, temp_keys = await async_manager.run_in_loop(redis.scan, cursor, match=pattern)
+                    for key in temp_keys:
+                        try:
+                            await async_manager.run_in_loop(redis.delete, key)
+                            deleted_count += 1
+                        except Exception as e:
+                            self.logger.error(f"Failed to delete key {key}: {e}")
+                            failed_count += 1
+                    if cursor == 0:
+                        break
             except Exception as e:
                 self.logger.error(f"Failed to scan Redis keys during clear: {e}")
                 raise
@@ -280,7 +290,7 @@ class RedisEmailCache(EmailCache):
             raise
 
     async def clear_all_cache(self, user_email: str) -> None:
-        """Clear all caches for all users. Only admins can perform this operation.
+        """Clear all caches (admin only)
         
         Args:
             user_email: Email of the admin user attempting the operation
@@ -303,13 +313,18 @@ class RedisEmailCache(EmailCache):
             failed_count = 0
             
             try:
-                async for key in redis.scan_iter(match=pattern):
-                    try:
-                        await async_manager.run_in_loop(redis.delete, key)
-                        deleted_count += 1
-                    except Exception as e:
-                        self.logger.error(f"Failed to delete key {key}: {e}")
-                        failed_count += 1
+                cursor = 0
+                while True:
+                    cursor, temp_keys = await async_manager.run_in_loop(redis.scan, cursor, match=pattern)
+                    for key in temp_keys:
+                        try:
+                            await async_manager.run_in_loop(redis.delete, key)
+                            deleted_count += 1
+                        except Exception as e:
+                            self.logger.error(f"Failed to delete key {key}: {e}")
+                            failed_count += 1
+                    if cursor == 0:
+                        break
             except Exception as e:
                 self.logger.error(f"Failed to scan Redis keys during clear: {e}")
                 raise
@@ -320,7 +335,7 @@ class RedisEmailCache(EmailCache):
             raise
 
     async def clear_old_entries(self, cache_duration_days: int, user_email: str) -> None:
-        """Proactively clear old cache entries for a specific user"""
+        """Proactively clear old cache entries"""
         try:
             redis = await self._ensure_redis_connection(user_email)
             
@@ -333,44 +348,50 @@ class RedisEmailCache(EmailCache):
             failed_count = 0
             invalid_count = 0
             
-            async for key in redis.scan_iter(match=pattern):
-                try:
-                    email_data = await async_manager.run_in_loop(redis.get, key)
-                    if not email_data:
-                        continue
-                        
-                    email_dict = json.loads(email_data)
-                    date_str = email_dict.get('date')
-                    
-                    if not date_str:
-                        await async_manager.run_in_loop(redis.delete, key)
-                        invalid_count += 1
-                        continue
-                        
+            cursor = 0
+            while True:
+                cursor, temp_keys = await async_manager.run_in_loop(redis.scan, cursor, match=pattern)
+                for key in temp_keys:
                     try:
-                        if 'Z' in date_str:
-                            parsed_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                        elif '+' in date_str or '-' in date_str[-6:]:
-                            parsed_date = datetime.fromisoformat(date_str)
-                        else:
-                            parsed_date = datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
-                        
-                        if parsed_date.tzinfo is None:
-                            parsed_date = parsed_date.replace(tzinfo=timezone.utc)
-                        else:
-                            parsed_date = parsed_date.astimezone(timezone.utc)
+                        email_data = await async_manager.run_in_loop(redis.get, key)
+                        if not email_data:
+                            continue
                             
-                        if parsed_date < cache_cutoff:
+                        email_dict = json.loads(email_data)
+                        date_str = email_dict.get('date')
+                        
+                        if not date_str:
                             await async_manager.run_in_loop(redis.delete, key)
-                            deleted_count += 1
+                            invalid_count += 1
+                            continue
                             
-                    except ValueError:
-                        await async_manager.run_in_loop(redis.delete, key)
-                        invalid_count += 1
-                        
-                except Exception as e:
-                    self.logger.error(f"Error processing cache entry {key}: {e}")
-                    failed_count += 1
+                        try:
+                            if 'Z' in date_str:
+                                parsed_date = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                            elif '+' in date_str or '-' in date_str[-6:]:
+                                parsed_date = datetime.fromisoformat(date_str)
+                            else:
+                                parsed_date = datetime.fromisoformat(date_str).replace(tzinfo=timezone.utc)
+                            
+                            if parsed_date.tzinfo is None:
+                                parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+                            else:
+                                parsed_date = parsed_date.astimezone(timezone.utc)
+                                
+                            if parsed_date < cache_cutoff:
+                                await async_manager.run_in_loop(redis.delete, key)
+                                deleted_count += 1
+                                
+                        except ValueError:
+                            await async_manager.run_in_loop(redis.delete, key)
+                            invalid_count += 1
+                            
+                    except Exception as e:
+                        self.logger.error(f"Error processing cache entry {key}: {e}")
+                        failed_count += 1
+                
+                if cursor == 0:
+                    break
                     
             self.logger.info(
                 f"Cache cleanup complete - Expired: {deleted_count}, "
