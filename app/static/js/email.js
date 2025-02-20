@@ -12,7 +12,7 @@ const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY = 2000; // 2 seconds
 
 // Update config with email-specific defaults
-config.days_back = 5;  // Increased default to show more emails
+config.days_back = 1;  // Increased default to show more emails
 config.batch_size = 50;  // Batch size for UI updates
 
 // Function to fetch user settings
