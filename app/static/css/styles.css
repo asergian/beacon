@@ -578,6 +578,7 @@ header {
 .tag.custom-category {
     opacity: 0.9;
     transition: opacity 0.2s ease;
+    color: white;
 }
 
 .tag.custom-category:hover {

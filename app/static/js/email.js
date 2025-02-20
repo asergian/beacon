@@ -12,7 +12,7 @@ const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY = 2000; // 2 seconds
 
 // Update config with email-specific defaults
-config.days_back = 1;  // Default value, will be updated from user settings
+config.days_back = 5;  // Increased default to show more emails
 config.batch_size = 50;  // Batch size for UI updates
 
 // Function to fetch user settings
@@ -23,7 +23,10 @@ async function fetchUserSettings() {
             const data = await response.json();
             if (data.status === 'success' && data.settings) {
                 userSettings = data.settings;
-                config.days_back = userSettings.email_preferences.days_to_analyze;
+                // For demo mode, keep the larger days_back value
+                if (!window.location.pathname.includes('demo')) {
+                    config.days_back = userSettings.email_preferences.days_to_analyze;
+                }
                 console.log('Updated user settings:', userSettings);
             }
         }
@@ -74,6 +77,8 @@ function clearEmailList() {
 
 // Function to initialize the email page
 async function initializePage() {
+    console.log('Initializing email page...');
+    
     // Check if we're on the email summary page by looking for specific elements
     const emailList = document.querySelector('.email-list');
     const emailDetails = document.getElementById('email-details');
@@ -90,15 +95,11 @@ async function initializePage() {
         return;
     }
     
-    console.log('Initializing email summary page...');
+    console.log('Starting fresh initialization...');
     hasInitialized = true;
     
     clearEmailState();
-    
     await fetchUserSettings();
-    
-    emailList.innerHTML = '';
-    emailDetails.style.display = 'none';
     
     try {
         await setupSSEConnection();
@@ -154,9 +155,10 @@ async function setupSSEConnection() {
         eventSource.addEventListener('cached', (event) => {
             const data = JSON.parse(event.data);
             if (data.emails && data.emails.length > 0) {
-                console.log(`Received ${data.emails.length} cached emails`);
+                console.log(`Received ${data.emails.length} cached emails from server`);
                 emailMap.clear();
                 data.emails.forEach(email => emailMap.set(email.id, { ...email, isAnalyzed: true }));
+                console.log(`Added ${emailMap.size} emails to email map`);
                 updateEmailList();
                 loadFirstEmail();
                 
@@ -407,6 +409,7 @@ function updateEmailList() {
     }
 
     updateEmailListTimeout = setTimeout(() => {
+        console.log('Updating email list...');
         const emailList = document.querySelector('.email-list');
         if (!emailList) return;
         
@@ -415,9 +418,15 @@ function updateEmailList() {
         
         const fragment = document.createDocumentFragment();
         const uniqueEmails = new Map(Array.from(emailMap.entries()));
+        console.log(`Total emails in map before filtering: ${uniqueEmails.size}`);
         
         const sortedEmails = Array.from(uniqueEmails.values())
             .filter(email => {
+                // Special handling for demo mode - show all emails
+                const isDemo = emailMap.get(email.id)?.id?.startsWith('demo');
+                if (isDemo) {
+                    return true;
+                }
                 const emailDate = new Date(email.date);
                 const now = new Date();
                 const daysDiff = Math.floor((now - emailDate) / (1000 * 60 * 60 * 24));
@@ -425,7 +434,7 @@ function updateEmailList() {
             })
             .sort((a, b) => {
                 if (a.needs_action !== b.needs_action) {
-                    return b.needs_action ? 1 : -1;
+                    return a.needs_action ? -1 : 1;
                 }
                 const priorityOrder = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
                 const aPriority = priorityOrder[a.priority_level] || 0;
@@ -436,6 +445,17 @@ function updateEmailList() {
                 return new Date(b.date) - new Date(a.date);
             });
         
+        console.log(`Emails after filtering and sorting: ${sortedEmails.length}`);
+        
+        // Log the first few emails for debugging
+        console.log('First few emails:', sortedEmails.slice(0, 3).map(e => ({
+            id: e.id,
+            subject: e.subject,
+            date: e.date,
+            needs_action: e.needs_action,
+            priority_level: e.priority_level
+        })));
+
         sortedEmails.forEach(email => {
             const li = document.createElement('li');
             li.className = `email-item ${!email.isAnalyzed ? 'analyzing' : ''}`;
@@ -491,6 +511,7 @@ function updateEmailList() {
         });
 
         emailList.appendChild(fragment);
+        console.log(`Added ${sortedEmails.length} emails to the UI`);
         
         // If we have emails but none selected, select the first one
         if (sortedEmails.length > 0 && !selectedEmailId) {

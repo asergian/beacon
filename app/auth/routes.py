@@ -255,3 +255,67 @@ def logout():
     logger.info("User logged out")
     session.clear()
     return redirect(url_for('auth.show_login', from_logout=1))
+
+@auth_bp.route('/demo-login')
+def demo_login():
+    """Create a demo session without OAuth."""
+    try:
+        # Clear any existing session
+        session.clear()
+        
+        # Find or create demo user
+        demo_email = "demo@example.com"
+        demo_user = User.query.filter_by(email=demo_email).first()
+        
+        if not demo_user:
+            demo_user = User(
+                email=demo_email,
+                name="Demo User",
+                picture="https://api.dicebear.com/7.x/avataaars/svg?seed=Demo&backgroundColor=4A90E2",
+                roles=['demo']
+            )
+            db.session.add(demo_user)
+            db.session.flush()
+        
+        # Update last login
+        demo_user.last_login = datetime.utcnow()
+        
+        # Log demo login
+        activity = log_activity(
+            user_id=demo_user.id,
+            activity_type='demo_login',
+            description="Demo user logged in"
+        )
+        db.session.add(activity)
+        
+        # Store demo user info in session
+        session['user'] = {
+            'id': demo_user.id,
+            'email': demo_user.email,
+            'name': demo_user.name,
+            'picture': demo_user.picture,
+            'roles': demo_user.roles,
+            'is_demo': True
+        }
+        
+        # Store mock credentials
+        session['credentials'] = {
+            'token': 'demo_token',
+            'refresh_token': None,
+            'token_uri': None,
+            'client_id': None,
+            'client_secret': None,
+            'scopes': SCOPES,
+            'id_token': None
+        }
+        
+        db.session.commit()
+        logger.info(f"Demo user logged in successfully")
+        
+        return redirect(url_for('email.home'))
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Demo login error: {e}")
+        return render_template('login.html', 
+                            error="Failed to create demo session. Please try again."), 500
