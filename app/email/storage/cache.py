@@ -204,6 +204,11 @@ class RedisEmailCache(EmailCache):
         if not emails:
             return
             
+        # Skip storing if cache duration is 0
+        if ttl_days == 0:
+            self.logger.info("Cache duration is 0, skipping email storage")
+            return
+            
         try:
             redis = await self._ensure_redis_connection(user_email)
             

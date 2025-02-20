@@ -73,6 +73,10 @@
                         </div>
                         <div class="button-group">
                             <button type="button" 
+                                    class="value-button {% if user_settings.email_preferences.cache_duration_days == 0 %}selected{% endif %}"
+                                    data-value="0" 
+                                    data-setting="email_preferences.cache_duration_days">0d</button>
+                            <button type="button" 
                                     class="value-button {% if user_settings.email_preferences.cache_duration_days == 1 %}selected{% endif %}"
                                     data-value="1" 
                                     data-setting="email_preferences.cache_duration_days">1d</button>
