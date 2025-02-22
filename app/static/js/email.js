@@ -424,9 +424,9 @@ function updateEmailList() {
             .filter(email => {
                 // Special handling for demo mode - show all emails
                 const isDemo = emailMap.get(email.id)?.id?.startsWith('demo');
-                if (isDemo) {
-                    return true;
-                }
+                // if (isDemo) {
+                //     return true;
+                // }
                 const emailDate = new Date(email.date);
                 const now = new Date();
                 const daysDiff = Math.floor((now - emailDate) / (1000 * 60 * 60 * 24));
@@ -478,8 +478,10 @@ function updateEmailList() {
             }
             
             const formatTagText = (text) => {
-                if (!text) return '';
-                return text.toLowerCase().split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                if (text === null || text === undefined) return '';
+                // Convert to string and ensure proper case
+                text = String(text);
+                return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
             };
             
             // Get custom category colors from user settings
@@ -554,8 +556,10 @@ function loadEmailDetails(emailId) {
     });
     
     const formatTagText = (text) => {
-        if (!text) return '';
-        return text.toLowerCase().split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        if (text === null || text === undefined) return '';
+        // Convert to string and ensure proper case
+        text = String(text);
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
     };
     
     requestAnimationFrame(() => {

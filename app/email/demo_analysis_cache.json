@@ -1,0 +1,3610 @@
+{
+  "demo1": {
+    "gpt-4o_500": {
+      "summary": "Welcome email introducing Beacon's demo mode with AI-powered features for email analysis.",
+      "key_phrases": [
+        "Beacon's Demo Mode",
+        "AI-powered features",
+        "Smart Prioritization",
+        "Action Item Detection",
+        "Sentiment Analysis"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "welcome",
+          "transform"
+        ],
+        "negative": [],
+        "neutral": [
+          "demo",
+          "features",
+          "emails"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Informational",
+      "model": "gpt-4o",
+      "context_length": "500",
+      "total_tokens": 1046,
+      "prompt_tokens": 864,
+      "completion_tokens": 182,
+      "needs_action": false
+    },
+    "gpt-4o_1000": {
+      "summary": "Welcome email introducing Beacon's Demo Mode, highlighting key AI-powered features.",
+      "key_phrases": [
+        "Beacon's Demo Mode",
+        "AI-powered features",
+        "Smart Prioritization",
+        "Action Item Detection",
+        "Sentiment Analysis"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "welcome",
+          "transform",
+          "showcase"
+        ],
+        "negative": [],
+        "neutral": [
+          "features",
+          "emails",
+          "experience"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [],
+      "category": "Promotions",
+      "model": "gpt-4o",
+      "context_length": "1000",
+      "total_tokens": 1029,
+      "prompt_tokens": 864,
+      "completion_tokens": 165,
+      "needs_action": false
+    },
+    "gpt-4o_2000": {
+      "summary": "Welcome email introducing Beacon's Demo Mode, highlighting AI-powered features for enhancing email management.",
+      "key_phrases": [
+        "Beacon's Demo Mode",
+        "AI-powered features",
+        "email experience",
+        "Smart Prioritization",
+        "Action Item Detection",
+        "Sentiment Analysis"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "transform",
+          "welcome",
+          "pro tip"
+        ],
+        "negative": [],
+        "neutral": [
+          "demo",
+          "features",
+          "emails",
+          "explore"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [],
+      "category": "Informational",
+      "model": "gpt-4o",
+      "context_length": "2000",
+      "total_tokens": 1110,
+      "prompt_tokens": 911,
+      "completion_tokens": 199,
+      "input_length": 2844,
+      "needs_action": false
+    },
+    "gpt-4o-mini_500": {
+      "summary": "The email welcomes the recipient to Beacon's Demo Mode, highlighting key features of the service that enhance email management through AI.",
+      "key_phrases": [
+        "Welcome to Beacon's Demo Mode",
+        "AI-powered features",
+        "Smart Prioritization",
+        "Action Item Detection",
+        "Sentiment Analysis"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "transform",
+          "showcase",
+          "important",
+          "understand"
+        ],
+        "negative": [],
+        "neutral": [
+          "demo",
+          "emails",
+          "features",
+          "context",
+          "intent"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [],
+      "category": "Promotions",
+      "model": "gpt-4o-mini",
+      "context_length": "500",
+      "total_tokens": 1017,
+      "prompt_tokens": 864,
+      "completion_tokens": 153,
+      "needs_action": false
+    },
+    "gpt-4o-mini_1000": {
+      "summary": "The email welcomes the recipient to Beacon's Demo Mode, highlighting key features of the AI-powered email experience and encouraging exploration of the demo emails.",
+      "key_phrases": [
+        "Welcome to Beacon's Demo Mode",
+        "AI-powered features",
+        "Smart Prioritization",
+        "Action Item Detection",
+        "Sentiment Analysis"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "transform",
+          "showcase",
+          "important",
+          "understand"
+        ],
+        "negative": [],
+        "neutral": [
+          "demo",
+          "emails",
+          "features",
+          "context",
+          "intent"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [],
+      "category": "Promotions",
+      "model": "gpt-4o-mini",
+      "context_length": "1000",
+      "total_tokens": 1021,
+      "prompt_tokens": 864,
+      "completion_tokens": 157,
+      "needs_action": false
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "The email welcomes the recipient to Beacon's Demo Mode, highlighting the AI-powered features designed to enhance email management, including analysis, prioritization, action item detection, and sentiment analysis.",
+      "key_phrases": [
+        "Welcome to Beacon's Demo Mode",
+        "AI-powered features",
+        "Smart Prioritization",
+        "Action Item Detection",
+        "Sentiment Analysis",
+        "Pro Tip"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "transform",
+          "showcase",
+          "important",
+          "understand"
+        ],
+        "negative": [],
+        "neutral": [
+          "demo",
+          "emails",
+          "features",
+          "context",
+          "intent"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Explore the demo emails to see Beacon in action",
+          "due_date": "2023-10-31"
+        }
+      ],
+      "category": "Promotions",
+      "model": "gpt-4o-mini",
+      "context_length": "2000",
+      "total_tokens": 1139,
+      "prompt_tokens": 911,
+      "completion_tokens": 228,
+      "input_length": 2844,
+      "needs_action": false
+    },
+    "gpt-4o_300": {
+      "summary": "Welcome email introducing Beacon's Demo Mode, highlighting AI-powered features to enhance email experience.",
+      "key_phrases": [
+        "Beacon's Demo Mode",
+        "AI-powered features",
+        "email experience"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "welcome",
+          "transform"
+        ],
+        "negative": [],
+        "neutral": [
+          "demo",
+          "features",
+          "experience"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 10,
+      "action_items": [
+        {
+          "description": "Explore the demo emails to understand Beacon's features.",
+          "due_date": "2023-11-30"
+        }
+      ],
+      "category": "Informational",
+      "model": "gpt-4o",
+      "context_length": "300",
+      "total_tokens": 623,
+      "prompt_tokens": 472,
+      "completion_tokens": 151,
+      "input_length": 903,
+      "needs_action": false
+    },
+    "gpt-4o_800": {
+      "summary": "Welcome to Beacon's Demo Mode, showcasing AI-powered email features like analysis, prioritization, action item detection, and sentiment analysis.",
+      "key_phrases": [
+        "Beacon's Demo Mode",
+        "AI-powered features",
+        "Smart Prioritization",
+        "Action Item Detection",
+        "Sentiment Analysis"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "transform",
+          "showcase"
+        ],
+        "negative": [],
+        "neutral": [
+          "demo",
+          "features",
+          "emails"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Explore Beacon's AI-powered features in demo mode.",
+          "due_date": "2023-11-30"
+        }
+      ],
+      "category": "Informational",
+      "model": "gpt-4o",
+      "context_length": "800",
+      "total_tokens": 997,
+      "prompt_tokens": 803,
+      "completion_tokens": 194,
+      "input_length": 2403,
+      "needs_action": false
+    },
+    "gpt-4o-mini_300": {
+      "summary": "The email welcomes the recipient to Beacon's Demo Mode, highlighting the excitement of showcasing AI-powered email features through a curated set of demo emails.",
+      "key_phrases": [
+        "Welcome to Beacon's Demo Mode",
+        "AI-powered features",
+        "curated set of emails",
+        "transform your email experience"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "showcase",
+          "transform"
+        ],
+        "negative": [],
+        "neutral": [
+          "demo",
+          "features",
+          "emails"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [
+        {
+          "description": "Explore the demo features of Beacon",
+          "due_date": "2023-11-30"
+        }
+      ],
+      "category": "Promotions",
+      "model": "gpt-4o-mini",
+      "context_length": "300",
+      "total_tokens": 644,
+      "prompt_tokens": 472,
+      "completion_tokens": 172,
+      "input_length": 903,
+      "needs_action": false
+    },
+    "gpt-4o-mini_800": {
+      "summary": "The email welcomes the recipient to Beacon's Demo Mode, highlighting the AI-powered features that enhance email management, including analysis, prioritization, action item detection, and sentiment analysis.",
+      "key_phrases": [
+        "Welcome to Beacon's Demo Mode",
+        "AI-powered features",
+        "Smart Prioritization",
+        "Action Item Detection",
+        "Sentiment Analysis"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "transform",
+          "showcase",
+          "important"
+        ],
+        "negative": [],
+        "neutral": [
+          "demo",
+          "emails",
+          "features"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 70,
+      "action_items": [
+        {
+          "description": "Explore the demo features of Beacon",
+          "due_date": "2023-11-30"
+        },
+        {
+          "description": "Use filters to sort emails by priority or category",
+          "due_date": "2023-11-30"
+        }
+      ],
+      "category": "Promotions",
+      "model": "gpt-4o-mini",
+      "context_length": "800",
+      "total_tokens": 1028,
+      "prompt_tokens": 803,
+      "completion_tokens": 225,
+      "input_length": 2403,
+      "needs_action": false
+    }
+  },
+  "demo2": {
+    "gpt-4o_500": {
+      "summary": "Weekly performance summary highlighting achievements and critical action items for API documentation and frontend testing.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Project Updates",
+        "API Documentation",
+        "Frontend Testing",
+        "Action Required"
+      ],
+      "sentiment": {
+        "positive": [
+          "achievements",
+          "growth",
+          "satisfaction"
+        ],
+        "negative": [
+          "blocked"
+        ],
+        "neutral": [
+          "review",
+          "schedule"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Review and approve API documentation",
+          "due_date": "2024-02-19"
+        },
+        {
+          "description": "Schedule meeting with DevOps to unblock frontend testing",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work"
+    },
+    "gpt-4o_1000": {
+      "summary": "The email provides a weekly performance summary for the period of Feb 12 - Feb 18, 2024, highlighting key achievements such as revenue growth, client satisfaction, and new clients. It also includes project updates with status and progress, and outlines action items requiring attention.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Revenue Growth",
+        "Client Satisfaction",
+        "New Clients",
+        "Project Updates",
+        "Action Required"
+      ],
+      "sentiment": {
+        "positive": [
+          "achievements",
+          "growth",
+          "satisfaction",
+          "completed"
+        ],
+        "negative": [
+          "blocked"
+        ],
+        "neutral": [
+          "summary",
+          "updates",
+          "progress"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Review and approve API documentation",
+          "due_date": "2024-02-19"
+        },
+        {
+          "description": "Schedule meeting with DevOps to unblock frontend testing",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o",
+      "context_length": "1000",
+      "total_tokens": 1029,
+      "prompt_tokens": 864,
+      "completion_tokens": 165,
+      "input_length": 5014,
+      "needs_action": true
+    },
+    "gpt-4o_2000": {
+      "summary": "The email provides a weekly performance summary for the period of Feb 12 - Feb 18, 2024, highlighting key achievements such as revenue growth, client satisfaction, and new clients. It also includes project updates with status and progress, and outlines action items requiring attention.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Revenue Growth",
+        "Client Satisfaction",
+        "New Clients",
+        "Project Updates",
+        "Action Required"
+      ],
+      "sentiment": {
+        "positive": [
+          "achievements",
+          "growth",
+          "satisfaction",
+          "completed"
+        ],
+        "negative": [
+          "blocked"
+        ],
+        "neutral": [
+          "summary",
+          "updates",
+          "progress"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Review and approve API documentation",
+          "due_date": "2024-02-19"
+        },
+        {
+          "description": "Schedule meeting with DevOps to unblock frontend testing",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o",
+      "context_length": "2000",
+      "total_tokens": 1748,
+      "prompt_tokens": 1516,
+      "completion_tokens": 232,
+      "input_length": 5014,
+      "needs_action": true
+    },
+    "gpt-4o-mini_500": {
+      "summary": "This email provides a weekly performance summary highlighting key achievements, project updates, and action items that require immediate attention.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Key Achievements",
+        "Project Updates",
+        "Action Required",
+        "Client Satisfaction",
+        "Revenue Growth",
+        "New Clients"
+      ],
+      "sentiment": {
+        "positive": [
+          "achievements",
+          "completed",
+          "growth",
+          "satisfaction"
+        ],
+        "negative": [
+          "blocked"
+        ],
+        "neutral": [
+          "in progress",
+          "scheduled"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Review and approve API documentation",
+          "due_date": "2024-02-19"
+        },
+        {
+          "description": "Schedule meeting with DevOps to unblock frontend testing",
+          "due_date": "2024-02-19"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "2000",
+      "total_tokens": 1744,
+      "prompt_tokens": 1516,
+      "completion_tokens": 228,
+      "input_length": 5014,
+      "needs_action": true
+    },
+    "gpt-4o-mini_1000": {
+      "summary": "This email provides a weekly performance summary highlighting key achievements, project updates, and action items that require immediate attention.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Key Achievements",
+        "Project Updates",
+        "Action Required",
+        "Client Satisfaction",
+        "Revenue Growth",
+        "New Clients"
+      ],
+      "sentiment": {
+        "positive": [
+          "achievements",
+          "completed",
+          "growth",
+          "satisfaction"
+        ],
+        "negative": [
+          "blocked"
+        ],
+        "neutral": [
+          "in progress",
+          "scheduled"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Review and approve API documentation",
+          "due_date": "2024-02-19"
+        },
+        {
+          "description": "Schedule meeting with DevOps to unblock frontend testing",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "1000",
+      "total_tokens": 1021,
+      "prompt_tokens": 864,
+      "completion_tokens": 157,
+      "input_length": 5014,
+      "needs_action": true
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "This email provides a weekly performance summary highlighting key achievements, project updates, and action items that require immediate attention.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Key Achievements",
+        "Project Updates",
+        "Action Required",
+        "Client Satisfaction",
+        "Revenue Growth",
+        "New Clients"
+      ],
+      "sentiment": {
+        "positive": [
+          "achievements",
+          "completed",
+          "growth",
+          "satisfaction"
+        ],
+        "negative": [
+          "blocked"
+        ],
+        "neutral": [
+          "in progress",
+          "scheduled"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Review and approve API documentation",
+          "due_date": "2024-02-19"
+        },
+        {
+          "description": "Schedule meeting with DevOps to unblock frontend testing",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "2000",
+      "total_tokens": 1744,
+      "prompt_tokens": 1516,
+      "completion_tokens": 228,
+      "input_length": 5014,
+      "needs_action": true
+    },
+    "gpt-4o_300": {
+      "summary": "The email provides a weekly performance summary for the period of February 12 to February 18, 2024, highlighting key achievements.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Key Achievements",
+        "Feb 12 - Feb 18, 2024"
+      ],
+      "sentiment": {
+        "positive": [
+          "achievements",
+          "\u2191 15%"
+        ],
+        "negative": [],
+        "neutral": [
+          "summary",
+          "period"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Review the weekly performance summary and analyze key achievements.",
+          "due_date": "2024-02-25"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o",
+      "context_length": "300",
+      "total_tokens": 657,
+      "prompt_tokens": 491,
+      "completion_tokens": 166,
+      "input_length": 903,
+      "needs_action": false
+    },
+    "gpt-4o_800": {
+      "summary": "The email provides a weekly performance summary for the period of February 12 to February 18, 2024, highlighting key achievements and project updates.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Revenue Growth",
+        "Client Satisfaction",
+        "New Clients",
+        "Project Updates"
+      ],
+      "sentiment": {
+        "positive": [
+          "achievements",
+          "growth",
+          "satisfaction",
+          "new clients"
+        ],
+        "negative": [],
+        "neutral": [
+          "summary",
+          "updates",
+          "period"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [
+        {
+          "description": "Review the detailed project updates for further insights.",
+          "due_date": "2024-02-25"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o",
+      "context_length": "800",
+      "total_tokens": 1044,
+      "prompt_tokens": 870,
+      "completion_tokens": 174,
+      "input_length": 2403,
+      "needs_action": false
+    },
+    "gpt-4o-mini_300": {
+      "summary": "This email provides a weekly performance summary for the period of February 12 to February 18, 2024, highlighting key achievements and metrics.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Key Achievements",
+        "15% increase",
+        "metrics",
+        "period"
+      ],
+      "sentiment": {
+        "positive": [
+          "achievements",
+          "increase",
+          "success"
+        ],
+        "negative": [],
+        "neutral": [
+          "summary",
+          "period"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [
+        {
+          "description": "Review the weekly performance metrics and prepare for the next team meeting.",
+          "due_date": "2024-02-19"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "300",
+      "total_tokens": 660,
+      "prompt_tokens": 491,
+      "completion_tokens": 169,
+      "input_length": 903,
+      "needs_action": false
+    },
+    "gpt-4o-mini_800": {
+      "summary": "This email provides a weekly performance summary highlighting key achievements and project updates for the period of February 12 to February 18, 2024. It reports a 15% revenue growth, a 98% client satisfaction rate, and the acquisition of 12 new clients.",
+      "key_phrases": [
+        "Weekly Performance Summary",
+        "Revenue Growth",
+        "Client Satisfaction",
+        "New Clients",
+        "Project Updates"
+      ],
+      "sentiment": {
+        "positive": [
+          "growth",
+          "satisfaction",
+          "achievements",
+          "new clients"
+        ],
+        "negative": [],
+        "neutral": [
+          "performance",
+          "updates",
+          "status"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Review project statuses and prepare for next week's updates.",
+          "due_date": "2024-02-19"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "800",
+      "total_tokens": 1069,
+      "prompt_tokens": 870,
+      "completion_tokens": 199,
+      "input_length": 2403,
+      "needs_action": false
+    }
+  },
+  "demo3": {
+    "gpt-4o_500": {
+      "summary": "Team meeting notes covering project milestones, technical updates, and upcoming features, with specific action items assigned.",
+      "key_phrases": [
+        "Team Meeting Notes",
+        "Project Milestones",
+        "Technical Updates",
+        "Upcoming Features"
+      ],
+      "sentiment": {
+        "positive": [
+          "successfully",
+          "improved",
+          "achievements"
+        ],
+        "negative": [],
+        "neutral": [
+          "updates",
+          "features",
+          "meeting"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [
+        {
+          "description": "Update project documentation with recent changes",
+          "due_date": "2024-02-23"
+        },
+        {
+          "description": "Prepare user testing plan for new features",
+          "due_date": "2024-02-26"
+        }
+      ],
+      "category": "Work"
+    },
+    "gpt-4o_1000": {
+      "summary": "The email provides notes from a team meeting held on February 19, 2024, discussing project milestones, technical updates, upcoming features, action items, and team achievements.",
+      "key_phrases": [
+        "Project Milestones",
+        "Technical Updates",
+        "Upcoming Features",
+        "Action Items",
+        "Team Achievements"
+      ],
+      "sentiment": {
+        "positive": [
+          "successfully completed",
+          "enhanced security",
+          "improved by 40%",
+          "reduced to under 100ms",
+          "decreased to 0.1%",
+          "achievements"
+        ],
+        "negative": [],
+        "neutral": [
+          "meeting notes",
+          "duration",
+          "attendees",
+          "discussion points",
+          "next meeting"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Update project documentation with recent changes",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o",
+      "context_length": "1000",
+      "total_tokens": 1029,
+      "prompt_tokens": 864,
+      "completion_tokens": 165,
+      "input_length": 4923,
+      "needs_action": true
+    },
+    "gpt-4o_2000": {
+      "summary": "The email provides notes from a team meeting held on February 19, 2024, discussing project milestones, technical updates, upcoming features, action items, and team achievements.",
+      "key_phrases": [
+        "Project Milestones",
+        "Technical Updates",
+        "Upcoming Features",
+        "Action Items",
+        "Team Achievements"
+      ],
+      "sentiment": {
+        "positive": [
+          "successfully completed",
+          "enhanced security",
+          "improved by 40%",
+          "reduced to under 100ms",
+          "decreased to 0.1%",
+          "achievements"
+        ],
+        "negative": [],
+        "neutral": [
+          "meeting notes",
+          "duration",
+          "attendees",
+          "discussion points",
+          "next meeting"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Update project documentation with recent changes",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o",
+      "context_length": "2000",
+      "total_tokens": 1707,
+      "prompt_tokens": 1367,
+      "completion_tokens": 340,
+      "input_length": 4923,
+      "needs_action": true
+    },
+    "gpt-4o-mini_500": {
+      "summary": "The email contains notes from a team meeting held on February 19, 2024, highlighting project milestones, technical updates, upcoming features, action items, and team achievements. It also includes details about the next meeting scheduled for February 26, 2024.",
+      "key_phrases": [
+        "Team Meeting Notes",
+        "Project Milestones",
+        "Technical Updates",
+        "Upcoming Features",
+        "Action Items",
+        "Team Achievements",
+        "Next Meeting"
+      ],
+      "sentiment": {
+        "positive": [
+          "successfully",
+          "enhanced",
+          "prioritized",
+          "improved",
+          "decreased",
+          "achieved",
+          "recognized"
+        ],
+        "negative": [],
+        "neutral": [
+          "date",
+          "duration",
+          "attendees",
+          "action items",
+          "next meeting"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Begin development of analytics dashboard",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Schedule security audit for next week",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Prepare user testing plan for new features",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Update project documentation with recent changes",
+          "due_date": "2024-02-26"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "2000",
+      "total_tokens": 1707,
+      "prompt_tokens": 1367,
+      "completion_tokens": 340,
+      "input_length": 4923,
+      "needs_action": true
+    },
+    "gpt-4o-mini_1000": {
+      "summary": "The email contains notes from a team meeting held on February 19, 2024, highlighting project milestones, technical updates, upcoming features, action items, and team achievements. It also includes details about the next meeting scheduled for February 26, 2024.",
+      "key_phrases": [
+        "Team Meeting Notes",
+        "Project Milestones",
+        "Technical Updates",
+        "Upcoming Features",
+        "Action Items",
+        "Team Achievements",
+        "Next Meeting"
+      ],
+      "sentiment": {
+        "positive": [
+          "successfully",
+          "enhanced",
+          "prioritized",
+          "improved",
+          "decreased",
+          "achieved",
+          "recognized"
+        ],
+        "negative": [],
+        "neutral": [
+          "date",
+          "duration",
+          "attendees",
+          "action items",
+          "next meeting"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Begin development of analytics dashboard",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Schedule security audit for next week",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Prepare user testing plan for new features",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Update project documentation with recent changes",
+          "due_date": "2024-02-26"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "1000",
+      "total_tokens": 1021,
+      "prompt_tokens": 864,
+      "completion_tokens": 157,
+      "input_length": 4923,
+      "needs_action": true
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "The email contains notes from a team meeting held on February 19, 2024, highlighting project milestones, technical updates, upcoming features, action items, and team achievements. It also includes details about the next meeting scheduled for February 26, 2024.",
+      "key_phrases": [
+        "Team Meeting Notes",
+        "Project Milestones",
+        "Technical Updates",
+        "Upcoming Features",
+        "Action Items",
+        "Team Achievements",
+        "Next Meeting"
+      ],
+      "sentiment": {
+        "positive": [
+          "successfully",
+          "enhanced",
+          "prioritized",
+          "improved",
+          "decreased",
+          "achieved",
+          "recognized"
+        ],
+        "negative": [],
+        "neutral": [
+          "date",
+          "duration",
+          "attendees",
+          "action items",
+          "next meeting"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 85,
+      "action_items": [
+        {
+          "description": "Begin development of analytics dashboard",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Schedule security audit for next week",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Prepare user testing plan for new features",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Update project documentation with recent changes",
+          "due_date": "2024-02-26"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "2000",
+      "total_tokens": 1707,
+      "prompt_tokens": 1367,
+      "completion_tokens": 340,
+      "input_length": 4923,
+      "needs_action": true
+    },
+    "gpt-4o_300": {
+      "summary": "The email contains notes from a team meeting held on February 19, 2024, discussing project milestones, team responsibilities, and upcoming deadlines.",
+      "key_phrases": [
+        "Team Meeting Notes",
+        "Project Milestones",
+        "Team Responsibilities",
+        "Upcoming Deadlines"
+      ],
+      "sentiment": {
+        "positive": [
+          "milestones",
+          "responsibilities"
+        ],
+        "negative": [
+          "deadlines"
+        ],
+        "neutral": [
+          "meeting",
+          "attendees"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [
+        {
+          "description": "Review project milestones and ensure all tasks are on track.",
+          "due_date": "2024-02-25"
+        },
+        {
+          "description": "Assign team responsibilities for upcoming tasks.",
+          "due_date": "2024-02-22"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o",
+      "context_length": "300",
+      "total_tokens": 678,
+      "prompt_tokens": 482,
+      "completion_tokens": 196,
+      "input_length": 903,
+      "needs_action": false
+    },
+    "gpt-4o_800": {
+      "summary": "The email provides notes from a team meeting held on February 19, 2024, covering project milestones, technical updates, and upcoming features.",
+      "key_phrases": [
+        "Team Meeting Notes",
+        "Project Milestones",
+        "Technical Updates",
+        "Upcoming Features",
+        "Backend service deployment",
+        "User authentication system",
+        "Database performance",
+        "API response time",
+        "Mobile app crash rate"
+      ],
+      "sentiment": {
+        "positive": [
+          "successfully",
+          "enhanced",
+          "improved",
+          "reduced",
+          "decreased"
+        ],
+        "negative": [],
+        "neutral": [
+          "meeting",
+          "notes",
+          "discussion",
+          "features"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 70,
+      "action_items": [
+        {
+          "description": "Prioritize new feature requests based on user feedback analysis.",
+          "due_date": "2024-03-01"
+        },
+        {
+          "description": "Monitor the performance of the upgraded user authentication system.",
+          "due_date": "2024-02-26"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o",
+      "context_length": "800",
+      "total_tokens": 1058,
+      "prompt_tokens": 794,
+      "completion_tokens": 264,
+      "input_length": 2403,
+      "needs_action": false
+    },
+    "gpt-4o-mini_300": {
+      "summary": "The email contains notes from a team meeting held on February 19, 2024, discussing key points such as project milestones, team roles, and upcoming deadlines.",
+      "key_phrases": [
+        "Team Meeting Notes",
+        "Project Milestones",
+        "Attendees",
+        "Upcoming Deadlines",
+        "Action Items"
+      ],
+      "sentiment": {
+        "positive": [
+          "collaboration",
+          "progress",
+          "engagement"
+        ],
+        "negative": [
+          "challenges",
+          "delays"
+        ],
+        "neutral": [
+          "discussion",
+          "notes",
+          "agenda"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [
+        {
+          "description": "Follow up on project milestones and ensure all team members are aligned.",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Prepare for the next meeting by gathering updates from each team member.",
+          "due_date": "2024-03-05"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "300",
+      "total_tokens": 703,
+      "prompt_tokens": 482,
+      "completion_tokens": 221,
+      "input_length": 903,
+      "needs_action": false
+    },
+    "gpt-4o-mini_800": {
+      "summary": "The email contains notes from a team meeting held on February 19, 2024, discussing project milestones, technical updates, and upcoming features. Key achievements include successful backend deployment and significant improvements in database performance and app stability.",
+      "key_phrases": [
+        "Team Meeting Notes",
+        "Project Milestones",
+        "Technical Updates",
+        "Upcoming Features",
+        "Backend service deployment",
+        "User authentication system",
+        "Database performance",
+        "API response time",
+        "Mobile app crash rate"
+      ],
+      "sentiment": {
+        "positive": [
+          "successfully",
+          "ahead of schedule",
+          "enhanced security",
+          "prioritized",
+          "improved",
+          "decreased"
+        ],
+        "negative": [],
+        "neutral": [
+          "meeting",
+          "attendees",
+          "duration",
+          "features"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [
+        {
+          "description": "Review the new feature requests and provide feedback by the next meeting.",
+          "due_date": "2024-02-26"
+        },
+        {
+          "description": "Monitor the performance of the upgraded user authentication system and report any issues.",
+          "due_date": "2024-03-05"
+        }
+      ],
+      "category": "Work",
+      "model": "gpt-4o-mini",
+      "context_length": "800",
+      "total_tokens": 1088,
+      "prompt_tokens": 794,
+      "completion_tokens": 294,
+      "input_length": 2403,
+      "needs_action": false
+    }
+  },
+  "demo4": {
+    "gpt-4o_2000": {
+      "summary": "Promotion for a mega weekend sale offering significant discounts and free shipping.",
+      "key_phrases": [
+        "Mega Weekend Sale",
+        "50% off",
+        "Free shipping",
+        "Extra 10% off",
+        "Sale ends Sunday"
+      ],
+      "sentiment": {
+        "positive": [
+          "biggest sale",
+          "50% off",
+          "free shipping",
+          "extra 10% off"
+        ],
+        "negative": [],
+        "neutral": [
+          "terms and conditions",
+          "unsubscribe"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 20,
+      "action_items": [],
+      "category": "Promotions",
+      "needs_action": false
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "Announcement of a major weekend sale offering significant discounts and promotions.",
+      "key_phrases": [
+        "Mega Weekend Sale",
+        "50% off",
+        "Free shipping",
+        "Extra 10% off",
+        "premium members",
+        "Sale ends Sunday"
+      ],
+      "sentiment": {
+        "positive": [
+          "biggest sale",
+          "50% off",
+          "Free shipping",
+          "Extra 10% off"
+        ],
+        "negative": [],
+        "neutral": [
+          "terms and conditions",
+          "unsubscribe"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 20,
+      "action_items": [],
+      "category": "Promotions",
+      "needs_action": false
+    },
+    "gpt-4o_300": {
+      "summary": "Announcement of a Mega Weekend Sale with significant discounts and free shipping offers.",
+      "key_phrases": [
+        "Mega Weekend Sale",
+        "50% off",
+        "free shipping",
+        "extra 10% off",
+        "sale ends Sunday"
+      ],
+      "sentiment": {
+        "positive": [
+          "biggest sale",
+          "free shipping",
+          "extra 10% off"
+        ],
+        "negative": [],
+        "neutral": [
+          "terms and conditions",
+          "unsubscribe"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 20,
+      "action_items": [],
+      "category": "Promotions",
+      "needs_action": false
+    },
+    "gpt-4o_800": {
+      "summary": "Promotion for a Mega Weekend Sale offering discounts and free shipping.",
+      "key_phrases": [
+        "Mega Weekend Sale",
+        "50% off",
+        "free shipping",
+        "premium members",
+        "sale ends Sunday"
+      ],
+      "sentiment": {
+        "positive": [
+          "biggest sale",
+          "50% off",
+          "free shipping",
+          "extra 10% off"
+        ],
+        "negative": [],
+        "neutral": [
+          "terms and conditions",
+          "unsubscribe"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 20,
+      "action_items": [],
+      "category": "Promotions",
+      "needs_action": false
+    },
+    "gpt-4o-mini_300": {
+      "summary": "Announcement of a major weekend sale featuring significant discounts and offers.",
+      "key_phrases": [
+        "Mega Weekend Sale",
+        "50% off all products",
+        "Free shipping",
+        "Extra 10% off for premium members",
+        "Sale ends Sunday"
+      ],
+      "sentiment": {
+        "positive": [
+          "biggest sale",
+          "50% off",
+          "free shipping",
+          "extra discount"
+        ],
+        "negative": [],
+        "neutral": [
+          "terms and conditions",
+          "unsubscribe"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 20,
+      "action_items": [],
+      "category": "Promotions",
+      "needs_action": false
+    },
+    "gpt-4o-mini_800": {
+      "summary": "Announcement of a major weekend sale featuring significant discounts and promotions.",
+      "key_phrases": [
+        "Mega Weekend Sale",
+        "50% off",
+        "Free shipping",
+        "Extra 10% off",
+        "premium members",
+        "Sale ends Sunday"
+      ],
+      "sentiment": {
+        "positive": [
+          "biggest sale",
+          "50% off",
+          "Free shipping",
+          "Extra 10% off"
+        ],
+        "negative": [],
+        "neutral": [
+          "Terms and conditions apply",
+          "Unsubscribe"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 20,
+      "action_items": [],
+      "category": "Promotions",
+      "needs_action": false
+    }
+  },
+  "demo5": {
+    "gpt-4o_500": {},
+    "gpt-4o_1000": {},
+    "gpt-4o_2000": {
+      "summary": "Mom invites for a family dinner on Saturday at 6 PM with Dad and sister.",
+      "key_phrases": [
+        "family dinner",
+        "Saturday at 6 PM",
+        "favorite lasagna"
+      ],
+      "sentiment": {
+        "positive": [
+          "wonderful",
+          "favorite",
+          "love"
+        ],
+        "negative": [],
+        "neutral": [
+          "Saturday",
+          "6 PM"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Confirm attendance for family dinner on Saturday.",
+          "due_date": "2023-10-27"
+        }
+      ],
+      "category": "Personal",
+      "model": "gpt-4o",
+      "context_length": "2000",
+      "total_tokens": 479,
+      "prompt_tokens": 331,
+      "completion_tokens": 148,
+      "input_length": 419,
+      "needs_action": false
+    },
+    "gpt-4o-mini_500": {},
+    "gpt-4o-mini_1000": {},
+    "gpt-4o-mini_2000": {
+      "summary": "Mom invites you to a family dinner this Saturday at 6 PM, mentioning that your sister will be in town and that she will make your favorite lasagna.",
+      "key_phrases": [
+        "family dinner",
+        "Saturday at 6 PM",
+        "your favorite lasagna"
+      ],
+      "sentiment": {
+        "positive": [
+          "wonderful",
+          "favorite",
+          "love"
+        ],
+        "negative": [],
+        "neutral": [
+          "dinner",
+          "sister"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Confirm attendance for the family dinner",
+          "due_date": "2023-10-28"
+        }
+      ],
+      "category": "Personal",
+      "model": "gpt-4o-mini",
+      "context_length": "2000",
+      "total_tokens": 495,
+      "prompt_tokens": 331,
+      "completion_tokens": 164,
+      "input_length": 419,
+      "needs_action": false
+    },
+    "gpt-4o_300": {
+      "summary": "Mom invites you to a family dinner on Saturday at 6 PM, with your sister visiting.",
+      "key_phrases": [
+        "family dinner",
+        "Saturday at 6 PM",
+        "sister visiting",
+        "favorite lasagna"
+      ],
+      "sentiment": {
+        "positive": [
+          "wonderful",
+          "favorite",
+          "love"
+        ],
+        "negative": [],
+        "neutral": [
+          "Saturday",
+          "6 PM"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [
+        {
+          "description": "Respond to Mom about family dinner on Saturday",
+          "due_date": "2023-10-27"
+        }
+      ],
+      "category": "Personal",
+      "needs_action": true
+    },
+    "gpt-4o_800": {
+      "summary": "Invitation to a family dinner this Saturday at 6 PM with Mom, Dad, and sister.",
+      "key_phrases": [
+        "family dinner",
+        "Saturday at 6 PM",
+        "favorite lasagna"
+      ],
+      "sentiment": {
+        "positive": [
+          "wonderful",
+          "favorite",
+          "love"
+        ],
+        "negative": [],
+        "neutral": [
+          "Saturday",
+          "6 PM"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Respond to Mom about attending the family dinner.",
+          "due_date": "2023-10-13"
+        }
+      ],
+      "category": "Personal",
+      "model": "gpt-4o",
+      "context_length": "800",
+      "total_tokens": 482,
+      "prompt_tokens": 331,
+      "completion_tokens": 151,
+      "input_length": 419,
+      "needs_action": false
+    },
+    "gpt-4o-mini_300": {
+      "summary": "Mom invites you to a family dinner on Saturday at 6 PM, mentioning that your sister will be in town and that she will make your favorite lasagna.",
+      "key_phrases": [
+        "family dinner",
+        "Saturday at 6 PM",
+        "favorite lasagna"
+      ],
+      "sentiment": {
+        "positive": [
+          "wonderful",
+          "favorite",
+          "love"
+        ],
+        "negative": [],
+        "neutral": [
+          "dinner",
+          "town"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Confirm attendance for family dinner",
+          "due_date": "2023-10-21"
+        }
+      ],
+      "category": "Personal",
+      "model": "gpt-4o-mini",
+      "context_length": "300",
+      "total_tokens": 492,
+      "prompt_tokens": 331,
+      "completion_tokens": 161,
+      "input_length": 419,
+      "needs_action": false
+    },
+    "gpt-4o-mini_800": {
+      "summary": "Mom invites you to a family dinner on Saturday at 6 PM, mentioning that your sister will be in town and that she will make your favorite lasagna.",
+      "key_phrases": [
+        "family dinner",
+        "Saturday at 6 PM",
+        "favorite lasagna",
+        "sister in town"
+      ],
+      "sentiment": {
+        "positive": [
+          "wonderful",
+          "favorite",
+          "love"
+        ],
+        "negative": [],
+        "neutral": [
+          "dinner",
+          "Saturday",
+          "join"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 65,
+      "action_items": [
+        {
+          "description": "Confirm attendance for the family dinner",
+          "due_date": "2023-10-21"
+        }
+      ],
+      "category": "Personal",
+      "model": "gpt-4o-mini",
+      "context_length": "800",
+      "total_tokens": 502,
+      "prompt_tokens": 331,
+      "completion_tokens": 171,
+      "input_length": 419,
+      "needs_action": false
+    }
+  },
+  "demo6": {
+    "gpt-4o_2000": {
+      "summary": "Security alert regarding a login attempt from a new device in San Francisco.",
+      "key_phrases": [
+        "Security Alert",
+        "login attempt",
+        "new device",
+        "secure your account"
+      ],
+      "sentiment": {
+        "positive": [],
+        "negative": [
+          "security",
+          "don't recognize",
+          "secure your account"
+        ],
+        "neutral": [
+          "login attempt",
+          "new device",
+          "Location: San Francisco"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 90,
+      "action_items": [
+        {
+          "description": "Review account activity and secure account if login attempt is unrecognized",
+          "due_date": "2023-10-10"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "The email is a security alert notifying the recipient of a login attempt from a new device in San Francisco, CA. It advises the recipient to secure their account if the activity is unrecognized.",
+      "key_phrases": [
+        "Security Alert",
+        "login attempt",
+        "new device",
+        "secure your account"
+      ],
+      "sentiment": {
+        "positive": [],
+        "negative": [
+          "unrecognized",
+          "alert"
+        ],
+        "neutral": [
+          "login attempt",
+          "device",
+          "location",
+          "time"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 90,
+      "action_items": [
+        {
+          "description": "Review account activity and secure account if login attempt is unrecognized",
+          "due_date": "2023-10-10"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_300": {
+      "summary": "Security alert regarding a login attempt from a new device in San Francisco.",
+      "key_phrases": [
+        "Security Alert",
+        "new device",
+        "login attempt",
+        "secure your account"
+      ],
+      "sentiment": {
+        "positive": [],
+        "negative": [
+          "alert",
+          "secure"
+        ],
+        "neutral": [
+          "login",
+          "device",
+          "account"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 90,
+      "action_items": [
+        {
+          "description": "Review account activity and secure account if login attempt is unrecognized",
+          "due_date": "2023-10-10"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_800": {
+      "summary": "Security alert regarding a login attempt from a new device in San Francisco, CA.",
+      "key_phrases": [
+        "Security Alert",
+        "new device",
+        "login attempt",
+        "secure your account"
+      ],
+      "sentiment": {
+        "positive": [],
+        "negative": [
+          "alert",
+          "secure",
+          "don't recognize"
+        ],
+        "neutral": [
+          "login attempt",
+          "new device",
+          "account activity"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 90,
+      "action_items": [
+        {
+          "description": "Review account activity and secure account if login attempt is unrecognized",
+          "due_date": "2023-10-10"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_300": {
+      "summary": "The email is a security alert regarding a login attempt from a new device and location, advising the recipient to secure their account if the activity is unrecognized.",
+      "key_phrases": [
+        "Security Alert",
+        "login attempt",
+        "new device",
+        "secure your account"
+      ],
+      "sentiment": {
+        "positive": [
+          "no action needed",
+          "review account"
+        ],
+        "negative": [
+          "detected",
+          "unrecognized activity"
+        ],
+        "neutral": [
+          "San Francisco",
+          "iPhone",
+          "2:15 PM PST"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 90,
+      "action_items": [
+        {
+          "description": "Review account activity and secure account if login attempt is unrecognized",
+          "due_date": "2023-10-10"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_800": {
+      "summary": "The email is a security alert notifying the recipient of a login attempt from a new device in San Francisco. It advises the recipient to secure their account if the activity is unrecognized.",
+      "key_phrases": [
+        "Security Alert",
+        "login attempt",
+        "new device",
+        "secure your account"
+      ],
+      "sentiment": {
+        "positive": [
+          "alert",
+          "action"
+        ],
+        "negative": [
+          "unrecognized",
+          "immediately"
+        ],
+        "neutral": [
+          "San Francisco",
+          "iPhone",
+          "2:15 PM PST"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 90,
+      "action_items": [
+        {
+          "description": "Review account activity and secure account if login attempt is unrecognized",
+          "due_date": "2023-10-10"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    }
+  },
+  "demo7": {
+    "gpt-4o_2000": {
+      "summary": "The email shares the Q3 2024 financial report with key highlights including a 15% revenue increase, an 8% reduction in operating costs, and progress in new market expansion.",
+      "key_phrases": [
+        "Q3 2024 financial report",
+        "15% revenue increase",
+        "8% reduction in operating costs",
+        "new market expansion"
+      ],
+      "sentiment": {
+        "positive": [
+          "increased",
+          "reduced",
+          "on track"
+        ],
+        "negative": [],
+        "neutral": [
+          "financial report",
+          "full report",
+          "finance portal"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 50,
+      "action_items": [
+        {
+          "description": "Review the Q3 2024 financial report on the finance portal",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "The email provides the Q3 2024 financial report and highlights key improvements in revenue and operating costs.",
+      "key_phrases": [
+        "Q3 2024 financial report",
+        "Revenue increased by 15% YoY",
+        "Operating costs reduced by 8%",
+        "New market expansion on track"
+      ],
+      "sentiment": {
+        "positive": [
+          "increased",
+          "reduced",
+          "on track"
+        ],
+        "negative": [],
+        "neutral": [
+          "financial report",
+          "key highlights",
+          "full report"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 50,
+      "action_items": [
+        {
+          "description": "Review the Q3 2024 financial report on the finance portal",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_300": {
+      "summary": "The email shares the Q3 2024 financial report, highlighting a 15% revenue increase, 8% reduction in operating costs, and progress in new market expansion.",
+      "key_phrases": [
+        "Q3 2024 financial report",
+        "15% revenue increase",
+        "8% operating costs reduction",
+        "new market expansion"
+      ],
+      "sentiment": {
+        "positive": [
+          "increased",
+          "reduced",
+          "on track"
+        ],
+        "negative": [],
+        "neutral": [
+          "financial report",
+          "available"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 50,
+      "action_items": [
+        {
+          "description": "Review the Q3 2024 financial report on the finance portal",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_800": {
+      "summary": "The email shares the Q3 2024 financial report with key highlights including a 15% increase in revenue, an 8% reduction in operating costs, and progress in new market expansion.",
+      "key_phrases": [
+        "Q3 2024 financial report",
+        "15% revenue increase",
+        "8% operating cost reduction",
+        "new market expansion"
+      ],
+      "sentiment": {
+        "positive": [
+          "increased",
+          "reduced",
+          "on track"
+        ],
+        "negative": [],
+        "neutral": [
+          "report",
+          "available"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 50,
+      "action_items": [
+        {
+          "description": "Review the Q3 2024 financial report on the finance portal",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_300": {
+      "summary": "The email provides the Q3 2024 financial report with key highlights including revenue growth, reduced operating costs, and market expansion.",
+      "key_phrases": [
+        "Q3 2024 financial report",
+        "Revenue increased by 15% YoY",
+        "Operating costs reduced by 8%",
+        "New market expansion on track"
+      ],
+      "sentiment": {
+        "positive": [
+          "increased",
+          "reduced",
+          "on track"
+        ],
+        "negative": [],
+        "neutral": [
+          "financial report",
+          "key highlights",
+          "full report"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 50,
+      "action_items": [
+        {
+          "description": "Review the Q3 2024 financial report on the finance portal",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_800": {
+      "summary": "The email provides the Q3 2024 financial report with key highlights including revenue growth, reduced operating costs, and market expansion.",
+      "key_phrases": [
+        "Q3 2024 financial report",
+        "Revenue increased by 15% YoY",
+        "Operating costs reduced by 8%",
+        "New market expansion on track"
+      ],
+      "sentiment": {
+        "positive": [
+          "increased",
+          "reduced",
+          "on track"
+        ],
+        "negative": [],
+        "neutral": [
+          "report",
+          "portal"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 50,
+      "action_items": [
+        {
+          "description": "Review the Q3 2024 financial report on the finance portal",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    }
+  },
+  "demo8": {
+    "gpt-4o_2000": {
+      "summary": "Sarah is organizing a brainstorming session for a new brand identity project, inviting participants to bring creative ideas.",
+      "key_phrases": [
+        "brainstorming session",
+        "new brand identity",
+        "creative ideas",
+        "Rainbow Room",
+        "2 PM - 4 PM tomorrow"
+      ],
+      "sentiment": {
+        "positive": [
+          "creative",
+          "excited",
+          "can't wait"
+        ],
+        "negative": [],
+        "neutral": [
+          "brainstorming",
+          "project",
+          "session"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Attend brainstorming session in Rainbow Room",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "Sarah is organizing a brainstorming session for a new brand identity project, encouraging creativity and collaboration among team members.",
+      "key_phrases": [
+        "brainstorming session",
+        "brand identity project",
+        "creative juices",
+        "Rainbow Room",
+        "2 PM - 4 PM tomorrow"
+      ],
+      "sentiment": {
+        "positive": [
+          "creative",
+          "excited",
+          "together",
+          "wildest",
+          "snacks"
+        ],
+        "negative": [],
+        "neutral": [
+          "tomorrow",
+          "2 PM - 4 PM",
+          "Rainbow Room"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Attend brainstorming session in Rainbow Room",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_300": {
+      "summary": "Sarah is organizing a brainstorming session for a new brand identity project, encouraging creative ideas.",
+      "key_phrases": [
+        "brainstorming session",
+        "new brand identity",
+        "creative ideas",
+        "Rainbow Room",
+        "2 PM - 4 PM tomorrow"
+      ],
+      "sentiment": {
+        "positive": [
+          "creative",
+          "exciting",
+          "can't wait"
+        ],
+        "negative": [],
+        "neutral": [
+          "brainstorming",
+          "session",
+          "project"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Attend brainstorming session in Rainbow Room",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_800": {
+      "summary": "Sarah is organizing a brainstorming session for a new brand identity project, inviting team members to bring creative ideas.",
+      "key_phrases": [
+        "brainstorming session",
+        "new brand identity",
+        "creative ideas",
+        "Rainbow Room",
+        "2 PM - 4 PM tomorrow"
+      ],
+      "sentiment": {
+        "positive": [
+          "creative",
+          "juices",
+          "wildest",
+          "exciting",
+          "can't wait"
+        ],
+        "negative": [],
+        "neutral": [
+          "session",
+          "project",
+          "bring",
+          "ideas"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Attend brainstorming session in Rainbow Room",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_300": {
+      "summary": "Sarah is organizing a brainstorming session for a new brand identity project, encouraging creativity and collaboration among team members.",
+      "key_phrases": [
+        "brainstorming session",
+        "brand identity project",
+        "creative juices",
+        "Rainbow Room",
+        "2 PM - 4 PM tomorrow"
+      ],
+      "sentiment": {
+        "positive": [
+          "creative",
+          "excited",
+          "together",
+          "imagination"
+        ],
+        "negative": [],
+        "neutral": [
+          "session",
+          "project",
+          "ideas",
+          "snacks"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Attend brainstorming session in Rainbow Room",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_800": {
+      "summary": "Sarah is organizing a brainstorming session for a new brand identity project, encouraging creativity and collaboration among team members.",
+      "key_phrases": [
+        "brainstorming session",
+        "new brand identity",
+        "creative juices",
+        "Rainbow Room",
+        "2 PM - 4 PM tomorrow"
+      ],
+      "sentiment": {
+        "positive": [
+          "creative",
+          "excited",
+          "together",
+          "imagination"
+        ],
+        "negative": [],
+        "neutral": [
+          "when",
+          "where",
+          "what to bring"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Attend brainstorming session in Rainbow Room",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    }
+  },
+  "demo9": {
+    "gpt-4o_2000": {
+      "summary": "Book club discussion summary of 'The Innovation Mindset', highlighting key takeaways and next month's book selection.",
+      "key_phrases": [
+        "book club discussion",
+        "The Innovation Mindset",
+        "key takeaways",
+        "next month's book"
+      ],
+      "sentiment": {
+        "positive": [
+          "engaging",
+          "insightful",
+          "enjoyed"
+        ],
+        "negative": [],
+        "neutral": [
+          "discussion",
+          "summary",
+          "next month"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "Summary of the book club's discussion on 'The Innovation Mindset', including main discussion points and the announcement of next month's book.",
+      "key_phrases": [
+        "book club discussion",
+        "The Innovation Mindset",
+        "discussion points",
+        "next month's book"
+      ],
+      "sentiment": {
+        "positive": [
+          "engaging",
+          "insightful",
+          "enjoyed"
+        ],
+        "negative": [],
+        "neutral": [
+          "discussion",
+          "summary",
+          "next month"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o_300": {
+      "summary": "Book club discussion summary of 'The Innovation Mindset' with key points and next month's book announcement.",
+      "key_phrases": [
+        "book club discussion",
+        "The Innovation Mindset",
+        "key points",
+        "next month's book"
+      ],
+      "sentiment": {
+        "positive": [
+          "engaging",
+          "insightful",
+          "enjoyed"
+        ],
+        "negative": [],
+        "neutral": [
+          "discussion",
+          "summary",
+          "next month"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o_800": {
+      "summary": "Book club discussion recap of 'The Innovation Mindset', covering main insights and announcing the next book selection.",
+      "key_phrases": [
+        "book club discussion",
+        "The Innovation Mindset",
+        "main insights",
+        "next month's book"
+      ],
+      "sentiment": {
+        "positive": [
+          "engaging",
+          "insightful",
+          "enjoyed"
+        ],
+        "negative": [],
+        "neutral": [
+          "discussion",
+          "summary",
+          "next month"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o-mini_300": {
+      "summary": "Summary of the book club meeting discussing 'The Innovation Mindset' and next month's book selection.",
+      "key_phrases": [
+        "book club discussion",
+        "The Innovation Mindset",
+        "discussion points",
+        "next month's book"
+      ],
+      "sentiment": {
+        "positive": [
+          "engaging",
+          "insightful",
+          "enjoyed"
+        ],
+        "negative": [],
+        "neutral": [
+          "discussion",
+          "summary",
+          "next month"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o-mini_800": {
+      "summary": "Book club discussion summary covering 'The Innovation Mindset' and the announcement of next month's book.",
+      "key_phrases": [
+        "book club discussion",
+        "The Innovation Mindset",
+        "discussion points",
+        "next month's book"
+      ],
+      "sentiment": {
+        "positive": [
+          "engaging",
+          "insightful",
+          "enjoyed"
+        ],
+        "negative": [],
+        "neutral": [
+          "discussion",
+          "summary",
+          "next month"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    }
+  },
+  "demo10": {
+    "gpt-4o_2000": {
+      "summary": "System maintenance notice for database upgrades scheduled for Saturday, March 2nd, from 2 AM to 6 AM EST.",
+      "key_phrases": [
+        "system maintenance",
+        "database upgrades",
+        "scheduled downtime",
+        "March 2nd",
+        "2 AM to 6 AM EST"
+      ],
+      "sentiment": {
+        "positive": [
+          "improvements",
+          "enhanced",
+          "minimal disruption"
+        ],
+        "negative": [
+          "downtime",
+          "unavailable"
+        ],
+        "neutral": [
+          "maintenance",
+          "scheduled",
+          "notice"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Save work and log out before system maintenance on March 2nd at 2 AM EST",
+          "due_date": "2024-03-02"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "System maintenance notice announcing database upgrades on Saturday, March 2nd, from 2 AM to 6 AM EST.",
+      "key_phrases": [
+        "system maintenance",
+        "database upgrades",
+        "scheduled downtime",
+        "March 2nd",
+        "2 AM to 6 AM EST"
+      ],
+      "sentiment": {
+        "positive": [
+          "improvements",
+          "enhanced",
+          "minimal disruption"
+        ],
+        "negative": [
+          "downtime",
+          "unavailable"
+        ],
+        "neutral": [
+          "maintenance",
+          "scheduled",
+          "notice"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Save work and log out before system maintenance on March 2nd at 2 AM EST",
+          "due_date": "2024-03-02"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_300": {
+      "summary": "System maintenance notice for database upgrades on Saturday, March 2nd, 2 AM to 6 AM EST.",
+      "key_phrases": [
+        "system maintenance",
+        "database upgrades",
+        "scheduled downtime",
+        "March 2nd",
+        "2 AM to 6 AM EST"
+      ],
+      "sentiment": {
+        "positive": [
+          "improvements",
+          "enhanced",
+          "minimal disruption"
+        ],
+        "negative": [
+          "downtime",
+          "unavailable"
+        ],
+        "neutral": [
+          "maintenance",
+          "scheduled",
+          "notice"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Save work and log out before system maintenance on March 2nd at 2 AM EST",
+          "due_date": "2024-03-02"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_800": {
+      "summary": "System maintenance notice for database upgrades scheduled for Saturday, March 2nd, 2 AM to 6 AM EST.",
+      "key_phrases": [
+        "system maintenance",
+        "database upgrades",
+        "scheduled downtime",
+        "March 2nd",
+        "2 AM to 6 AM EST"
+      ],
+      "sentiment": {
+        "positive": [
+          "improvements",
+          "enhanced",
+          "minimal disruption"
+        ],
+        "negative": [
+          "downtime",
+          "unavailable"
+        ],
+        "neutral": [
+          "maintenance",
+          "scheduled",
+          "notice"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Save work and log out before system maintenance on March 2nd at 2 AM EST",
+          "due_date": "2024-03-02"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_300": {
+      "summary": "System maintenance notice for database upgrades on Saturday, March 2nd, from 2 AM to 6 AM EST.",
+      "key_phrases": [
+        "system maintenance",
+        "database upgrades",
+        "scheduled downtime",
+        "March 2nd",
+        "2 AM to 6 AM EST"
+      ],
+      "sentiment": {
+        "positive": [
+          "improvements",
+          "enhanced",
+          "minimal disruption"
+        ],
+        "negative": [
+          "downtime",
+          "unavailable"
+        ],
+        "neutral": [
+          "maintenance",
+          "scheduled",
+          "notice"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Save work and log out before system maintenance on March 2nd at 2 AM EST",
+          "due_date": "2024-03-02"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_800": {
+      "summary": "System maintenance notice announcing database upgrades scheduled for March 2nd, 2 AM to 6 AM EST.",
+      "key_phrases": [
+        "system maintenance",
+        "database upgrades",
+        "scheduled downtime",
+        "March 2nd",
+        "2 AM to 6 AM EST"
+      ],
+      "sentiment": {
+        "positive": [
+          "improvements",
+          "enhanced",
+          "minimal disruption"
+        ],
+        "negative": [
+          "downtime",
+          "unavailable"
+        ],
+        "neutral": [
+          "maintenance",
+          "scheduled",
+          "notice"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Save work and log out before system maintenance on March 2nd at 2 AM EST",
+          "due_date": "2024-03-02"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    }
+  },
+  "demo11": {
+    "gpt-4o_2000": {
+      "summary": "Announcement of a new Office Plant Program to enhance workplace environment and productivity.",
+      "key_phrases": [
+        "Office Plant Program",
+        "reduce stress",
+        "increase productivity",
+        "improve air quality",
+        "plant preference form"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "reduce stress",
+          "increase productivity",
+          "improve"
+        ],
+        "negative": [],
+        "neutral": [
+          "participate",
+          "form",
+          "Friday"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Fill out the plant preference form for the Office Plant Program",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "Launch announcement of the Office Plant Program initiative to improve workplace environment with desk plants.",
+      "key_phrases": [
+        "Office Plant Program",
+        "reduce stress",
+        "increase productivity",
+        "improve air quality",
+        "plant preference form"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "reduce stress",
+          "increase productivity",
+          "improve"
+        ],
+        "negative": [],
+        "neutral": [
+          "participate",
+          "form",
+          "Friday"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Fill out the plant preference form for the Office Plant Program",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_300": {
+      "summary": "Announcement of the Office Plant Program launch with benefits and participation instructions.",
+      "key_phrases": [
+        "Office Plant Program",
+        "reduce stress",
+        "increase productivity",
+        "plant preference form"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "reduce stress",
+          "improve"
+        ],
+        "negative": [],
+        "neutral": [
+          "participate",
+          "form",
+          "Friday"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Fill out the plant preference form for the Office Plant Program",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_800": {
+      "summary": "Announcement of the new Office Plant Program with workplace benefits and participation details.",
+      "key_phrases": [
+        "Office Plant Program",
+        "reduce stress",
+        "increase productivity",
+        "improve air quality",
+        "plant preference form"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "reduce stress",
+          "increase productivity",
+          "improve"
+        ],
+        "negative": [],
+        "neutral": [
+          "participate",
+          "form",
+          "Friday"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Fill out the plant preference form for the Office Plant Program",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_300": {
+      "summary": "Launch of the Office Plant Program with participation instructions.",
+      "key_phrases": [
+        "Office Plant Program",
+        "reduce stress",
+        "increase productivity",
+        "plant preference form"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "reduce stress",
+          "improve"
+        ],
+        "negative": [],
+        "neutral": [
+          "participate",
+          "form",
+          "Friday"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Fill out the plant preference form for the Office Plant Program",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_800": {
+      "summary": "Announcement of the Office Plant Program initiative with workplace benefits and sign-up details.",
+      "key_phrases": [
+        "Office Plant Program",
+        "reduce stress",
+        "increase productivity",
+        "improve air quality",
+        "plant preference form"
+      ],
+      "sentiment": {
+        "positive": [
+          "excited",
+          "reduce stress",
+          "increase productivity",
+          "improve"
+        ],
+        "negative": [],
+        "neutral": [
+          "participate",
+          "form",
+          "Friday"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Fill out the plant preference form for the Office Plant Program",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    }
+  },
+  "demo12": {
+    "gpt-4o_2000": {
+      "summary": "Project timeline update following team meeting: research phase extended, phases 2 and 3 combined, final delivery date unchanged.",
+      "key_phrases": [
+        "project timeline",
+        "extend research phase",
+        "combine phases",
+        "final delivery date"
+      ],
+      "sentiment": {
+        "positive": [
+          "thanks",
+          "efficiency"
+        ],
+        "negative": [],
+        "neutral": [
+          "update",
+          "review",
+          "schedule"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Update team schedules to reflect extended research phase and combined project phases",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "Project timeline adjustments: research phase extended by two weeks, phases 2 and 3 combined, with final delivery date remaining unchanged.",
+      "key_phrases": [
+        "project timeline",
+        "extend research phase",
+        "combine phases",
+        "final delivery date"
+      ],
+      "sentiment": {
+        "positive": [
+          "thanks",
+          "efficiency"
+        ],
+        "negative": [],
+        "neutral": [
+          "update",
+          "review",
+          "schedule"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Update team schedules to reflect extended research phase and combined project phases",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_300": {
+      "summary": "Project timeline update: research phase extended, phases merged, delivery date unchanged.",
+      "key_phrases": [
+        "project timeline",
+        "extend research phase",
+        "combine phases",
+        "final delivery"
+      ],
+      "sentiment": {
+        "positive": [
+          "thanks",
+          "efficiency"
+        ],
+        "negative": [],
+        "neutral": [
+          "update",
+          "review",
+          "schedule"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Update team schedules to reflect extended research phase and combined project phases",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_800": {
+      "summary": "Project timeline modifications after team meeting: extended research phase, combined phases 2 and 3, maintaining final delivery date.",
+      "key_phrases": [
+        "project timeline",
+        "extend research phase",
+        "combine phases",
+        "final delivery date"
+      ],
+      "sentiment": {
+        "positive": [
+          "thanks",
+          "efficiency"
+        ],
+        "negative": [],
+        "neutral": [
+          "update",
+          "review",
+          "schedule"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Update team schedules to reflect extended research phase and combined project phases",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_300": {
+      "summary": "Project timeline changes: research phase extended, phases combined, final date unchanged.",
+      "key_phrases": [
+        "project timeline",
+        "extend research phase",
+        "combine phases",
+        "final delivery"
+      ],
+      "sentiment": {
+        "positive": [
+          "thanks",
+          "efficiency"
+        ],
+        "negative": [],
+        "neutral": [
+          "update",
+          "review",
+          "schedule"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Update team schedules to reflect extended research phase and combined project phases",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_800": {
+      "summary": "Project timeline update following meeting: research phase extended, phases 2 and 3 merged, final delivery date maintained.",
+      "key_phrases": [
+        "project timeline",
+        "extend research phase",
+        "combine phases",
+        "final delivery date"
+      ],
+      "sentiment": {
+        "positive": [
+          "thanks",
+          "efficiency"
+        ],
+        "negative": [],
+        "neutral": [
+          "update",
+          "review",
+          "schedule"
+        ]
+      },
+      "priority_level": "HIGH",
+      "priority_score": 80,
+      "action_items": [
+        {
+          "description": "Update team schedules to reflect extended research phase and combined project phases",
+          "due_date": "2024-02-20"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    }
+  },
+  "demo13": {
+    "gpt-4o_2000": {
+      "summary": "Recap of a tech meetup event featuring keynote on AI, lightning talks, and networking opportunities.",
+      "key_phrases": [
+        "tech meetup",
+        "AI keynote",
+        "lightning talks",
+        "networking",
+        "community portal"
+      ],
+      "sentiment": {
+        "positive": [
+          "amazing",
+          "awesome",
+          "engaging"
+        ],
+        "negative": [],
+        "neutral": [
+          "presentations",
+          "networking",
+          "portal"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "Summary of a tech meetup featuring AI discussions, presentations, and networking sessions.",
+      "key_phrases": [
+        "tech meetup",
+        "AI keynote",
+        "lightning talks",
+        "networking",
+        "community portal"
+      ],
+      "sentiment": {
+        "positive": [
+          "amazing",
+          "awesome",
+          "engaging"
+        ],
+        "negative": [],
+        "neutral": [
+          "presentations",
+          "networking",
+          "portal"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o_300": {
+      "summary": "Recap of tech meetup with AI keynote and networking sessions.",
+      "key_phrases": [
+        "tech meetup",
+        "AI keynote",
+        "lightning talks",
+        "networking"
+      ],
+      "sentiment": {
+        "positive": [
+          "amazing",
+          "awesome",
+          "engaging"
+        ],
+        "negative": [],
+        "neutral": [
+          "presentations",
+          "networking",
+          "portal"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o_800": {
+      "summary": "Recap of tech meetup event with AI keynote, lightning talks, and networking opportunities.",
+      "key_phrases": [
+        "tech meetup",
+        "AI keynote",
+        "lightning talks",
+        "networking",
+        "community portal"
+      ],
+      "sentiment": {
+        "positive": [
+          "amazing",
+          "awesome",
+          "engaging"
+        ],
+        "negative": [],
+        "neutral": [
+          "presentations",
+          "networking",
+          "portal"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o-mini_300": {
+      "summary": "Summary of tech meetup featuring AI discussions and networking.",
+      "key_phrases": [
+        "tech meetup",
+        "AI keynote",
+        "lightning talks",
+        "networking"
+      ],
+      "sentiment": {
+        "positive": [
+          "amazing",
+          "awesome",
+          "engaging"
+        ],
+        "negative": [],
+        "neutral": [
+          "presentations",
+          "networking",
+          "portal"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    },
+    "gpt-4o-mini_800": {
+      "summary": "Recap of tech meetup with AI keynote, presentations, and networking sessions.",
+      "key_phrases": [
+        "tech meetup",
+        "AI keynote",
+        "lightning talks",
+        "networking",
+        "community portal"
+      ],
+      "sentiment": {
+        "positive": [
+          "amazing",
+          "awesome",
+          "engaging"
+        ],
+        "negative": [],
+        "neutral": [
+          "presentations",
+          "networking",
+          "portal"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Work",
+      "needs_action": false
+    }
+  },
+  "demo14": {
+    "gpt-4o_2000": {
+      "summary": "Weekly analytics report showing user growth (+12.5%), engagement (28.3%), conversion (3.7%), and insights on mobile usage and feature adoption.",
+      "key_phrases": [
+        "weekly analytics",
+        "user growth",
+        "engagement rate",
+        "conversion rate",
+        "mobile usage",
+        "peak activity",
+        "feature adoption"
+      ],
+      "sentiment": {
+        "positive": [
+          "growth",
+          "increased",
+          "adoption"
+        ],
+        "negative": [],
+        "neutral": [
+          "analytics",
+          "metrics",
+          "report"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Review full analytics report in the dashboard",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "Weekly analytics summary highlighting user growth, engagement metrics, and key insights about mobile usage and feature adoption.",
+      "key_phrases": [
+        "weekly analytics",
+        "user growth",
+        "engagement rate",
+        "conversion rate",
+        "mobile usage",
+        "peak activity",
+        "feature adoption"
+      ],
+      "sentiment": {
+        "positive": [
+          "growth",
+          "increased",
+          "adoption"
+        ],
+        "negative": [],
+        "neutral": [
+          "analytics",
+          "metrics",
+          "report"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Review full analytics report in the dashboard",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_300": {
+      "summary": "Weekly analytics report with metrics on user growth, engagement, and conversion rates.",
+      "key_phrases": [
+        "weekly analytics",
+        "user growth",
+        "engagement rate",
+        "conversion rate",
+        "mobile usage"
+      ],
+      "sentiment": {
+        "positive": [
+          "growth",
+          "increased",
+          "adoption"
+        ],
+        "negative": [],
+        "neutral": [
+          "analytics",
+          "metrics",
+          "report"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Review full analytics report in the dashboard",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o_800": {
+      "summary": "Weekly analytics report detailing user growth, engagement metrics, and insights on mobile usage and feature adoption.",
+      "key_phrases": [
+        "weekly analytics",
+        "user growth",
+        "engagement rate",
+        "conversion rate",
+        "mobile usage",
+        "peak activity",
+        "feature adoption"
+      ],
+      "sentiment": {
+        "positive": [
+          "growth",
+          "increased",
+          "adoption"
+        ],
+        "negative": [],
+        "neutral": [
+          "analytics",
+          "metrics",
+          "report"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Review full analytics report in the dashboard",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_300": {
+      "summary": "Weekly analytics summary with key metrics on user growth and engagement.",
+      "key_phrases": [
+        "weekly analytics",
+        "user growth",
+        "engagement rate",
+        "conversion rate",
+        "mobile usage"
+      ],
+      "sentiment": {
+        "positive": [
+          "growth",
+          "increased",
+          "adoption"
+        ],
+        "negative": [],
+        "neutral": [
+          "analytics",
+          "metrics",
+          "report"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Review full analytics report in the dashboard",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    },
+    "gpt-4o-mini_800": {
+      "summary": "Weekly analytics report covering user growth, engagement metrics, and mobile usage insights.",
+      "key_phrases": [
+        "weekly analytics",
+        "user growth",
+        "engagement rate",
+        "conversion rate",
+        "mobile usage",
+        "peak activity",
+        "feature adoption"
+      ],
+      "sentiment": {
+        "positive": [
+          "growth",
+          "increased",
+          "adoption"
+        ],
+        "negative": [],
+        "neutral": [
+          "analytics",
+          "metrics",
+          "report"
+        ]
+      },
+      "priority_level": "MEDIUM",
+      "priority_score": 60,
+      "action_items": [
+        {
+          "description": "Review full analytics report in the dashboard",
+          "due_date": "2024-02-23"
+        }
+      ],
+      "category": "Work",
+      "needs_action": true
+    }
+  },
+  "demo15": {
+    "gpt-4o_2000": {
+      "summary": "Monthly personal goal check-in showing completed Python certification, ongoing exercise routine, and reading progress.",
+      "key_phrases": [
+        "monthly goal check-in",
+        "Python certification",
+        "exercise routine",
+        "reading goals",
+        "personal development"
+      ],
+      "sentiment": {
+        "positive": [
+          "complete",
+          "progress",
+          "achievements",
+          "keep going"
+        ],
+        "negative": [],
+        "neutral": [
+          "check-in",
+          "goals",
+          "monthly"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Personal",
+      "needs_action": false
+    },
+    "gpt-4o-mini_2000": {
+      "summary": "Monthly goal progress update reviewing Python certification completion, exercise habits, and reading targets.",
+      "key_phrases": [
+        "monthly goal check-in",
+        "Python certification",
+        "exercise routine",
+        "reading goals",
+        "personal development"
+      ],
+      "sentiment": {
+        "positive": [
+          "complete",
+          "progress",
+          "achievements",
+          "keep going"
+        ],
+        "negative": [],
+        "neutral": [
+          "check-in",
+          "goals",
+          "monthly"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Personal",
+      "needs_action": false
+    },
+    "gpt-4o_300": {
+      "summary": "Monthly goal check-in on Python certification, exercise, and reading progress.",
+      "key_phrases": [
+        "monthly goal check-in",
+        "Python certification",
+        "exercise routine",
+        "reading goals"
+      ],
+      "sentiment": {
+        "positive": [
+          "complete",
+          "progress",
+          "achievements",
+          "keep going"
+        ],
+        "negative": [],
+        "neutral": [
+          "check-in",
+          "goals",
+          "monthly"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Personal",
+      "needs_action": false
+    },
+    "gpt-4o_800": {
+      "summary": "Monthly personal goal check-in reviewing completed Python certification, exercise progress, and reading achievements.",
+      "key_phrases": [
+        "monthly goal check-in",
+        "Python certification",
+        "exercise routine",
+        "reading goals",
+        "personal development"
+      ],
+      "sentiment": {
+        "positive": [
+          "complete",
+          "progress",
+          "achievements",
+          "keep going"
+        ],
+        "negative": [],
+        "neutral": [
+          "check-in",
+          "goals",
+          "monthly"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Personal",
+      "needs_action": false
+    },
+    "gpt-4o-mini_300": {
+      "summary": "Monthly goal progress update on Python certification, exercise, and reading.",
+      "key_phrases": [
+        "monthly goal check-in",
+        "Python certification",
+        "exercise routine",
+        "reading goals"
+      ],
+      "sentiment": {
+        "positive": [
+          "complete",
+          "progress",
+          "achievements",
+          "keep going"
+        ],
+        "negative": [],
+        "neutral": [
+          "check-in",
+          "goals",
+          "monthly"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Personal",
+      "needs_action": false
+    },
+    "gpt-4o-mini_800": {
+      "summary": "Monthly goal check-in detailing Python certification completion, exercise habits, and reading progress.",
+      "key_phrases": [
+        "monthly goal check-in",
+        "Python certification",
+        "exercise routine",
+        "reading goals",
+        "personal development"
+      ],
+      "sentiment": {
+        "positive": [
+          "complete",
+          "progress",
+          "achievements",
+          "keep going"
+        ],
+        "negative": [],
+        "neutral": [
+          "check-in",
+          "goals",
+          "monthly"
+        ]
+      },
+      "priority_level": "LOW",
+      "priority_score": 30,
+      "action_items": [],
+      "category": "Personal",
+      "needs_action": false
+    }
+  }
+}

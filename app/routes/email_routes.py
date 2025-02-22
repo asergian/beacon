@@ -13,6 +13,7 @@ import time
 from datetime import datetime, timedelta
 import random
 from ..email.demo_emails import get_demo_email_bodies
+from ..email.demo_analysis import demo_analysis, load_analysis_cache
 
 def async_route(f):
     @wraps(f)
@@ -78,6 +79,12 @@ def get_demo_emails():
     # Get demo email bodies
     demo_bodies = get_demo_email_bodies()
     
+    # Load pre-generated analysis if available
+    try:
+        load_analysis_cache()
+    except Exception as e:
+        logger.warning(f"Could not load analysis cache: {e}")
+    
     demo_emails = [
         {
             "id": "demo1",
@@ -118,7 +125,7 @@ def get_demo_emails():
                 }
             ],
             "summary": "Welcome email introducing the demo mode and its key features. The email highlights AI-powered analysis, smart prioritization, and action item detection. A request for feedback is included with a suggested timeline.",
-            "priority": 80,
+            "priority": 75,
             "priority_level": "HIGH",
             "custom_categories": {
                 "type": "onboarding",
@@ -374,7 +381,7 @@ def get_demo_emails():
             "category": "Informational",
             "action_items": [],
             "summary": "Security notification about a new device login from San Francisco using an iPhone. No action needed if the login attempt was legitimate.",
-            "priority": 45,
+            "priority": 55,
             "priority_level": "MEDIUM",
             "custom_categories": {
                 "type": "security",
@@ -482,7 +489,7 @@ def get_demo_emails():
                 }
             ],
             "summary": "Creative team brainstorming session scheduled for tomorrow from 2-4 PM in the Rainbow Room for the new brand identity project. Participants encouraged to bring creative ideas.",
-            "priority": 55,
+            "priority": 50,
             "priority_level": "MEDIUM",
             "custom_categories": {
                 "type": "meeting",
@@ -593,7 +600,7 @@ def get_demo_emails():
                 }
             ],
             "summary": "Critical system maintenance scheduled for tonight with various service impacts. Users must save work and log out before 21:45 UTC.",
-            "priority": 70,
+            "priority": 80,
             "priority_level": "HIGH",
             "custom_categories": {
                 "type": "system",
@@ -710,7 +717,7 @@ def get_demo_emails():
                 }
             ],
             "summary": "Project timeline adjustments including extended research phase and combined phases 2-3, with final delivery date remaining unchanged.",
-            "priority": 60,
+            "priority": 65,
             "priority_level": "MEDIUM",
             "custom_categories": {
                 "type": "project",
@@ -894,9 +901,158 @@ async def get_cached_emails():
     try:
         # Check if in demo mode
         if session.get('user', {}).get('is_demo', False):
+            # Get user settings
+            user = User.query.get(session['user']['id'])
+            if not user:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'User not found'
+                }), 404
+
+            # Get demo emails
+            demo_emails = get_demo_emails()
+
+            # Apply user settings to demo emails
+            settings = user.get_all_settings()
+            
+            # Check if AI features are enabled
+            ai_enabled = settings.get('ai_features', {}).get('enabled', True)
+            
+            # Apply settings to each email
+            for email in demo_emails:
+                if not ai_enabled:
+                    # If AI is disabled, remove AI-generated fields
+                    email.pop('summary', None)
+                    email.pop('priority', None)
+                    email.pop('priority_level', None)
+                    email.pop('category', None)
+                    email.pop('custom_categories', None)
+                    email.pop('entities', None)
+                    email.pop('key_phrases', None)
+                    email.pop('sentiment_indicators', None)
+                    email.pop('needs_action', None)
+                    email.pop('action_items', None)
+                else:
+                    # Get model type and context length settings
+                    model_type = str(settings.get('ai_features', {}).get('model_type', 'gpt-4o-mini')).lower()
+                    context_length = str(settings.get('ai_features', {}).get('context_length', '1000'))
+                    summary_length = str(settings.get('ai_features', {}).get('summary_length', 'medium')).lower()
+
+                    # Apply pre-generated analysis based on model and context length
+                    email = demo_analysis.apply_analysis(email, model_type, context_length)
+                    
+                    # Apply additional enhancements based on model type
+                    if model_type == 'gpt-4o':
+                        # Enhanced analysis for premium model
+                        email['analysis_quality'] = 'premium'
+                        
+                        # Enhance entities with relationships and context
+                        if 'entities' in email:
+                            enhanced_entities = {}
+                            original_entities = dict(email['entities'])
+                            for key, values in original_entities.items():
+                                if isinstance(values, list):
+                                    enhanced_entities[key] = list(values)
+                                    enhanced_entities[f"{key}_context"] = [
+                                        f"Impact: High relevance to {key.lower()}",
+                                        f"Related Terms: {', '.join(values[:2])}"
+                                    ]
+                            email['entities'] = enhanced_entities
+                        
+                        # Add sophisticated key phrases with analysis
+                        if 'key_phrases' in email:
+                            original_phrases = email['key_phrases']
+                            email['key_phrases'] = []
+                            for phrase in original_phrases[:3]:
+                                email['key_phrases'].extend([
+                                    phrase,
+                                    f"Analysis: {phrase} indicates significant business impact",
+                                    f"Context: Frequently appears in important communications"
+                                ])
+                        
+                        # Enhanced sentiment analysis
+                        if 'sentiment_indicators' in email:
+                            for tone, words in email['sentiment_indicators'].items():
+                                if isinstance(words, list):
+                                    email['sentiment_indicators'][tone] = [
+                                        f"{word} (Confidence: High)" for word in words
+                                    ]
+                                    email['sentiment_indicators'][f"{tone}_analysis"] = [
+                                        f"Strong {tone} sentiment detected",
+                                        f"Impact on priority: Significant"
+                                    ]
+                        
+                        # Detailed action items with business context
+                        if email.get('action_items'):
+                            for item in email['action_items']:
+                                item['priority_reason'] = [
+                                    "Based on comprehensive analysis",
+                                    "Aligns with business objectives",
+                                    "Time-sensitive nature"
+                                ]
+                                item['impact_assessment'] = [
+                                    "Direct impact on project goals",
+                                    "Affects multiple stakeholders",
+                                    "Resource implications identified"
+                                ]
+                                item['suggested_delegates'] = [
+                                    {"name": "Team Lead", "reason": "Technical expertise required"},
+                                    {"name": "Project Manager", "reason": "Resource coordination needed"}
+                                ]
+                    else:
+                        email['analysis_quality'] = 'standard'
+                    
+                    # Apply summary length with enhanced formatting
+                    base_summary = email.get('summary', '')
+                    if summary_length == 'short':
+                        summary = base_summary.split('.')[0][:100]
+                        if model_type == 'gpt-4o':
+                            summary += "\n• Key Focus: " + ', '.join(email.get('key_phrases', [])[:1])
+                        email['summary'] = summary + '...'
+                    elif summary_length == 'medium':
+                        sentences = base_summary.split('.')[:2]
+                        summary = '. '.join(sentences)[:200]
+                        if model_type == 'gpt-4o':
+                            summary += "\n• Context: " + ', '.join(email.get('key_phrases', [])[:2])
+                            summary += "\n• Impact: High relevance to ongoing projects"
+                        email['summary'] = summary + '...'
+                    else:  # long summary
+                        if model_type == 'gpt-4o':
+                            if context_length == '2000':
+                                email['summary'] = f"{base_summary}\n\nDetailed Analysis:\n• Pattern: Part of ongoing communication thread\n• Business Impact: High\n• Stakeholder Relevance: Multiple teams affected"
+                            else:
+                                email['summary'] = f"{base_summary}\n\nKey Insights:\n• Significant communication\n• Requires attention\n• Follow-up recommended"
+                    
+                    # Apply priority threshold
+                    threshold = str(settings.get('ai_features', {}).get('priority_threshold', '50')).lower()
+                    priority = email.get('priority', 50)
+                    
+                    # Adjust priority level based on threshold setting
+                    if threshold == '30':  # More permissive
+                        if priority < 40:
+                            email['priority_level'] = 'LOW'
+                        elif priority < 65:
+                            email['priority_level'] = 'MEDIUM'
+                        else:
+                            email['priority_level'] = 'HIGH'
+                    elif threshold == '50':  # Balanced
+                        if priority < 50:
+                            email['priority_level'] = 'LOW'
+                        elif priority < 70:
+                            email['priority_level'] = 'MEDIUM'
+                        else:
+                            email['priority_level'] = 'HIGH'
+                    else:  # high threshold - strict
+                        if priority < 65:
+                            email['priority_level'] = 'LOW'
+                        elif priority < 75:
+                            email['priority_level'] = 'MEDIUM'
+                        else:
+                            email['priority_level'] = 'HIGH'
+
             return jsonify({
                 'status': 'success',
-                'emails': get_demo_emails(),
+                'emails': demo_emails,
                 'is_cached': True
             })
             
@@ -1120,8 +1276,151 @@ def stream_email_analysis():
                 yield 'event: status\ndata: {"message": "Loading demo data..."}\n\n'
                 time.sleep(1)  # Simulate loading
                 
-                # Get demo emails and calculate stats
+                # Get user settings
+                user = User.query.get(session['user']['id'])
+                if not user:
+                    yield 'event: error\ndata: {"message": "User not found"}\n\n'
+                    return
+                
+                # Get demo emails and user settings
                 demo_emails = get_demo_emails()
+                settings = user.get_all_settings()
+                
+                # Check if AI features are enabled
+                ai_enabled = settings.get('ai_features', {}).get('enabled', True)
+                
+                # Apply settings to each email
+                for email in demo_emails:
+                    if not ai_enabled:
+                        # If AI is disabled, remove AI-generated fields
+                        email.pop('summary', None)
+                        email.pop('priority', None)
+                        email.pop('priority_level', None)
+                        email.pop('category', None)
+                        email.pop('custom_categories', None)
+                        email.pop('entities', None)
+                        email.pop('key_phrases', None)
+                        email.pop('sentiment_indicators', None)
+                        email.pop('needs_action', None)
+                        email.pop('action_items', None)
+                    else:
+                        # Get model type and context length settings
+                        model_type = str(settings.get('ai_features', {}).get('model_type', 'gpt-4o-mini')).lower()
+                        context_length = str(settings.get('ai_features', {}).get('context_length', '1000'))
+                        summary_length = str(settings.get('ai_features', {}).get('summary_length', 'medium')).lower()
+
+                        # Apply pre-generated analysis based on model and context length
+                        email = demo_analysis.apply_analysis(email, model_type, context_length)
+                        
+                        # Apply additional enhancements based on model type
+                        if model_type == 'gpt-4o':
+                            # Enhanced analysis for premium model
+                            email['analysis_quality'] = 'premium'
+                            
+                            # Enhance entities with relationships and context
+                            if 'entities' in email:
+                                enhanced_entities = {}
+                                original_entities = dict(email['entities'])
+                                for key, values in original_entities.items():
+                                    if isinstance(values, list):
+                                        enhanced_entities[key] = list(values)
+                                        enhanced_entities[f"{key}_context"] = [
+                                            f"Impact: High relevance to {key.lower()}",
+                                            f"Related Terms: {', '.join(values[:2])}"
+                                        ]
+                                email['entities'] = enhanced_entities
+                            
+                            # Add sophisticated key phrases with analysis
+                            if 'key_phrases' in email:
+                                original_phrases = email['key_phrases']
+                                email['key_phrases'] = []
+                                for phrase in original_phrases[:3]:
+                                    email['key_phrases'].extend([
+                                        phrase,
+                                        f"Analysis: {phrase} indicates significant business impact",
+                                        f"Context: Frequently appears in important communications"
+                                    ])
+                            
+                            # Enhanced sentiment analysis
+                            if 'sentiment_indicators' in email:
+                                for tone, words in email['sentiment_indicators'].items():
+                                    if isinstance(words, list):
+                                        email['sentiment_indicators'][tone] = [
+                                            f"{word} (Confidence: High)" for word in words
+                                        ]
+                                        email['sentiment_indicators'][f"{tone}_analysis"] = [
+                                            f"Strong {tone} sentiment detected",
+                                            f"Impact on priority: Significant"
+                                        ]
+                            
+                            # Detailed action items with business context
+                            if email.get('action_items'):
+                                for item in email['action_items']:
+                                    item['priority_reason'] = [
+                                        "Based on comprehensive analysis",
+                                        "Aligns with business objectives",
+                                        "Time-sensitive nature"
+                                    ]
+                                    item['impact_assessment'] = [
+                                        "Direct impact on project goals",
+                                        "Affects multiple stakeholders",
+                                        "Resource implications identified"
+                                    ]
+                                    item['suggested_delegates'] = [
+                                        {"name": "Team Lead", "reason": "Technical expertise required"},
+                                        {"name": "Project Manager", "reason": "Resource coordination needed"}
+                                    ]
+                        else:
+                            email['analysis_quality'] = 'standard'
+                        
+                        # Apply summary length with enhanced formatting
+                        base_summary = email.get('summary', '')
+                        if summary_length == 'short':
+                            summary = base_summary.split('.')[0][:100]
+                            if model_type == 'gpt-4o':
+                                summary += "\n• Key Focus: " + ', '.join(email.get('key_phrases', [])[:1])
+                            email['summary'] = summary + '...'
+                        elif summary_length == 'medium':
+                            sentences = base_summary.split('.')[:2]
+                            summary = '. '.join(sentences)[:200]
+                            if model_type == 'gpt-4o':
+                                summary += "\n• Context: " + ', '.join(email.get('key_phrases', [])[:2])
+                                summary += "\n• Impact: High relevance to ongoing projects"
+                            email['summary'] = summary + '...'
+                        else:  # long summary
+                            if model_type == 'gpt-4o':
+                                if context_length == '2000':
+                                    email['summary'] = f"{base_summary}\n\nDetailed Analysis:\n• Pattern: Part of ongoing communication thread\n• Business Impact: High\n• Stakeholder Relevance: Multiple teams affected"
+                                else:
+                                    email['summary'] = f"{base_summary}\n\nKey Insights:\n• Significant communication\n• Requires attention\n• Follow-up recommended"
+                        
+                        # Apply priority threshold
+                        threshold = str(settings.get('ai_features', {}).get('priority_threshold', '50')).lower()
+                        priority = email.get('priority', 50)
+                        
+                        # Adjust priority level based on threshold setting
+                        if threshold == '30':  # More permissive
+                            if priority < 40:
+                                email['priority_level'] = 'LOW'
+                            elif priority < 65:
+                                email['priority_level'] = 'MEDIUM'
+                            else:
+                                email['priority_level'] = 'HIGH'
+                        elif threshold == '50':  # Balanced
+                            if priority < 50:
+                                email['priority_level'] = 'LOW'
+                            elif priority < 70:
+                                email['priority_level'] = 'MEDIUM'
+                            else:
+                                email['priority_level'] = 'HIGH'
+                        else:  # high threshold - strict
+                            if priority < 65:
+                                email['priority_level'] = 'LOW'
+                            elif priority < 75:
+                                email['priority_level'] = 'MEDIUM'
+                            else:
+                                email['priority_level'] = 'HIGH'
+
                 logger.info(f"Retrieved {len(demo_emails)} demo emails for streaming")
                 stats = {
                     'total_analyzed': len(demo_emails),
@@ -1131,20 +1430,21 @@ def stream_email_analysis():
                 
                 # Calculate actual stats from demo emails
                 for email in demo_emails:
-                    # Category distribution
-                    category = email.get('category', 'Uncategorized')
-                    stats['categories'][category] = stats['categories'].get(category, 0) + 1
-                    
-                    # Sentiment distribution
-                    sentiment = 'neutral'
-                    if email.get('sentiment_indicators'):
-                        pos = len(email['sentiment_indicators'].get('positive', []))
-                        neg = len(email['sentiment_indicators'].get('negative', []))
-                        if pos > neg:
-                            sentiment = 'positive'
-                        elif neg > pos:
-                            sentiment = 'negative'
-                    stats['sentiment_distribution'][sentiment] = stats['sentiment_distribution'].get(sentiment, 0) + 1
+                    if ai_enabled:  # Only calculate AI stats if enabled
+                        # Category distribution
+                        category = email.get('category', 'Uncategorized')
+                        stats['categories'][category] = stats['categories'].get(category, 0) + 1
+                        
+                        # Sentiment distribution
+                        sentiment = 'neutral'
+                        if email.get('sentiment_indicators'):
+                            pos = len(email['sentiment_indicators'].get('positive', []))
+                            neg = len(email['sentiment_indicators'].get('negative', []))
+                            if pos > neg:
+                                sentiment = 'positive'
+                            elif neg > pos:
+                                sentiment = 'negative'
+                        stats['sentiment_distribution'][sentiment] = stats['sentiment_distribution'].get(sentiment, 0) + 1
                 
                 logger.info(f"Sending {len(demo_emails)} demo emails via SSE cached event")
                 # Send cached data
