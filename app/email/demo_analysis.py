@@ -5,11 +5,18 @@ from openai import OpenAI
 from typing import Dict, Any, List
 import json
 import logging
+from flask import current_app
 
 logger = logging.getLogger(__name__)
 
-# Configure OpenAI client
-client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+# The OpenAI client will be obtained from the Flask app context instead of being initialized here
+def get_openai_client():
+    """Get the OpenAI client from the Flask application context."""
+    if not current_app:
+        raise RuntimeError("This function must be called within a Flask application context")
+    if not hasattr(current_app, 'get_openai_client'):
+        raise RuntimeError("OpenAI client not initialized in Flask application")
+    return current_app.get_openai_client()
 
 def get_analysis_key(model: str, context_length: str) -> str:
     """Generate a key for looking up pre-generated analysis."""
@@ -139,7 +146,7 @@ Analysis Guidelines by Context Length:
 Note: Context length should NOT affect whether action items are included - this should only depend on the email's content and requirements."""
 
             # Call OpenAI API
-            response = client.chat.completions.create(
+            response = get_openai_client().chat.completions.create(
                 model=openai_model,
                 messages=[
                     {"role": "system", "content": system_message},

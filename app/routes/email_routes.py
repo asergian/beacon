@@ -81,6 +81,15 @@ def get_demo_emails():
     
     # Load pre-generated analysis if available
     try:
+        # Ensure we're in an application context
+        if not current_app:
+            raise RuntimeError("This function must be called within a Flask application context")
+            
+        # Initialize OpenAI client if not already done
+        if not hasattr(current_app, 'get_openai_client'):
+            from .. import init_openai_client
+            init_openai_client(current_app)
+            
         load_analysis_cache()
     except Exception as e:
         logger.warning(f"Could not load analysis cache: {e}")
