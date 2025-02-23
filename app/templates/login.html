@@ -34,11 +34,25 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
-            <div class="hero-logo">
-                <img src="{{ url_for('static', filename='images/beacon-logo-hero.svg') }}" alt="Beacon" class="hero-logo-img">
-            </div>
             <h1>Take Control of Your Inbox</h1>
             <p>Beacon uses AI to analyze, summarize, and prioritize your emails, helping you focus on what matters most.</p>
+            <div class="cta-buttons">
+                <a href="{{ url_for('auth.oauth_login') }}" class="cta-button primary">
+                    <svg class="google-icon" width="18" height="18" viewBox="0 0 18 18">
+                        <path fill="#4285f4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                        <path fill="#34a853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                        <path fill="#fbbc05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.192 0 7.556 0 9s.348 2.808.957 4.039l3.007-2.332z"/>
+                        <path fill="#ea4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+                    </svg>
+                    Sign in with Google
+                </a>
+                <a href="{{ url_for('auth.demo_login') }}" class="cta-button secondary">
+                    <svg class="demo-icon" width="18" height="18" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+                    </svg>
+                    Try Demo Version
+                </a>
+            </div>
             {% if error %}
             <div class="error-message">
                 {{ error }}
@@ -52,23 +66,31 @@
         <h2>Key Features</h2>
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">📊</div>
-                <h3>Smart Prioritization</h3>
+                <div class="feature-header">
+                    <div class="feature-icon">📊</div>
+                    <h3>Smart Prioritization</h3>
+                </div>
                 <p>AI-powered email analysis that automatically identifies important messages and action items.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">📝</div>
-                <h3>Instant Summaries</h3>
+                <div class="feature-header">
+                    <div class="feature-icon">📝</div>
+                    <h3>Instant Summaries</h3>
+                </div>
                 <p>Get the key points from long email threads at a glance with AI-generated summaries.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">📅</div>
-                <h3>Calendar Integration</h3>
+                <div class="feature-header">
+                    <div class="feature-icon">📅</div>
+                    <h3>Calendar Integration</h3>
+                </div>
                 <p>Automatically detect and manage meeting requests and deadlines from your emails.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🔍</div>
-                <h3>Smart Search</h3>
+                <div class="feature-header">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Smart Search</h3>
+                </div>
                 <p>Find any email instantly with our powerful semantic search capabilities.</p>
             </div>
         </div>
@@ -127,5 +149,189 @@
         attemptClear();
     </script>
     {% endif %}
+
+    <style>
+    .hero {
+        text-align: center;
+        padding: 140px 20px 80px;
+        background: linear-gradient(135deg, #006F6A 0%, #00524E 100%);
+        color: white;
+        position: relative;
+        overflow: hidden;
+        margin-top: -1px;
+    }
+
+    .hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("{{ url_for('static', filename='images/pattern.svg') }}") center/cover;
+        opacity: 0.05;
+        pointer-events: none;
+    }
+
+    .hero-content {
+        max-width: 700px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero p {
+        font-size: 1.25rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin: 0 auto 2rem;
+        line-height: 1.5;
+        max-width: 600px;
+    }
+
+    .cta-buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: center;
+        margin-top: 2.5rem;
+    }
+
+    .cta-button {
+        display: inline-flex;
+        align-items: center;
+        padding: 14px 28px;
+        border-radius: 8px;
+        font-weight: 500;
+        font-size: 1.1rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        gap: 12px;
+    }
+
+    .cta-button.primary {
+        background: white;
+        color: #006F6A;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .cta-button.primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        background: #f8f9fa;
+    }
+
+    .cta-button.secondary {
+        background: transparent;
+        color: white;
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .cta-button.secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .nav-links .login-button {
+        display: none;
+    }
+
+    .demo-icon {
+        width: 24px;
+        height: 24px;
+    }
+
+    @media (max-width: 640px) {
+        .hero {
+            padding: 60px 20px;
+        }
+
+        .hero-logo-img {
+            height: 50px;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            padding: 0 20px;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            padding: 0 20px;
+        }
+
+        .cta-buttons {
+            flex-direction: column;
+            gap: 16px;
+            padding: 0 20px;
+        }
+
+        .cta-button {
+            width: 100%;
+            justify-content: center;
+            font-size: 1.1rem;
+            padding: 14px 28px;
+        }
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        padding: 2rem;
+    }
+
+    .feature-card {
+        background: white;
+        padding: 3rem 2rem 3rem 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .feature-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 2rem;
+        min-height: 48px;
+    }
+
+    .feature-icon {
+        flex-shrink: 0;
+        width: 48px;
+        height: 48px;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 111, 106, 0.1);
+        border-radius: 12px;
+        margin-right: 1rem;
+    }
+
+    .feature-card h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        color: #006F6A;
+        line-height: 1.2;
+    }
+
+    .feature-card p {
+        margin: 0;
+        color: #4B5563;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 640px) {
+        .features-grid {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+    }
+    </style>
 </body>
 </html> 

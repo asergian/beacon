@@ -87,13 +87,20 @@ class User(db.Model):
             'context_length': '1000',  # Default to medium context
             'priority_threshold': 50,  # Default to Medium (50)
             'summary_length': 'medium',  # Default summary length
-            'custom_categories': []  # List of custom category objects with format:
-                                   # {
-                                   #   'name': str,
-                                   #   'description': str,
-                                   #   'values': List[str],
-                                   #   'color': str  # Hex color code
-                                   # }
+            'custom_categories': [  # Default demo categories
+                {
+                    'name': 'Type',
+                    'description': 'The type or purpose of the email communication',
+                    'values': ['Onboarding', 'Report', 'Meeting', 'Security', 'Marketing', 'Community', 'Initiative', 'Project', 'Personal Development', 'System'],
+                    'color': '#8B5CF6'
+                },
+                {
+                    'name': 'Communication Style',
+                    'description': 'The tone and style of the email communication',
+                    'values': ['Instructional Friendly', 'Formal Analytical', 'Creative Enthusiastic', 'Direct Authoritative', 'Casual Enthusiastic', 'Data Driven Analytical', 'Motivational Supportive', 'Professional Decisive', 'Informative Encouraging'],
+                    'color': '#EC4899'
+                }
+            ]
         }
     }
     
