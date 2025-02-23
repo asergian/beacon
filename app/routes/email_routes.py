@@ -128,8 +128,8 @@ def get_demo_emails():
             "priority": 75,
             "priority_level": "HIGH",
             "custom_categories": {
-                "type": "onboarding",
-                "communication_style": "instructional_friendly"
+                "Type": "Onboarding",
+                "Communication Style": "Instructional Friendly"
             }
         },
         {
@@ -178,8 +178,8 @@ def get_demo_emails():
             "priority": 60,
             "priority_level": "MEDIUM",
             "custom_categories": {
-                "type": "report",
-                "communication_style": "formal_analytical"
+                "Type": "Report",
+                "Communication Style": "Formal Analytical"
             }
         },
         {
@@ -224,8 +224,8 @@ def get_demo_emails():
             "priority": 70,
             "priority_level": "MEDIUM",
             "custom_categories": {
-                "type": "meeting",
-                "communication_style": "formal_analytical"
+                "Type": "Meeting",
+                "Communication Style": "Formal Analytical"
             }
         },
         {
@@ -278,8 +278,8 @@ def get_demo_emails():
             "priority": 20,
             "priority_level": "LOW",
             "custom_categories": {
-                "type": "marketing",
-                "communication_style": "creative_enthusiastic"
+                "Type": "Marketing",
+                "Communication Style": "Creative Enthusiastic"
             }
         },
         {
@@ -331,8 +331,8 @@ def get_demo_emails():
             "priority": 65,
             "priority_level": "MEDIUM",
             "custom_categories": {
-                "type": "family",
-                "communication_style": "instructional_friendly"
+                "Type": "Family",
+                "Communication Style": "Instructional Friendly"
             }
         },
         {
@@ -384,8 +384,8 @@ def get_demo_emails():
             "priority": 55,
             "priority_level": "MEDIUM",
             "custom_categories": {
-                "type": "security",
-                "communication_style": "formal_analytical"
+                "Type": "Security",
+                "Communication Style": "Direct Authoritative"
             }
         },
         {
@@ -437,8 +437,8 @@ def get_demo_emails():
             "priority": 40,
             "priority_level": "LOW",
             "custom_categories": {
-                "type": "report",
-                "communication_style": "formal_analytical"
+                "Type": "Report",
+                "Communication Style": "Data Driven Analytical"
             }
         },
         {
@@ -492,8 +492,8 @@ def get_demo_emails():
             "priority": 50,
             "priority_level": "MEDIUM",
             "custom_categories": {
-                "type": "meeting",
-                "communication_style": "creative_enthusiastic"
+                "Type": "Meeting",
+                "Communication Style": "Creative Enthusiastic"
             }
         },
         {
@@ -544,8 +544,8 @@ def get_demo_emails():
             "priority": 30,
             "priority_level": "LOW",
             "custom_categories": {
-                "type": "social",
-                "communication_style": "intellectual_collaborative"
+                "Type": "Social",
+                "Communication Style": "Intellectual Collaborative"
             }
         },
         {
@@ -603,8 +603,8 @@ def get_demo_emails():
             "priority": 80,
             "priority_level": "HIGH",
             "custom_categories": {
-                "type": "system",
-                "communication_style": "direct_authoritative"
+                "Type": "System",
+                "Communication Style": "Direct Authoritative"
             }
         },
         {
@@ -662,8 +662,8 @@ def get_demo_emails():
             "priority": 35,
             "priority_level": "LOW",
             "custom_categories": {
-                "type": "initiative",
-                "communication_style": "informative_encouraging"
+                "Type": "Initiative",
+                "Communication Style": "Informative Encouraging"
             }
         },
         {
@@ -720,8 +720,8 @@ def get_demo_emails():
             "priority": 65,
             "priority_level": "MEDIUM",
             "custom_categories": {
-                "type": "project",
-                "communication_style": "professional_decisive"
+                "Type": "Project",
+                "Communication Style": "Professional Decisive"
             }
         },
         {
@@ -773,8 +773,8 @@ def get_demo_emails():
             "priority": 25,
             "priority_level": "LOW",
             "custom_categories": {
-                "type": "community",
-                "communication_style": "casual_enthusiastic"
+                "Type": "Community",
+                "Communication Style": "Casual Enthusiastic"
             }
         },
         {
@@ -831,8 +831,8 @@ def get_demo_emails():
             "priority": 45,
             "priority_level": "MEDIUM",
             "custom_categories": {
-                "type": "report",
-                "communication_style": "data_driven_analytical"
+                "Type": "Report",
+                "Communication Style": "Data Driven Analytical"
             }
         },
         {
@@ -884,8 +884,8 @@ def get_demo_emails():
             "priority": 35,
             "priority_level": "LOW",
             "custom_categories": {
-                "type": "personal_development",
-                "communication_style": "motivational_supportive"
+                "Type": "Personal Development",
+                "Communication Style": "Motivational Supportive"
             }
         }
     ]
@@ -999,6 +999,25 @@ async def get_cached_emails():
                                     {"name": "Team Lead", "reason": "Technical expertise required"},
                                     {"name": "Project Manager", "reason": "Resource coordination needed"}
                                 ]
+                                
+                        # Apply custom categories from user settings
+                        if 'custom_categories' in email:
+                            # Get custom categories from user settings
+                            user_categories = settings.get('ai_features', {}).get('custom_categories', [])
+                            if user_categories:
+                                # Create a mapping of category names to their configurations
+                                category_configs = {cat['name']: cat for cat in user_categories}
+                                
+                                # Update or filter custom categories based on user settings
+                                updated_categories = {}
+                                for cat_name, cat_value in email['custom_categories'].items():
+                                    if cat_name in category_configs:
+                                        # Ensure the value is in the allowed values for this category
+                                        config = category_configs[cat_name]
+                                        if cat_value in config['values']:
+                                            updated_categories[cat_name] = cat_value
+                                
+                                email['custom_categories'] = updated_categories
                     else:
                         email['analysis_quality'] = 'standard'
                     
@@ -1370,6 +1389,25 @@ def stream_email_analysis():
                                         {"name": "Team Lead", "reason": "Technical expertise required"},
                                         {"name": "Project Manager", "reason": "Resource coordination needed"}
                                     ]
+                                
+                            # Apply custom categories from user settings
+                            if 'custom_categories' in email:
+                                # Get custom categories from user settings
+                                user_categories = settings.get('ai_features', {}).get('custom_categories', [])
+                                if user_categories:
+                                    # Create a mapping of category names to their configurations
+                                    category_configs = {cat['name']: cat for cat in user_categories}
+                                    
+                                    # Update or filter custom categories based on user settings
+                                    updated_categories = {}
+                                    for cat_name, cat_value in email['custom_categories'].items():
+                                        if cat_name in category_configs:
+                                            # Ensure the value is in the allowed values for this category
+                                            config = category_configs[cat_name]
+                                            if cat_value in config['values']:
+                                                updated_categories[cat_name] = cat_value
+                                
+                                email['custom_categories'] = updated_categories
                         else:
                             email['analysis_quality'] = 'standard'
                         
