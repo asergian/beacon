@@ -31,44 +31,14 @@ class RateLimitError(GmailAPIError):
     pass
 
 class MemoryCache(Cache):
-    """In-memory LRU cache for Gmail API discovery document."""
-    def __init__(self, maxsize=128):
-        self.logger = logging.getLogger(__name__)
-        self.maxsize = maxsize
-        self.cache = {}
-        self.access_times = {}
-        self.cleanup_threshold = 1000  # Cleanup when we have this many items
-        self.logger.info(f"Initialized MemoryCache with maxsize={maxsize}")
+    """In-memory cache for Gmail API discovery document."""
+    _CACHE = {}
 
     def get(self, url):
-        if url in self.cache:
-            self.access_times[url] = time.time()
-            self.logger.debug(f"Cache hit for {url}. Current cache size: {len(self.cache)}")
-            return self.cache[url]
-        self.logger.debug(f"Cache miss for {url}")
-        return None
+        return MemoryCache._CACHE.get(url)
 
     def set(self, url, content):
-        self.cache[url] = content
-        self.access_times[url] = time.time()
-        self.logger.debug(f"Added {url} to cache. Current cache size: {len(self.cache)}")
-        
-        # Cleanup if we're over the limit
-        if len(self.cache) > self.cleanup_threshold:
-            self.logger.info(f"Cache cleanup triggered. Size before cleanup: {len(self.cache)}")
-            # Sort by access time and keep only maxsize most recent items
-            items = sorted(self.access_times.items(), key=lambda x: x[1], reverse=True)
-            to_keep = items[:self.maxsize]
-            
-            # Create new dictionaries with only the items to keep
-            new_cache = {url: self.cache[url] for url, _ in to_keep}
-            new_times = {url: time.time() for url, _ in to_keep}
-            
-            items_removed = len(self.cache) - len(new_cache)
-            self.logger.info(f"Removed {items_removed} items from cache. New size: {len(new_cache)}")
-            
-            self.cache = new_cache
-            self.access_times = new_times
+        MemoryCache._CACHE[url] = content
 
 class GmailClient:
     """
@@ -233,7 +203,7 @@ class GmailClient:
                 self.logger.info(f"Connecting to Gmail API for user {user_email}")
                 self._service = build('gmail', 'v1', 
                                     credentials=self._credentials,
-                                    cache=MemoryCache(maxsize=128))
+                                    cache=MemoryCache())
                 self._user_email = user_email
                 self.logger.info("Gmail API connection established")
             
