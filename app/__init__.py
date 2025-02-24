@@ -115,11 +115,14 @@ def init_openai_client(app):
 def create_app(config_class: Optional[object] = Config) -> Flask:
     """Create and configure the Flask application."""
     flask_app = Flask(__name__)
-    
+
+    # Configure logging first
+    configure_logging()
+    logger = logging.getLogger(__name__)
+
     # Get worker information
     worker_id = os.environ.get('HYPERCORN_WORKER_ID')
     is_worker = bool(worker_id)
-    logger = logging.getLogger(__name__)
     
     # Basic setup (no logging needed)
     flask_app.logger.handlers.clear()
@@ -128,7 +131,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     flask_app.config['SESSION_TYPE'] = 'filesystem'
     flask_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     flask_app.config['SESSION_PERMANENT'] = True
-    
+
     # Trust proxy headers for HTTPS detection
     if os.environ.get('RENDER'):
         flask_app.config['PREFERRED_URL_SCHEME'] = 'https'
