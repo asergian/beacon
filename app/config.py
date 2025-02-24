@@ -132,6 +132,11 @@ def configure_logging():
                 'handlers': ['console'],
                 'level': log_level,  # Use environment-specified level
                 'propagate': False
+            },
+            'app.email.core.gmail_client': {
+                'handlers': ['console'],
+                'level': log_level,  # Use environment-specified level
+                'propagate': False
             }
         }
     })

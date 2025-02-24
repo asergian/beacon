@@ -114,11 +114,11 @@ def init_openai_client(app):
 
 def create_app(config_class: Optional[object] = Config) -> Flask:
     """Create and configure the Flask application."""
-    flask_app = Flask(__name__)
-
     # Configure logging first
     configure_logging()
     logger = logging.getLogger(__name__)
+
+    flask_app = Flask(__name__)
 
     # Get worker information
     worker_id = os.environ.get('HYPERCORN_WORKER_ID')

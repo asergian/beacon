@@ -44,8 +44,8 @@ def setup_https_config() -> Config:
     
     # Worker configuration
     config.worker_class = "asyncio"
-    config.workers = max(1, min(4, os.cpu_count() - 1))
-    #config.workers = 1
+    #config.workers = max(1, min(4, os.cpu_count() - 1))
+    config.workers = 1
     config.worker_connections = 1000
     
     # SSE-specific configuration
