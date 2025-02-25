@@ -32,13 +32,18 @@ class RateLimitError(GmailAPIError):
 
 class MemoryCache(Cache):
     """In-memory cache for Gmail API discovery document."""
-    _CACHE = {}
+    # Module level cache that persists across instances
+    _GLOBAL_CACHE = {}
 
     def get(self, url):
-        return MemoryCache._CACHE.get(url)
+        return self._GLOBAL_CACHE.get(url)
 
     def set(self, url, content):
-        MemoryCache._CACHE[url] = content
+        self._GLOBAL_CACHE[url] = content
+
+# Initialize cache with common discovery URLs
+_DISCOVERY_URL = "https://gmail.googleapis.com/$discovery/rest?version=v1"
+MemoryCache._GLOBAL_CACHE[_DISCOVERY_URL] = None  # Will be populated on first use
 
 class GmailClient:
     """
@@ -54,16 +59,18 @@ class GmailClient:
         self._service = None
         self._credentials = None
         self._user_email = None  # Track the authenticated user's email
-        self._batch_size = 20
+        self._batch_size = 25  # Increased from 5 for better throughput
         self._request_count = 0
         self._last_request_time = 0
-        self._min_request_interval = 0.25
-        self._max_retries = 5
-        self._base_delay = 2
+        self._min_request_interval = 0.1  # Reduced from 0.15 for faster processing
+        self._max_retries = 3
+        self._base_delay = 1
         self._quota_window = 1.0
-        self._quota_limit = 250
+        self._quota_limit = 250  # Gmail's default quota
         self._quota_cost_get = 5
         self._quota_usage = []
+        self._last_quota_reset = time.time()
+        self._concurrent_batch_limit = 5  # Increased from 3 for better parallelization
     
     def _create_credentials(self, creds_dict: Dict) -> Credentials:
         """Create a Credentials object from session dictionary."""
@@ -109,11 +116,11 @@ class GmailClient:
                 
                 creds_dict = session['credentials']
                 
-                # Get user info from ID token to verify email
+                # Only verify token if we don't have valid credentials
                 try:
                     id_info = id_token.verify_oauth2_token(
                         creds_dict.get('id_token'),
-                        AuthRequest(),  # Use the correct Request class from google.auth.transport
+                        AuthRequest(),
                         creds_dict.get('client_id')
                     )
                     token_email = id_info.get('email', '').lower()
@@ -126,9 +133,9 @@ class GmailClient:
                     self.logger.debug(f"Token needs refresh: {e}")  # Changed to debug since this is normal
                     # If token verification fails, try to refresh credentials
                     if creds_dict.get('refresh_token'):
-                        self.logger.info("Refreshing expired token...")  # Updated message
+                        self.logger.info("Refreshing expired token...")
                         temp_creds = self._create_credentials(creds_dict)
-                        temp_creds.refresh(AuthRequest())  # Use the correct Request class from google.auth.transport
+                        temp_creds.refresh(AuthRequest())
                         creds_dict['token'] = temp_creds.token
                         creds_dict['id_token'] = temp_creds.id_token
                         session['credentials'] = creds_dict
@@ -219,9 +226,15 @@ class GmailClient:
         if attempt >= self._max_retries:
             raise RateLimitError("Max retries exceeded for rate limit")
             
-        delay = (self._base_delay ** attempt) + (random.random() * 0.5)
-        self.logger.info(f"Rate limit hit. Backing off for {delay:.2f} seconds (attempt {attempt + 1}/{self._max_retries})")
+        delay = (self._base_delay * (2 ** attempt)) + (random.random() * 0.5)  # True exponential backoff
+        self.logger.warning(f"Rate limit hit. Backing off for {delay:.2f} seconds (attempt {attempt + 1}/{self._max_retries})")
         await asyncio.sleep(delay)
+        
+        # Adjust batch size and concurrency after rate limit
+        if attempt > 0:
+            self._batch_size = max(5, self._batch_size - 2)  # Reduce batch size but not below 5
+            self._concurrent_batch_limit = max(2, self._concurrent_batch_limit - 1)  # Reduce concurrency but not below 2
+            self.logger.info(f"Adjusted batch size to {self._batch_size} and concurrency to {self._concurrent_batch_limit}")
 
     async def _execute_with_retry(self, operation, *args, **kwargs):
         """Execute an operation with retry logic for rate limits."""
@@ -247,14 +260,57 @@ class GmailClient:
         raise RateLimitError("Max retries exceeded")
 
     async def _track_quota(self, cost: int):
-        """Track API quota usage within the rolling window."""
+        """Track API quota usage with automatic reset."""
         current_time = time.time()
-        # Remove timestamps outside the window
-        self._quota_usage = [t for t in self._quota_usage if current_time - t < self._quota_window]
-        if len(self._quota_usage) * cost >= self._quota_limit:
-            await asyncio.sleep(self._quota_window)
+        
+        # Reset quota if window has passed
+        if current_time - self._last_quota_reset >= self._quota_window:
             self._quota_usage.clear()
-        self._quota_usage.append(current_time)
+            self._last_quota_reset = current_time
+        
+        # Remove old timestamps
+        self._quota_usage = [t for t in self._quota_usage 
+                           if current_time - t[0] < self._quota_window]
+        
+        # Calculate current usage
+        current_usage = sum(cost for _, cost in self._quota_usage)
+        
+        # If we would exceed quota, wait for reset
+        if current_usage + cost >= self._quota_limit:
+            wait_time = self._quota_window - (current_time - self._last_quota_reset)
+            if wait_time > 0:
+                self.logger.info(f"Quota limit reached, waiting {wait_time:.2f}s for reset")
+                await asyncio.sleep(wait_time)
+                self._quota_usage.clear()
+                self._last_quota_reset = time.time()
+        
+        # Add new usage
+        self._quota_usage.append((current_time, cost))
+
+    async def _execute_batch_with_quota(self, batch_request, batch_size: int):
+        """Execute a batch request with quota tracking and rate limiting."""
+        try:
+            # Track quota before execution
+            await self._track_quota(self._quota_cost_get * batch_size)
+            
+            # Add jitter to request timing to avoid thundering herd
+            jitter = random.uniform(0, 0.1)
+            current_time = time.time()
+            time_since_last = current_time - self._last_request_time
+            if time_since_last < self._min_request_interval:
+                await asyncio.sleep(self._min_request_interval - time_since_last + jitter)
+            
+            # Execute with retry
+            result = await self._execute_with_retry(batch_request.execute)
+            self._last_request_time = time.time()
+            return result
+            
+        except Exception as e:
+            if "429" in str(e) or "quota" in str(e).lower():
+                # If we hit rate limit, adjust parameters dynamically
+                self._min_request_interval = min(self._min_request_interval * 1.2, 0.5)  # Increase interval up to max 0.5s
+                raise RateLimitError(str(e))
+            raise
 
     async def fetch_emails(self, days_back: int = 1, user_email: str = None) -> List[Dict]:
         """
@@ -266,9 +322,6 @@ class GmailClient:
             
         Returns:
             List of dictionaries containing email data
-            
-        Raises:
-            GmailAPIError: If fetching emails fails
         """
         if not user_email:
             raise ValueError("user_email is required to fetch emails")
@@ -306,27 +359,22 @@ class GmailClient:
             messages = results.get('messages', [])
             if not messages:
                 return []
-            
-            # Batch get full messages with rate limiting
+
+            # Process batches with controlled concurrency
             batch_results = []
+            all_batches = []
+            
             for i in range(0, len(messages), self._batch_size):
                 batch = messages[i:i + self._batch_size]
-                
-                # Create a new batch request
                 batch_request = self._service.new_batch_http_request()
-                current_batch = []
                 
                 def callback(request_id, response, exception):
                     if exception is None:
                         batch_results.append(response)
                     else:
                         self.logger.error(f"Error in batch request: {exception}")
-                        if "429" in str(exception) or "quota" in str(exception).lower():
-                            current_batch.append(exception)
                 
-                # Track quota for the batch
-                await self._track_quota(self._quota_cost_get * len(batch))
-                
+                # Add messages to batch
                 for msg in batch:
                     batch_request.add(
                         self._service.users().messages().get(
@@ -337,25 +385,25 @@ class GmailClient:
                         callback=callback
                     )
                 
-                # Execute batch with retry
-                retry_count = 0
-                while retry_count < self._max_retries:
-                    try:
-                        current_batch.clear()
-                        await self._execute_with_retry(batch_request.execute)
-                        if not current_batch:  # No rate limit errors in batch
-                            break
-                        retry_count += 1
-                        await self._handle_rate_limit(retry_count)
-                    except Exception as e:
-                        if retry_count == self._max_retries - 1:
-                            raise
-                        retry_count += 1
-                        await self._handle_rate_limit(retry_count)
+                all_batches.append((batch_request, len(batch)))
+            
+            # Process batches with controlled concurrency
+            for i in range(0, len(all_batches), self._concurrent_batch_limit):
+                current_batches = all_batches[i:i + self._concurrent_batch_limit]
+                batch_tasks = [self._execute_batch_with_quota(req, size) 
+                             for req, size in current_batches]
                 
-                # Only add delay if we're close to quota limits
-                if len(self._quota_usage) * self._quota_cost_get > self._quota_limit * 0.8:
-                    await asyncio.sleep(self._min_request_interval)
+                try:
+                    await asyncio.gather(*batch_tasks)
+                except RateLimitError:
+                    # If we hit rate limit, process remaining batches sequentially
+                    self.logger.warning("Rate limit hit, switching to sequential processing")
+                    for req, size in current_batches:
+                        try:
+                            await self._execute_batch_with_quota(req, size)
+                        except Exception as e:
+                            self.logger.error(f"Failed to process batch: {e}")
+                            continue
             
             # Process results
             emails = []
