@@ -10,6 +10,7 @@ import multiprocessing
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
 import math
+import gc
 
 class ContentAnalyzer:
     """Analyzes text using spaCy for entities and urgency."""
@@ -72,6 +73,23 @@ class ContentAnalyzer:
             f"    Batch size: {self.batch_size}"
         )
 
+    def _cleanup_doc(self, doc: spacy.tokens.Doc):
+        """Safely cleanup spaCy doc to free memory."""
+        try:
+            # Remove circular references
+            doc.user_hooks = {}
+            doc.user_data = {}
+            # Clear token and span references
+            for token in doc:
+                token._.remove()
+            doc.user_span_hooks = {}
+            # Remove document from vocabulary
+            doc.vocab = None
+            # Clear the document text
+            doc.text = ""
+        except Exception as e:
+            self.logger.debug(f"Non-critical error during doc cleanup: {e}")
+
     async def analyze_batch(self, texts: List[str]) -> List[Dict]:
         """Analyze a batch of texts efficiently."""
         try:
@@ -113,18 +131,32 @@ class ContentAnalyzer:
                 f"    Average per text: {pipe_time/len(texts):.3f}s"
             )
             
-            # Process results
-            post_process_start = time.time()
-            results = [
-                self._process_analyzed_doc(doc, text_lower) 
-                for doc, text_lower in zip(docs, texts_lower)
-            ]
-            post_process_time = time.time() - post_process_start
+            # Process results and cleanup immediately
+            results = []
+            for doc, text_lower in zip(docs, texts_lower):
+                try:
+                    result = self._process_analyzed_doc(doc, text_lower)
+                    results.append(result)
+                finally:
+                    # Cleanup spaCy doc
+                    self._cleanup_doc(doc)
+            
+            # Clear references to large objects
+            docs = None
+            texts = None
+            texts_lower = None
+            chunk_results = None
+            batches = None
+            
+            # Force garbage collection after large batch processing
+            gc.collect()
+            
+            post_process_time = time.time() - start_time - pipe_time
             
             self.logger.debug(
                 f"Post-processing completed:\n"
                 f"    Total time: {post_process_time:.2f}s\n"
-                f"    Average: {post_process_time/len(texts):.3f}s per text"
+                f"    Average: {post_process_time/len(results):.3f}s per text"
             )
             
             total_time = time.time() - start_time
@@ -133,10 +165,10 @@ class ContentAnalyzer:
                 f"    Total time: {total_time:.2f}s\n"
                 f"    SpaCy pipe time: {pipe_time:.2f}s\n"
                 f"    Post-processing time: {post_process_time:.2f}s\n"
-                f"    Average time per text: {total_time/len(texts):.3f}s"
+                f"    Average time per text: {total_time/len(results):.3f}s"
             )
             
-            self.logger.info(f"NLP Analysis completed - SpaCy: {pipe_time:.2f}s, Post-processing: {post_process_time:.2f}s, Total: {total_time:.2f}s (avg {total_time/len(texts):.3f}s/text)")
+            self.logger.info(f"NLP Analysis completed - SpaCy: {pipe_time:.2f}s, Post-processing: {post_process_time:.2f}s, Total: {total_time:.2f}s (avg {total_time/len(results):.3f}s/text)")
             
             return results
             
@@ -170,18 +202,8 @@ class ContentAnalyzer:
                 }
             }
             
-            # Single pass over tokens and entities
+            # Process entities and tokens first
             entity_dict = {}
-            for token in doc:
-                # Collect verbs
-                if token.pos_ == 'VERB':
-                    result['structural_elements']['verbs'].add(token.lemma_)
-                
-                # Collect dependencies
-                if token.dep_ in ('ROOT', 'dobj', 'iobj'):
-                    result['structural_elements']['dependencies'].append((token.text, token.dep_))
-            
-            # Single pass over entities
             for ent in doc.ents:
                 if ent.label_ in self.VALID_ENTITY_LABELS:
                     if not any(indicator in ent.text.lower() for indicator in self.HTML_INDICATORS):
@@ -190,7 +212,14 @@ class ContentAnalyzer:
                     if ent.label_ in {'DATE', 'TIME'}:
                         result['time_sensitivity']['time_references'].append(ent.text)
             
-            # Single pass over sentences
+            # Process tokens
+            for token in doc:
+                if token.pos_ == 'VERB':
+                    result['structural_elements']['verbs'].add(token.lemma_)
+                if token.dep_ in ('ROOT', 'dobj', 'iobj'):
+                    result['structural_elements']['dependencies'].append((token.text, token.dep_))
+            
+            # Process sentences
             for sent in doc.sents:
                 result['sentence_count'] += 1
                 sent_text = sent.text.strip()
@@ -230,19 +259,19 @@ class ContentAnalyzer:
             sentiment_scores = self._analyze_sentiment(text_lower)
             email_patterns = self._detect_email_patterns(text_lower)
             
-            # Finalize results
+            # Convert sets to lists and limit sizes
             result.update({
-                'entities': dict(list(entity_dict.items())[:5]),  # Top 5 entities
-                'key_phrases': result['key_phrases'][:3],  # Top 3 phrases
+                'entities': dict(list(entity_dict.items())[:5]),
+                'key_phrases': result['key_phrases'][:3],
                 'urgency': self._check_urgency(text_lower),
-            'sentiment_analysis': {
-                'scores': sentiment_scores,
-                'is_positive': sentiment_scores['positive'] > sentiment_scores['negative'],
-                'is_strong_sentiment': abs(sentiment_scores['positive'] - sentiment_scores['negative']) > 0.5,
-                'has_gratitude': sentiment_scores['patterns']['gratitude'] > 0,
-                'has_dissatisfaction': sentiment_scores['patterns']['dissatisfaction'] > 0
-            },
-            'email_patterns': email_patterns,
+                'sentiment_analysis': {
+                    'scores': sentiment_scores,
+                    'is_positive': sentiment_scores['positive'] > sentiment_scores['negative'],
+                    'is_strong_sentiment': abs(sentiment_scores['positive'] - sentiment_scores['negative']) > 0.5,
+                    'has_gratitude': sentiment_scores['patterns']['gratitude'] > 0,
+                    'has_dissatisfaction': sentiment_scores['patterns']['dissatisfaction'] > 0
+                },
+                'email_patterns': email_patterns,
                 'questions': {
                     'has_questions': result['questions']['question_count'] > 0,
                     'direct_questions': result['questions']['direct_questions'][:2],
@@ -261,6 +290,11 @@ class ContentAnalyzer:
                     'dependencies': result['structural_elements']['dependencies'][:3]
                 }
             })
+            
+            # Clear large intermediate objects
+            entity_dict = None
+            sentiment_scores = None
+            email_patterns = None
             
             return result
             
