@@ -39,6 +39,7 @@ from .email.analyzers.content_analyzer_subprocess import ContentAnalyzerSubproce
 from .email.utils.priority_scoring import PriorityScorer
 from .email.pipeline.pipeline import create_pipeline
 from .email.core.gmail_client import GmailClient
+from .email.core.gmail_client_subprocess import GmailClientSubprocess
 from .email.storage.cache import RedisEmailCache
 from .utils.memory_utils import MemoryProfilingMiddleware
 
@@ -180,7 +181,8 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         priority_calculator.set_priority_threshold(50)
 
         # Create Gmail client and parser
-        gmail_client = GmailClient()
+        # Use the subprocess version for better memory isolation
+        gmail_client = GmailClientSubprocess()
         parser = EmailParser()
         
         # Create and store email processor

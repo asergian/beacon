@@ -156,44 +156,61 @@ class EmailParser:
         Extract metadata from a raw email message.
         """
         try:
-            # Handle Gmail API format
+            # Check if we have a valid raw_message to parse
+            if raw_email is None or 'raw_message' not in raw_email or raw_email['raw_message'] is None:
+                self.logger.error("Unsupported email format: Missing or invalid raw_message")
+                return None
+
+            # Handle Gmail API format - raw_message can be bytes
             if isinstance(raw_email.get('raw_message'), bytes):
                 email_msg = email.message_from_bytes(raw_email['raw_message'])
+                
+                # Extract basic headers
+                message_id = self._extract_message_id(email_msg)
+                
+                # Use Gmail API ID from raw_email['id'] as the primary identifier 
+                # This is consistent with how GmailClient processes emails
+                email_id = raw_email.get('id', '')
+                
+                # If no Gmail API ID is available, fall back to Message-ID header
+                if not email_id:
+                    email_id = message_id
+                
+                headers = {
+                    'subject': self._decode_header(email_msg.get('subject', '')),
+                    'from': self._decode_header(email_msg.get('from', '')),
+                    'to': self._decode_header(email_msg.get('to', '')),
+                    'date': self._parse_date(email_msg.get('date')),
+                    'content_type': email_msg.get_content_type()
+                }
+
+                # Extract body
+                body = self._extract_body(email_msg)
+                if not body:
+                    self.logger.warning(f"No readable body found for email {email_id}")
+                    body = ""
+                
+                # Clear the raw_message reference to free memory immediately
+                raw_email['raw_message'] = None
+                email_msg = None
+
+                # Create and return EmailMetadata object
+                return EmailMetadata(
+                    id=email_id,
+                    subject=headers['subject'],
+                    sender=headers['from'],
+                    body=body,
+                    date=headers['date']
+                )
             else:
                 self.logger.error("Unsupported email format")
                 return None
 
-            # Extract basic headers
-            message_id = self._extract_message_id(email_msg)
-            
-            # Use the raw_email['id'] if available (Gmail API ID), otherwise use the message_id
-            email_id = raw_email.get('id', message_id)
-            
-            headers = {
-                'subject': self._decode_header(email_msg.get('subject', '')),
-                'from': self._decode_header(email_msg.get('from', '')),
-                'to': self._decode_header(email_msg.get('to', '')),
-                'date': self._parse_date(email_msg.get('date')),
-                'content_type': email_msg.get_content_type()
-            }
-
-            # Extract body
-            body = self._extract_body(email_msg)
-            if not body:
-                self.logger.warning(f"No readable body found for email {email_id}")
-                body = ""
-
-            # Create and return EmailMetadata object
-            return EmailMetadata(
-                id=email_id,
-                subject=headers['subject'],
-                sender=headers['from'],
-                body=body,
-                date=headers['date']
-            )
-
         except Exception as e:
             self.logger.error(f"Failed to parse email: {e}")
+            # Make sure we clear references even on errors
+            if isinstance(raw_email.get('raw_message'), bytes):
+                raw_email['raw_message'] = None
             return None
 
     def _safe_extract_header(self, msg: email.message.Message, header: str) -> str:

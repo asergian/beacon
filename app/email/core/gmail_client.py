@@ -357,7 +357,7 @@ class GmailClient:
                     maxResults=100
                 ).execute
             )
-            
+
             messages = results.get('messages', [])
             if not messages:
                 return []
@@ -365,7 +365,7 @@ class GmailClient:
             # Process batches with controlled concurrency
             batch_results = []
             all_batches = []
-            
+
             for i in range(0, len(messages), self._batch_size):
                 batch = messages[i:i + self._batch_size]
                 batch_request = self._service.new_batch_http_request()
@@ -388,7 +388,7 @@ class GmailClient:
                     )
                 
                 all_batches.append((batch_request, len(batch)))
-            
+            log_memory_usage(self.logger, "After Gmail API Fetch (get list of message IDs)")
             # Process batches with controlled concurrency
             for i in range(0, len(all_batches), self._concurrent_batch_limit):
                 current_batches = all_batches[i:i + self._concurrent_batch_limit]
@@ -406,10 +406,8 @@ class GmailClient:
                         except Exception as e:
                             self.logger.error(f"Failed to process batch: {e}")
                             continue
-            
-            log_memory_usage(self.logger, "After Email Processing")
-            
-            # Process results
+            log_memory_usage(self.logger, "After Batch Processing")
+            # Process results - with memory optimization
             emails = []
             for msg in batch_results:
                 try:
@@ -424,21 +422,35 @@ class GmailClient:
                     if email_date:
                         local_email_date = email_date.astimezone(local_tz)
                         if local_email_date >= local_midnight:
-                            emails.append({
+                            # Process this email and extract what we need now
+                            email_data = {
                                 'id': msg['id'],
-                                'raw_message': raw_msg,
                                 'Message-ID': email_msg.get('Message-ID'),
                                 'subject': email_msg.get('subject'),
                                 'from': email_msg.get('from'),
                                 'to': email_msg.get('to'),
                                 'date': date_str,
-                                'snippet': msg.get('snippet', '')
-                            })
+                                'snippet': msg.get('snippet', ''),
+                                'raw_message': raw_msg  # Will be processed and cleared by parser
+                            }
+                            emails.append(email_data)
+                            
+                    # Clear references to large objects immediately
+                    raw_msg = None
+                    email_msg = None
+                    msg['raw'] = None  # Clear the raw data in the batch result too
+                    
                 except Exception as e:
                     self.logger.error(f"Error processing message {msg['id']}: {e}")
                     continue
+
+            # Clear batch results to free memory
+            batch_results = None
+            msg = None  # Clear the reference to the last message in the loop
             
+            log_memory_usage(self.logger, "After Email Processing")
             self.logger.info(f"Retrieved {len(emails)} emails from Gmail API")
+            
             return emails
                 
         except Exception as e:
