@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import logging
 from flask import session
 import time
+import gc
 
 from ..core.email_processor import EmailProcessor
 from ..models.processed_email import ProcessedEmail
@@ -221,6 +222,7 @@ class EmailPipeline:
                     # Cache new results if cache available
                     if self.cache and analyzed_emails:
                         try:
+                            stats["processed"] = len(analyzed_emails)  # Track processed count
                             await self.cache.store_many(analyzed_emails, user_email, ttl_days=cache_duration)
                         except Exception as e:
                             errors.append({"error": f"Cache storage error: {str(e)}", "timestamp": datetime.now()})
@@ -303,14 +305,41 @@ class EmailPipeline:
                 # Make sure to release memory at the end of pipeline execution
                 log_memory_usage(self.logger, "Pipeline Complete")
                 
+                # Create a copy of the filtered emails list to avoid memory leaks
+                # from keeping references to the larger original objects
+                filtered_emails_copy = []
+                for email in filtered_emails:
+                    # Create a new dictionary with only essential fields
+                    email_dict = email.dict()
+                    filtered_emails_copy.append(ProcessedEmail(**email_dict))
+                
+                # Clear original references
+                filtered_emails = None
+                all_emails = None
+                analyzed_emails = None
+                cached_emails = None
+                raw_emails = None
+                new_raw_emails = None
+                
+                # Force garbage collection
+                gc.collect()
+                gc.collect()
+                
+                log_memory_usage(self.logger, "Pipeline After Final Cleanup")
+                
                 return AnalysisResult(
-                    emails=filtered_emails,
+                    emails=filtered_emails_copy,
                     stats=stats,
                     errors=errors
                 )
             finally:
-                # No cleanup here - let the route handle disconnection
-                pass
+                # Even though the route will handle disconnection,
+                # we ensure resources are cleaned up here as well
+                try:
+                    await self.connection.disconnect()
+                    log_memory_usage(self.logger, "Pipeline After Disconnection")
+                except Exception as e:
+                    self.logger.error(f"Error during pipeline disconnect: {e}")
 
         except Exception as e:
             errors.append({"error": str(e), "timestamp": datetime.now()})
@@ -351,7 +380,8 @@ class EmailPipeline:
             "failed_parsing": 0,
             "failed_analysis": 0,
             "cached": 0,
-            "batches": 0
+            "batches": 0,
+            "processed": 0
         }
 
         try:
@@ -544,22 +574,75 @@ class EmailPipeline:
                                 if self.cache and batch_results:
                                     await self.cache.store_many(batch_results, user_email, ttl_days=cache_duration)
                                 
-                                # Yield each batch as it's processed
-                                if batch_results:
+                                # Clear out large memory objects we don't need anymore
+                                emails_to_process = []
+                                
+                                # Create lightweight copies of the email objects
+                                for email in batch_results:
+                                    # Create a new dictionary with only essential fields
+                                    email_dict = email.dict()
+                                    email_copy = ProcessedEmail(**email_dict)
+                                    emails_to_process.append(email_copy)
+                                
+                                # Clear original references
+                                batch_results = None
+                                
+                                # Force garbage collection
+                                gc.collect()
+                                
+                                # Track successfully analyzed emails count BEFORE clearing the emails_to_process variable
+                                analyzed_count = len(emails_to_process) if emails_to_process else 0
+                                stats["successfully_analyzed"] = stats.get("successfully_analyzed", 0) + analyzed_count
+                                
+                                # Stream as a batch instead of individual emails
+                                if emails_to_process and len(emails_to_process) > 0:
                                     yield {
                                         'type': 'batch',
-                                        'data': {'emails': [email.dict() for email in batch_results]}
-                                    }
-                                    
-                                    processed_so_far = i + len(batch_results)
-                                    yield {
-                                        'type': 'status',
-                                        'data': {'message': f'Processed {processed_so_far} of {len(parsed_emails)} emails'}
+                                        'data': {
+                                            'emails': [email.dict() for email in emails_to_process]
+                                        }
                                     }
                                 
-                                # Update stats
-                                stats["successfully_analyzed"] += len(batch_results)
-                                stats["failed_analysis"] += len(batch) - len(batch_results)
+                                # Clear batch data
+                                emails_to_process = None
+                                
+                                # Yield batch completion status
+                                stats["processed"] = i + min(command.batch_size, len(parsed_emails) - i if parsed_emails else 0)
+                                yield {
+                                    'type': 'status',
+                                    'data': {
+                                        'message': f'Processed {stats["processed"]}/{stats["new_emails"]} emails',
+                                        'progress': i / stats["new_emails"] if stats["new_emails"] > 0 else 1
+                                    }
+                                }
+                            
+                            # Once all batches are done, if using cache, save newly processed emails
+                            if self.cache:
+                                try:
+                                    # We no longer need to save anything here since we've been caching each batch as we go
+                                    self.logger.debug("All batches have been cached individually already")
+                                except Exception as e:
+                                    self.logger.error(f"Failed to store emails in cache: {e}")
+                            
+                            # Final stats
+                            yield {
+                                'type': 'complete',
+                                'data': {
+                                    'processed': stats.get("processed", 0),
+                                    'cached': stats.get("cached", 0),
+                                    'total': stats.get("cached", 0) + stats.get("processed", 0),
+                                }
+                            }
+                            
+                            # Clear any remaining large objects to free memory
+                            batch_results = None
+                            
+                            # Force garbage collection
+                            gc.collect()
+                            
+                            # Log memory at end of pipeline
+                            log_memory_usage(self.logger, "Streaming Pipeline Complete")
+                        
                         else:
                             # Process all at once if no batch size specified
                             # Log memory before processing all emails at once
@@ -573,7 +656,10 @@ class EmailPipeline:
                             
                             # Cache results
                             if self.cache and analyzed_emails:
+                                stats["processed"] = len(analyzed_emails)  # Track processed count
                                 await self.cache.store_many(analyzed_emails, user_email, ttl_days=cache_duration)
+                            else:
+                                stats["processed"] = len(analyzed_emails) if analyzed_emails else 0
                             
                             # Yield all results at once
                             if analyzed_emails:
@@ -583,8 +669,8 @@ class EmailPipeline:
                                 }
                             
                             stats.update({
-                                "successfully_analyzed": len(analyzed_emails),
-                                "failed_analysis": len(parsed_emails) - len(analyzed_emails)
+                                "successfully_analyzed": stats.get("processed", 0),  # Use processed count from stats
+                                "failed_analysis": len(parsed_emails) - stats.get("processed", 0)
                             })
 
                         stats.update({
@@ -613,21 +699,27 @@ class EmailPipeline:
                 yield {
                     'type': 'stats',
                     'data': {
-                        'total_processed': stats['emails_fetched'],
-                        'new_emails': stats['new_emails'],
-                        'successfully_parsed': stats['successfully_parsed'],
-                        'successfully_analyzed': stats['successfully_analyzed'],
-                        'failed_parsing': stats['failed_parsing'],
-                        'failed_analysis': stats['failed_analysis'],
+                        'total_processed': stats.get('emails_fetched', 0),
+                        'new_emails': stats.get('new_emails', 0),
+                        'successfully_parsed': stats.get('successfully_parsed', 0),
+                        'successfully_analyzed': stats.get('successfully_analyzed', 0),
+                        'failed_parsing': stats.get('failed_parsing', 0),
+                        'failed_analysis': stats.get('failed_analysis', 0),
                         'success_rate_parse': success_rate_parse,
                         'success_rate_analyze': success_rate_analyze,
-                        'batches': stats['batches']
+                        'batches': stats.get('batches', 0),
+                        'total': stats.get('cached', 0) + stats.get('processed', 0)  # Use safe get method
                     }
                 }
 
             finally:
-                # No cleanup here - let the route handle disconnection
-                pass
+                # Even though the route will handle disconnection,
+                # we ensure resources are cleaned up here as well
+                try:
+                    await self.connection.disconnect()
+                    log_memory_usage(self.logger, "Streaming Pipeline After Disconnection")
+                except Exception as e:
+                    self.logger.error(f"Error during streaming pipeline disconnect: {e}")
                 
         except Exception as e:
             self.logger.error(f"Pipeline error: {e}")

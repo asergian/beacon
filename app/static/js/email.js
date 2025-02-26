@@ -216,6 +216,36 @@ async function setupSSEConnection() {
             }
         });
         
+        // Add listener for individual email events
+        eventSource.addEventListener('email', (event) => {
+            const data = JSON.parse(event.data);
+            console.log(`Received individual email: ${data.id}`);
+            
+            // Add new email to map
+            emailMap.set(data.id, { ...data, isAnalyzed: true });
+            
+            // Cleanup old emails if needed
+            cleanupOldEmails();
+            
+            // Update UI
+            updateEmailList();
+            
+            // Load first email if none selected yet
+            if (!selectedEmailId) {
+                loadFirstEmail();
+            }
+            
+            const emailList = document.querySelector('.email-list');
+            if (emailList) {
+                emailList.style.display = 'block';
+            }
+            
+            const emailDetails = document.getElementById('email-details');
+            if (emailDetails) {
+                emailDetails.style.display = 'block';
+            }
+        });
+        
         eventSource.addEventListener('batch', (event) => {
             const data = JSON.parse(event.data);
             if (data.emails && data.emails.length > 0) {
@@ -244,6 +274,38 @@ async function setupSSEConnection() {
                 if (emailDetails) {
                     emailDetails.style.display = 'block';
                 }
+            }
+        });
+        
+        // Add listener for complete event
+        eventSource.addEventListener('complete', (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Processing complete:', data);
+            
+            // Display final processing stats
+            const processed = data.processed || 0;
+            const cached = data.cached || 0;
+            const total = data.total || 0;
+            
+            // Show the completion message
+            showLoadingBar(`Processing complete. Total emails: ${total} (${cached} cached, ${processed} new)`);
+            setTimeout(() => {
+                hideLoadingBar();
+            }, 3000);
+            
+            // Ensure email list is visible
+            const emailList = document.querySelector('.email-list');
+            if (emailList) {
+                emailList.style.display = 'block';
+            }
+            
+            // Mark initialization as complete
+            hasInitialized = true;
+            
+            // Close SSE connection
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
             }
         });
         
@@ -346,7 +408,9 @@ async function setupSSEConnection() {
                 currentTimeout = setTimeout(() => {
                     // Only timeout if we haven't received any data
                     if (!hasResolved) {
-                        eventSource.close();
+                        if (eventSource) {
+                            eventSource.close();
+                        }
                         reject(new Error(timeouts[index].message));
                     }
                 }, timeouts[index].time);
@@ -768,6 +832,7 @@ function updateLoadingText(stage) {
     
     let message = '';
     
+    // If stage is a pre-defined key, use mapped message
     switch(stage) {
         case 'fetch':
             message = 'Fetching emails...';
@@ -782,6 +847,7 @@ function updateLoadingText(stage) {
             message = 'Loading cached emails...';
             break;
         default:
+            // If it's not a pre-defined stage, use the text directly
             message = 'Loading...';
     }
     

@@ -15,17 +15,20 @@ import os
 import signal
 import sys
 import time
+import gzip
 from datetime import datetime, timedelta, timezone
 from email import message_from_bytes
 from email.utils import parsedate_to_datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
+from functools import lru_cache
 
-from google.auth.transport.requests import Request as AuthRequest
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.discovery_cache.base import Cache
-import httplib2
-from googleapiclient.errors import HttpError
+# Set more aggressive garbage collection thresholds
+# This helps reclaim memory more frequently
+gc.set_threshold(700, 10, 5)  # Default is (700, 10, 10)
+
+# Import memory utilities for consistent memory tracking
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../..'))
+from app.utils.memory_utils import get_process_memory, log_memory_usage, log_memory_cleanup
 
 # Configure logging
 logging.basicConfig(
@@ -34,6 +37,24 @@ logging.basicConfig(
     stream=sys.stderr
 )
 logger = logging.getLogger('gmail_subprocess')
+
+# Track memory usage globally
+TOTAL_PROCESSED_BYTES = 0
+EMAILS_PROCESSED = 0
+MAX_EMAIL_SIZE = 0
+
+# Log initial memory usage
+log_memory_usage(logger, "Subprocess Start")
+
+# Import Google API libraries - These are heavy imports
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import HttpRequest
+import googleapiclient.discovery_cache
+from googleapiclient.http import HttpError
+from googleapiclient.discovery_cache.base import Cache
+import httplib2
+from google.auth.transport.requests import Request as AuthRequest
 
 class MemoryCache(Cache):
     """In-memory cache for Gmail API discovery document."""
@@ -83,195 +104,264 @@ async def create_gmail_service(creds_data: Dict) -> any:
         raise GmailAPIError(f"Failed to create Gmail service: {e}")
 
 
-async def fetch_and_process_emails(service, user_email, query, include_spam_trash) -> list:
-    """Fetch and process emails using the Gmail API service with batch requests.
+async def fetch_and_process_emails(service, user_email, query, include_spam_trash=False):
+    """Fetch and process emails from Gmail API.
     
-    This function retrieves emails matching the query from Gmail API and processes them
-    in batches to limit memory usage. Each batch request processes multiple messages
-    in a single HTTP request to improve performance.
-    
-    Note:
-    - Callbacks are registered per request when adding to the batch,
-      rather than globally when executing the batch.
-    - Raw message data is encoded as base64 text for JSON serialization,
-      and must be decoded back to bytes by the client.
+    This function fetches emails from Gmail API, processes them to extract 
+    raw message data, and returns a list of processed emails.
     """
+    global TOTAL_PROCESSED_BYTES, EMAILS_PROCESSED, MAX_EMAIL_SIZE
+    
     try:
-        logger.info(f"Fetching emails for user {user_email} with query: {query}")
+        # Fetch emails matching the query
+        messages_resource = service.users().messages()
         
-        # Log memory usage before fetching
-        process = os.getpid()
-        logger.info(f"Memory usage before fetching: {os.popen(f'ps -p {process} -o rss=').read().strip()} KB")
+        # Initial request to get messages
+        request = messages_resource.list(
+            userId=user_email,
+            q=query,
+            includeSpamTrash=include_spam_trash
+        )
         
-        # Get list of message IDs matching the query
+        # Fetch all matching message IDs
         messages = []
-        request = service.users().messages().list(userId=user_email, q=query, includeSpamTrash=include_spam_trash)
-        
-        while request is not None:
+        while request:
+            log_memory_usage(logger, "Before Email Fetching")
             response = request.execute()
-            msg_items = response.get('messages', [])
+            msgs = response.get('messages', [])
+            messages.extend(msgs)
             
-            if not msg_items:
-                logger.info("No messages found matching the query.")
-                return []
-                
-            messages.extend(msg_items)
-            request = service.users().messages().list_next(request, response)
+            # Get next page if available
+            request = messages_resource.list_next(request, response)
             
-        logger.info(f"Found {len(messages)} emails matching the query")
+            # Log progress
+            logger.info(f"Found {len(messages)} emails matching the query")
+            
+            # Break early if no results
+            if not messages:
+                break
         
-        # Batch size for processing
-        batch_size = 25
-        results = []
+        if not messages:
+            logger.info("No emails found matching the criteria")
+            return []
+            
+        # Process emails in smaller batches to limit memory usage
+        # Decrease batch size from 25 to 10 to reduce memory peaks
+        batch_size = 10
+        batches = [messages[i:i+batch_size] for i in range(0, len(messages), batch_size)]
         
-        # Process messages in batches to limit memory usage
-        for i in range(0, len(messages), batch_size):
-            batch = messages[i:i + batch_size]
-            logger.info(f"Processing batch {i // batch_size + 1}/{(len(messages) + batch_size - 1) // batch_size} ({len(batch)} messages)")
-            
-            # Create a batch request
-            batch_request = service.new_batch_http_request()
-            message_map = {}  # Map request IDs to message IDs
-            
-            # Add requests to the batch
-            for j, msg_item in enumerate(batch):
-                msg_id = msg_item['id']
-                request_id = f'msg{j}'
-                message_map[request_id] = msg_id
-                
-                # Define callback inline for each request
-                def create_callback(req_id):
-                    def _callback(request_id, response, exception):
-                        if exception:
-                            logger.error(f"Error fetching message {message_map.get(req_id)}: {exception}")
-                            return
-                        responses[req_id] = response
-                    return _callback
-                
-                batch_request.add(
-                    service.users().messages().get(userId=user_email, id=msg_id, format='raw'),
-                    callback=create_callback(request_id),
-                    request_id=request_id
-                )
-            
-            # Execute the batch request
-            responses = {}
-            
-            # Execute without callback parameter
-            batch_request.execute()
-            
-            # Process the batch results
+        all_results = []
+        
+        # Process each batch
+        for batch_idx, batch in enumerate(batches):
+            # Create a batch request properly with a callback dictionary
             batch_results = []
-            for request_id, msg_id in message_map.items():
-                if request_id not in responses:
-                    continue
+            batch_message_ids = {}
+            
+            # Force garbage collection before processing batch content
+            gc.collect()
+            
+            def create_callback(msg_id):
+                """Create a callback function that captures the message ID through closure."""
+                def callback(request_id, response, exception):
+                    if exception:
+                        logger.warning(f"Error fetching message {msg_id}: {exception}")
+                        return
                     
-                response = responses[request_id]
-                
-                try:
-                    # Extract raw message
-                    raw_msg = base64.urlsafe_b64decode(response['raw'])
+                    # Skip if message fetch failed
+                    if not response:
+                        logger.warning(f"Skipping message {msg_id} due to fetch error")
+                        return
                     
-                    # Extract headers from the message
+                    # Get raw message data
+                    raw_data = response.get('raw', '')
+                    if not raw_data:
+                        logger.warning(f"No raw data for message {msg_id}")
+                        return
+                    
+                    # Decode base64 data to bytes
+                    raw_msg = base64.urlsafe_b64decode(raw_data)
+                    
+                    # Update byte counters
+                    msg_size = len(raw_msg)
+                    global TOTAL_PROCESSED_BYTES, EMAILS_PROCESSED, MAX_EMAIL_SIZE
+                    TOTAL_PROCESSED_BYTES += msg_size
+                    EMAILS_PROCESSED += 1
+                    MAX_EMAIL_SIZE = max(MAX_EMAIL_SIZE, msg_size)
+                    
+                    # Parse email message - this is the most memory-intensive part
                     email_msg = message_from_bytes(raw_msg)
                     
-                    # Process and add to results
+                    # Compress the raw message data for transfer
+                    compressed_data = gzip.compress(raw_msg, compresslevel=6)
+                    # Encode as base64 for JSON serialization and add prefix
+                    compressed_b64 = base64.b64encode(compressed_data).decode('utf-8')
+                    compressed_with_prefix = f"COMPRESSED:{compressed_b64}"
+                    
+                    # Log compression stats for the first few emails
+                    if EMAILS_PROCESSED <= 3:
+                        original_size = len(raw_msg)
+                        compressed_size = len(compressed_data)
+                        compression_ratio = (original_size - compressed_size) / original_size * 100 if original_size > 0 else 0
+                        logger.debug(
+                            f"Email {msg_id}: Original: {original_size/1024:.1f}KB, "
+                            f"Compressed: {compressed_size/1024:.1f}KB, Ratio: {compression_ratio:.1f}%"
+                        )
+                    
+                    # Extract minimal headers - we'll do full parsing in the main process
+                    # to avoid duplicating the memory overhead
+                    headers = {
+                        'subject': email_msg.get('subject', ''),
+                        'from': email_msg.get('from', ''),
+                        'to': email_msg.get('to', ''),
+                        'date': email_msg.get('date', '')
+                    }
+                    
+                    # Process and add to results - only keep essential fields
                     result = {
                         'id': msg_id,
                         'threadId': response.get('threadId', ''),
                         'labelIds': response.get('labelIds', []),
-                        'raw_message': base64.b64encode(raw_msg).decode('ascii'),  # Encode as base64 text for JSON serialization
+                        'raw_message': compressed_with_prefix,  # Use compressed data
+                        # Include a minimal snippet to help with display
                         'snippet': response.get('snippet', '')
                     }
                     
+                    # Add extracted headers
+                    result.update(headers)
+                    
                     batch_results.append(result)
                     
-                    # Clear references to large objects
+                    # Clear large objects explicitly
                     raw_msg = None
                     email_msg = None
-                    response = None
-                except Exception as e:
-                    logger.error(f"Error processing message {msg_id}: {e}")
+                    compressed_data = None
+                    compressed_b64 = None
+                    headers = None
+                    
+                    # Free individual message memory more aggressively
+                    if (len(batch_results) % 5 == 0):
+                        gc.collect()
+                
+                return callback
             
-            # Add batch results to final results
-            results.extend(batch_results)
+            # Create batch request with per-request callbacks
+            batch_request = service.new_batch_http_request()
             
-            # Clear batch data for garbage collection
+            # Add each message to the batch request with its own callback
+            for message in batch:
+                msg_id = message['id']
+                # Add request to batch with a callback specific to this message
+                request = messages_resource.get(
+                    userId=user_email, 
+                    id=msg_id, 
+                    format='raw'
+                )
+                # Add the request to the batch with a callback that knows which message ID this is
+                batch_request.add(request, callback=create_callback(msg_id))
+            
+            # Execute batch and get responses through callbacks
+            try:
+                # Execute the batch request - responses will go to callbacks
+                batch_request.execute()
+                
+            except Exception as e:
+                logger.error(f"Error executing batch request: {e}")
+            
+            # Add this batch's results to the overall results
+            all_results.extend(batch_results)
+            
+            # Clear batch data
             batch_results = None
-            responses = None
-            message_map = None
-            batch_request = None
-            batch = None
             
-            # Force garbage collection
+            # Force garbage collection between batches
+            gc.collect()
             gc.collect()
             
-        # Log memory after fetching
-        logger.info(f"Memory usage after fetching: {os.popen(f'ps -p {process} -o rss=').read().strip()} KB")
-        logger.info(f"Successfully retrieved {len(results)} emails")
+            # Log memory status after each batch
+            if batch_idx == 0 or (batch_idx+1) % 2 == 0:  # Log more frequently
+                log_memory_usage(logger, f"After Batch {batch_idx+1}/{len(batches)}")
         
-        return results
+        # Clear batches data
+        batches = None
+        messages = None
         
-    except HttpError as error:
-        logger.error(f"Gmail API HTTP error: {error}")
-        raise
+        # Log memory usage after fetching
+        log_memory_usage(logger, "After Fetching All Emails")
+        
+        # Log stats about the data we processed
+        avg_size = TOTAL_PROCESSED_BYTES / EMAILS_PROCESSED if EMAILS_PROCESSED > 0 else 0
+        logger.info(
+            f"Successfully retrieved {EMAILS_PROCESSED} emails\n"
+            f"    Total data processed: {TOTAL_PROCESSED_BYTES/1024/1024:.2f} MB\n"
+            f"    Average email size: {avg_size/1024:.1f} KB\n"
+            f"    Largest email: {MAX_EMAIL_SIZE/1024:.1f} KB"
+        )
+        
+        # Final cleanup before returning
+        log_memory_cleanup(logger, "Before Returning Results")
+        
+        return all_results
+        
     except Exception as e:
         logger.error(f"Error fetching emails: {e}")
-        raise
-
-
-def get_memory_usage():
-    """Get memory usage for the current process."""
-    try:
-        import psutil
-        process = psutil.Process(os.getpid())
-        memory_info = process.memory_info()
-        return {
-            'rss_mb': memory_info.rss / 1024 / 1024,
-            'vms_mb': memory_info.vms / 1024 / 1024
-        }
-    except ImportError:
-        # Fallback if psutil is not available
-        return {'rss_mb': 0, 'vms_mb': 0}
+        return []
 
 
 async def main(credentials_json, user_email, query, include_spam_trash):
-    """Main function to handle the subprocess flow."""
+    """Main function to run Gmail API operations."""
     try:
-        # Create credentials from the JSON
-        creds_data = json.loads(credentials_json)
-        credentials = Credentials(
-            token=creds_data['token'],
-            refresh_token=creds_data['refresh_token'],
-            token_uri=creds_data['token_uri'],
-            client_id=creds_data['client_id'],
-            client_secret=creds_data['client_secret'],
-            scopes=creds_data['scopes']
-        )
-        
-        # Build the Gmail API service
-        service = build('gmail', 'v1', credentials=credentials, cache=MemoryCache())
+        # Get credentials from JSON file or direct JSON string
+        if credentials_json.startswith('@'):
+            # It's a file path
+            file_path = credentials_json[1:]
+            with open(file_path, 'r') as f:
+                credentials_data = json.load(f)
+        else:
+            # It's a JSON string
+            credentials_data = json.loads(credentials_json)
+            
+        # Build Gmail service
+        service = await create_gmail_service(credentials_data)
         
         # Fetch and process emails
+        log_memory_usage(logger, "Before Email Processing")
         emails = await fetch_and_process_emails(service, user_email, query, include_spam_trash)
         
-        # Output results as JSON
+        # Clear service reference
+        service = None
+        
+        # Force garbage collection and log results
+        log_memory_cleanup(logger, "After Email Processing")
+        
+        # Return JSON with success flag and emails
         result = {
             "success": True,
             "emails": emails
         }
+        
+        # Final memory cleanup
+        emails = None
+        credentials_data = None
+        log_memory_cleanup(logger, "Before Exit")
+        
+        # Return the result
         print(json.dumps(result))
         
+        return 0
+        
     except Exception as e:
-        # If something goes wrong, output the error as JSON
-        error_result = {
+        logger.error(f"Error: {e}")
+        # Return JSON with error flag
+        print(json.dumps({
             "success": False,
-            "error": str(e),
-            "emails": []
-        }
-        print(json.dumps(error_result))
-        sys.stderr.write(f"ERROR: {str(e)}\n")
-        sys.exit(1)
+            "error": str(e)
+        }))
+        return 1
+    finally:
+        # Final cleanup
+        gc.collect()
+        gc.collect()
 
 
 if __name__ == "__main__":
@@ -294,6 +384,12 @@ if __name__ == "__main__":
         credentials_json = credentials_data
     
     try:
+        # Log starting memory usage
+        logger.info(f"Initial memory usage: {os.popen(f'ps -p {os.getpid()} -o rss=').read().strip()} KB")
+        
+        # Ensure httplib2 caching is disabled to prevent memory leaks
+        httplib2.RETRIES = 1
+        
         # Set up signal handler
         def handle_timeout(signum, frame):
             print(json.dumps({
@@ -321,4 +417,54 @@ if __name__ == "__main__":
             "emails": []
         }
         print(json.dumps(error_response))
-        sys.exit(1) 
+        sys.exit(1)
+    finally:
+        # Ensure all resources are cleaned up before exit
+        try:
+            # Force final garbage collection
+            gc.collect()
+            gc.collect()
+            
+            # Close any remaining httplib2 connections - safely check for attributes first
+            try:
+                # Check if httplib2.SCHEMES exists before accessing
+                if hasattr(httplib2, 'SCHEMES') and httplib2.SCHEMES:
+                    for scheme, conn in httplib2.SCHEMES.items():
+                        if hasattr(conn, 'connections'):
+                            conn.connections.clear()
+                            logger.debug(f"Cleared {scheme} connections")
+            except Exception as e:
+                logger.warning(f"Could not clean httplib2 connections: {e}")
+                
+            # Note: httplib2 connections might already be cleaned up by the HTTP request objects
+            # Try an alternative cleanup approach for httplib2
+            try:
+                # For open HTTP connections
+                if hasattr(httplib2, 'Http'):
+                    for attr in dir(httplib2.Http):
+                        if attr.startswith('_conn_') and hasattr(httplib2.Http, attr):
+                            setattr(httplib2.Http, attr, {})
+                            logger.debug(f"Reset httplib2.Http.{attr}")
+            except Exception as e:
+                logger.warning(f"Alternative httplib2 cleanup failed: {e}")
+                
+            # Attempt to free the Google API client
+            try:
+                if 'service' in globals():
+                    try:
+                        service_obj = globals()['service']
+                        if hasattr(service_obj, '_http') and service_obj._http:
+                            # Close any http connections
+                            if hasattr(service_obj._http, 'close'):
+                                service_obj._http.close()
+                    except Exception:
+                        pass
+                    # Set to None to free reference
+                    globals()['service'] = None
+            except Exception as e:
+                logger.warning(f"Error cleaning up Google API service: {e}")
+            
+            # Log final memory usage
+            logger.info(f"Final memory usage before exit: {os.popen(f'ps -p {os.getpid()} -o rss=').read().strip()} KB")
+        except Exception as e:
+            logger.error(f"Error during final cleanup: {e}") 
