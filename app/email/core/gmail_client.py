@@ -389,8 +389,6 @@ class GmailClient:
                 
                 all_batches.append((batch_request, len(batch)))
             
-            log_memory_usage(self.logger, "Before Batch Processing")
-            
             # Process batches with controlled concurrency
             for i in range(0, len(all_batches), self._concurrent_batch_limit):
                 current_batches = all_batches[i:i + self._concurrent_batch_limit]
@@ -409,7 +407,7 @@ class GmailClient:
                             self.logger.error(f"Failed to process batch: {e}")
                             continue
             
-            log_memory_usage(self.logger, "After Batch Processing")
+            log_memory_usage(self.logger, "After Email Processing")
             
             # Process results
             emails = []
@@ -439,8 +437,6 @@ class GmailClient:
                 except Exception as e:
                     self.logger.error(f"Error processing message {msg['id']}: {e}")
                     continue
-            
-            log_memory_usage(self.logger, "After Email Processing")
             
             self.logger.info(f"Retrieved {len(emails)} emails from Gmail API")
             return emails

@@ -50,17 +50,13 @@ class ContentAnalyzer:
         """Initialize the ContentAnalyzer."""
         self.logger = logging.getLogger(__name__)
         
-        # Create a single optimized NLP pipeline
-        self.nlp = spacy.load(nlp_model.meta['lang'] + '_core_web_sm')
+        # Store model name rather than keeping model instance
+        self.model_name = nlp_model.meta['lang'] + '_core_web_sm'
+        self._batch_count = 0
+        self._reload_threshold = 3  # Reload model every 3 batches
         
-        # Configure pipeline for maximum efficiency
-        self.nlp.max_length = 2000000  # Increase max length
-        
-        # Disable unnecessary components
-        disabled_pipes = ['textcat', 'lemmatizer', 'attribute_ruler']
-        for pipe in disabled_pipes:
-            if pipe in self.nlp.pipe_names:
-                self.nlp.disable_pipe(pipe)
+        # Create a model loader method instead of storing the model
+        self._load_nlp_model()
         
         # Configure batch processing
         self.batch_size = 100
@@ -68,26 +64,68 @@ class ContentAnalyzer:
         # Log pipeline configuration
         self.logger.debug(
             f"SpaCy pipeline configuration:\n"
-            f"    Enabled components: {[pipe for pipe in self.nlp.pipe_names if not pipe in disabled_pipes]}\n"
-            f"    Disabled components: {disabled_pipes}\n"
+            f"    Model: {self.model_name}\n"
+            f"    Enabled components: {[pipe for pipe in self.nlp.pipe_names if pipe not in ['textcat', 'lemmatizer', 'attribute_ruler', 'vectors', 'tok2vec']]}\n"
+            f"    Disabled components: ['textcat', 'lemmatizer', 'attribute_ruler', 'vectors', 'tok2vec']\n"
             f"    Max length: {self.nlp.max_length}\n"
-            f"    Batch size: {self.batch_size}"
+            f"    Batch size: {self.batch_size}\n"
+            f"    Reload threshold: {self._reload_threshold} batches"
         )
+
+    def _load_nlp_model(self):
+        """Load SpaCy model with optimal memory settings."""
+        # Force garbage collection before loading a new model
+        gc.collect()
+        gc.collect()
+        
+        # Load model with minimal components
+        self.nlp = spacy.load(self.model_name, disable=['vectors', 'textcat', 'lemmatizer', 'attribute_ruler', 'tok2vec'])
+        
+        # Configure pipeline for maximum efficiency
+        self.nlp.max_length = 100000  # Reduced from 2000000
+        
+        # Additional memory optimization - disable vector storage
+        if hasattr(self.nlp, 'remove_pipe') and 'vectors' in self.nlp.pipe_names:
+            self.nlp.remove_pipe('vectors')
 
     def _cleanup_doc(self, doc: spacy.tokens.Doc):
         """Safely cleanup spaCy doc to free memory."""
+        if doc is None:
+            return
+            
         try:
             # Remove circular references
             doc.user_hooks = {}
             doc.user_data = {}
+            
             # Clear token and span references
             for token in doc:
                 token._.remove()
+                # Clear token attributes to prevent circular references
+                for attr_name in dir(token._):
+                    if not attr_name.startswith('__'):
+                        setattr(token._, attr_name, None)
+                        
+            # Clear entities and noun chunks to prevent reference cycles
+            if hasattr(doc, 'ents'):
+                doc.ents = []
+            if hasattr(doc, '_'):
+                doc._.clear()
+                
             doc.user_span_hooks = {}
+            
             # Remove document from vocabulary
+            # This is a critical step for memory release
             doc.vocab = None
+            
             # Clear the document text
             doc.text = ""
+            
+            # Clear other attributes that might hold references
+            doc._vector = None
+            if hasattr(doc, 'tensor'):
+                doc.tensor = None
+                
         except Exception as e:
             self.logger.debug(f"Non-critical error during doc cleanup: {e}")
 
@@ -103,29 +141,34 @@ class ContentAnalyzer:
                 f"    Batch size: {self.batch_size}"
             )
             
-            # Preprocess texts
-            texts = [text[:1000000] for text in texts]  # Limit length
-            texts_lower = [text.lower() for text in texts]  # Convert to lower case once
+            # Increment batch counter for model reload tracking
+            self._batch_count += 1
+            
+            # Preprocess texts - limit to most relevant parts for analysis
+            # This drastically reduces memory usage
+            texts = [text[:30000] for text in texts]  # Reduced from 1000000 to 30000
+            texts_lower = [text.lower() for text in texts]
             
             # Process with optimized batch size
-            # Use ThreadPoolExecutor for parallel processing within the same process
-            with ThreadPoolExecutor() as executor:
+            with ThreadPoolExecutor(max_workers=1) as executor:  # Reduced max_workers to 1
                 loop = asyncio.get_event_loop()
                 
-                # Split texts into smaller batches for better parallelization
-                batch_size = max(1, len(texts) // 4)  # Split into 4 batches
+                # Process in smaller batches for better memory management
+                batch_size = max(1, min(3, len(texts)))  # Reduced from 5 to 3
                 batches = [texts[i:i + batch_size] for i in range(0, len(texts), batch_size)]
                 
-                # Process batches in parallel
-                async def process_batch(batch):
-                    return list(self.nlp.pipe(batch, batch_size=self.batch_size))
-                
-                tasks = [loop.run_in_executor(executor, lambda b=batch: list(self.nlp.pipe(b, batch_size=self.batch_size))) 
-                        for batch in batches]
-                chunk_results = await asyncio.gather(*tasks)
-                
-                # Flatten results
-                docs = [doc for chunk in chunk_results for doc in chunk]
+                # Process batches sequentially for better memory control
+                docs = []
+                for batch in batches:
+                    # Process small batches in executor to avoid memory issues
+                    batch_docs = await loop.run_in_executor(
+                        executor, 
+                        lambda b=batch: list(self.nlp.pipe(b, batch_size=self.batch_size))
+                    )
+                    docs.extend(batch_docs)
+                    
+                    # Force immediate garbage collection after each small batch
+                    gc.collect()
             
             log_memory_usage(self.logger, "After SpaCy Processing")
             
@@ -138,24 +181,30 @@ class ContentAnalyzer:
             
             # Process results and cleanup immediately
             results = []
-            for doc, text_lower in zip(docs, texts_lower):
+            for i, (doc, text_lower) in enumerate(zip(docs, texts_lower)):
                 try:
                     result = self._process_analyzed_doc(doc, text_lower)
                     results.append(result)
                 finally:
                     # Cleanup spaCy doc
                     self._cleanup_doc(doc)
+                    # Clear doc reference immediately
+                    doc = None
+                
+                # Perform more frequent garbage collection
+                if i % 2 == 0:  # Every 2 documents
+                    gc.collect()
             
             log_memory_usage(self.logger, "After Document Processing")
             
-            # Clear references to large objects
+            # Clear all references to large objects
             docs = None
             texts = None
             texts_lower = None
-            chunk_results = None
             batches = None
             
-            # Force garbage collection after large batch processing
+            # Force aggressive garbage collection
+            gc.collect()
             gc.collect()
             
             post_process_time = time.time() - start_time - pipe_time
@@ -178,6 +227,21 @@ class ContentAnalyzer:
             self.logger.info(f"NLP Analysis completed - SpaCy: {pipe_time:.2f}s, Post-processing: {post_process_time:.2f}s, Total: {total_time:.2f}s (avg {total_time/len(results):.3f}s/text)")
             
             log_memory_usage(self.logger, "ContentAnalyzer Batch Complete")
+            
+            # Check if we need to reload the model to release memory
+            if self._batch_count >= self._reload_threshold:
+                self.logger.info(f"Reached reload threshold ({self._reload_threshold} batches) - Reloading SpaCy model to release memory")
+                # Release old model completely
+                self.nlp = None
+                # Force garbage collection
+                gc.collect()
+                gc.collect()
+                # Reload the model
+                self._load_nlp_model()
+                # Reset batch counter
+                self._batch_count = 0
+                log_memory_usage(self.logger, "After Model Reload")
+            
             return results
             
         except Exception as e:

@@ -84,7 +84,7 @@ def configure_logging():
                 'datefmt': '%H:%M:%S'
             },
             'operation': {
-                'format': '%(asctime)s | %(name)-32s | %(levelname)-8s\n%(message)s',
+                'format': '%(asctime)s | %(name)-32s | %(levelname)-8s | %(message)s',
                 'datefmt': '%H:%M:%S'
             }
         },

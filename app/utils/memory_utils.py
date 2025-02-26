@@ -69,4 +69,31 @@ class MemoryProfilingMiddleware:
             
             return start_response(status, headers, exc_info)
         
-        return self.app(environ, memory_profiling_start_response) 
+        return self.app(environ, memory_profiling_start_response)
+
+def log_memory_cleanup(logger, stage: str):
+    """Log memory cleanup results at specific stages."""
+    import gc
+    
+    try:
+        # Log memory before cleanup
+        mem_before = get_process_memory()
+        logger.info(f"Memory Before Cleanup [{stage}]: RSS={mem_before['rss']:.1f}MB USS={mem_before['uss']:.1f}MB")
+        
+        # Run multiple collection cycles
+        freed_objects = gc.collect()
+        additional_freed = gc.collect()
+        final_freed = gc.collect()
+        
+        # Log memory after cleanup
+        mem_after = get_process_memory()
+        diff = {k: mem_before[k] - mem_after[k] for k in mem_before}
+        
+        logger.info(
+            f"Memory Cleanup [{stage}]: "
+            f"Freed {freed_objects+additional_freed+final_freed} objects, "
+            f"RSS diff: {diff['rss']:.1f}MB, "
+            f"USS diff: {diff['uss']:.1f}MB"
+        )
+    except Exception as e:
+        logger.warning(f"Error during memory cleanup logging: {e}")

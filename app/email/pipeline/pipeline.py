@@ -9,7 +9,7 @@ The pipeline uses two time-based parameters:
 """
 
 from dataclasses import dataclass
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, AsyncGenerator
 from datetime import datetime, timezone
 import logging
 from flask import session
@@ -107,32 +107,38 @@ class EmailPipeline:
             # Get cache duration from settings
             cache_duration = user.get_setting('email_preferences.cache_duration_days', 7)
             
-            # Set up cache if available
+            # Fetch emails from cache first if enabled
             cached_emails = []
-            cached_ids = set()
-            if self.cache:
-                cached_emails = await self.cache.get_recent(cache_duration, command.days_back, user_email)
-                cached_ids = {email.id for email in cached_emails}
-                stats["cached"] = len(cached_emails)
-                log_memory_usage(self.logger, "After Cache Retrieval")
+            if self.cache and command.use_cache and cache_duration > 0:
+                try:
+                    cached_emails = await self.cache.get_recent(
+                        cache_duration, 
+                        command.days_back,
+                        user_email
+                    )
+                    
+                    self.logger.info(f"Retrieved {len(cached_emails)} cached emails")
+                    
+                except Exception as e:
+                    self.logger.error(f"Cache retrieval error: {e}")
+                    errors.append({"error": f"Cache retrieval error: {str(e)}", "timestamp": datetime.now()})
+                    stats["cache_errors"] += 1
             
             # Now that user context is set up, connect to Gmail with user email
             await self.connection.connect(user_email)
             try:
                 # Fetch emails from Gmail
-                log_memory_usage(self.logger, "Before Gmail Fetch")
                 raw_emails = await self.connection.fetch_emails(command.days_back, user_email)
-                log_memory_usage(self.logger, "After Gmail Fetch")
                 
                 stats["emails_fetched"] = len(raw_emails)
                 
                 # Filter out already cached emails
-                new_raw_emails = [email for email in raw_emails if email.get('id') not in cached_ids]
+                new_raw_emails = [email for email in raw_emails if email.get('id') not in [email.id for email in cached_emails]]
                 stats["new_emails"] = len(new_raw_emails)
                 
                 self.logger.info(
                     "Email Retrieval Complete\n"
-                    f"    From Cache: {len(cached_ids)} emails\n"
+                    f"    From Cache: {len(cached_emails)} emails\n"
                     f"    From Gmail: {len(raw_emails)} emails\n"
                     f"    New Emails: {len(new_raw_emails)} emails"
                 )
@@ -140,9 +146,7 @@ class EmailPipeline:
                 # Only process new emails if there are any
                 analyzed_emails = []
                 if new_raw_emails:
-                    log_memory_usage(self.logger, "Before Email Parsing")
                     parsed_emails = [email for email in [self.parser.extract_metadata(email) for email in new_raw_emails] if email is not None]
-                    log_memory_usage(self.logger, "After Email Parsing")
                     
                     # If AI is disabled, create basic metadata without batch processing
                     if not ai_enabled:
@@ -188,8 +192,11 @@ class EmailPipeline:
                             analyzed_batch = []
                             batch_count = (len(parsed_emails) + command.batch_size - 1) // command.batch_size
                             
+                            # Log memory before starting batch processing
+                            log_memory_usage(self.logger, "Before Starting Batch Processing")
+                            
                             self.logger.info(
-                                "Starting Batch Processing\n"
+                                f"\nStarting Batch Processing\n"
                                 f"    Total Emails to Process: {len(parsed_emails)}\n"
                                 f"    Batch Size: {command.batch_size}\n"
                                 f"    Total Batches: {batch_count}"
@@ -213,7 +220,12 @@ class EmailPipeline:
 
                     # Cache new results if cache available
                     if self.cache and analyzed_emails:
-                        await self.cache.store_many(analyzed_emails, user_email, ttl_days=cache_duration)
+                        try:
+                            await self.cache.store_many(analyzed_emails, user_email, ttl_days=cache_duration)
+                        except Exception as e:
+                            errors.append({"error": f"Cache storage error: {str(e)}", "timestamp": datetime.now()})
+                            stats["cache_errors"] += 1
+                            self.logger.error(f"Failed to cache emails: {e}")
                 
                 # Combine cached and newly analyzed emails
                 all_emails = cached_emails + analyzed_emails
@@ -229,7 +241,7 @@ class EmailPipeline:
                     "Pipeline Complete\n"
                     "Email Processing Summary:\n"
                     f"    Total Processed: {stats['emails_fetched']} emails\n"
-                    f"    From Cache: {stats.get('cached', 0)} emails\n"
+                    f"    From Cache: {len(cached_emails)} emails\n"
                     f"    New Emails: {stats['new_emails']} emails\n"
                     f"    Success Rates:\n"
                     f"        Parsing: {success_rate_parse}\n"
@@ -254,7 +266,7 @@ class EmailPipeline:
                             'analysis_stats': {
                                 'total_fetched': stats.get('emails_fetched', 0),
                                 'new_emails': stats.get('new_emails', 0),
-                                'cached_emails': stats.get('cached', 0),
+                                'cached_emails': len(cached_emails),
                                 'successfully_parsed': stats.get('successfully_parsed', 0),
                                 'successfully_analyzed': stats.get('successfully_analyzed', 0),
                                 'failed_parsing': stats.get('failed_parsing', 0),
@@ -288,6 +300,9 @@ class EmailPipeline:
                 except Exception as e:
                     self.logger.error(f"Failed to log pipeline activity: {e}")
 
+                # Make sure to release memory at the end of pipeline execution
+                log_memory_usage(self.logger, "Pipeline Complete")
+                
                 return AnalysisResult(
                     emails=filtered_emails,
                     stats=stats,
@@ -325,7 +340,7 @@ class EmailPipeline:
         command = AnalysisCommand(days_back=days, batch_size=batch_size)
         await self.get_analyzed_emails(command)
 
-    async def get_analyzed_emails_stream(self, command: AnalysisCommand):
+    async def get_analyzed_emails_stream(self, command: AnalysisCommand) -> AsyncGenerator[dict, None]:
         """Streaming version of get_analyzed_emails that yields results as they are processed"""
         errors = []
         stats = {
@@ -340,6 +355,9 @@ class EmailPipeline:
         }
 
         try:
+            # Log memory at start of streaming pipeline
+            log_memory_usage(self.logger, "Streaming Pipeline Start")
+            
             # First ensure we have user context
             if 'user' not in session:
                 raise ValueError("No user found in session")
@@ -402,6 +420,9 @@ class EmailPipeline:
             try:
                 raw_emails = await self.connection.fetch_emails(command.days_back, user_email)
                 stats["emails_fetched"] = len(raw_emails)
+                
+                # Log memory after Gmail fetch
+                log_memory_usage(self.logger, "After Streaming Gmail Fetch")
                 
                 # Filter out already cached emails
                 new_raw_emails = [email for email in raw_emails if email.get('id') not in cached_ids]
@@ -480,7 +501,7 @@ class EmailPipeline:
                             )
                             basic_emails.append(processed_email)
                             
-                            # Cache each email as we process it
+                            # Cache each email without redundant logging
                             if self.cache:
                                 await self.cache.store_many([processed_email], user_email, ttl_days=cache_duration)
                         
@@ -505,8 +526,11 @@ class EmailPipeline:
                             batch_count = (len(parsed_emails) + command.batch_size - 1) // command.batch_size
                             stats["batches"] = batch_count
                             
+                            # Keep only this critical memory log point
+                            log_memory_usage(self.logger, "Before Starting Streaming Batch Processing")
+                            
                             self.logger.info(
-                                "Starting Batch Processing\n"
+                                f"\nStarting Batch Processing\n"
                                 f"    Total Emails to Process: {len(parsed_emails)}\n"
                                 f"    Batch Size: {command.batch_size}\n"
                                 f"    Total Batches: {batch_count}"
@@ -538,8 +562,14 @@ class EmailPipeline:
                                 stats["failed_analysis"] += len(batch) - len(batch_results)
                         else:
                             # Process all at once if no batch size specified
+                            # Log memory before processing all emails at once
+                            log_memory_usage(self.logger, "Before Processing All Emails")
+                            
                             analyzed_emails = await self.processor.analyze_parsed_emails(parsed_emails, user_id=user_id, ai_enabled=ai_enabled)
                             stats["batches"] = 1
+                            
+                            # Log memory after processing all emails
+                            log_memory_usage(self.logger, "After Processing All Emails")
                             
                             # Cache results
                             if self.cache and analyzed_emails:
@@ -575,6 +605,9 @@ class EmailPipeline:
                     f"        Parsing: {success_rate_parse}\n"
                     f"        Analysis: {success_rate_analyze}"
                 )
+
+                # Keep only this critical end log point
+                log_memory_usage(self.logger, "Streaming Pipeline End")
 
                 # Yield final stats as a dictionary
                 yield {

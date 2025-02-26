@@ -35,6 +35,7 @@ from .email.core.email_parsing import EmailParser
 from .email.models.analysis_settings import ProcessingConfig
 from .email.analyzers.semantic_analyzer import SemanticAnalyzer
 from .email.analyzers.content_analyzer import ContentAnalyzer
+from .email.analyzers.content_analyzer_subprocess import ContentAnalyzerSubprocess
 from .email.utils.priority_scoring import PriorityScorer
 from .email.pipeline.pipeline import create_pipeline
 from .email.core.gmail_client import GmailClient
@@ -168,7 +169,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         nlp_model = create_nlp_model()
         
         # Initialize analyzers
-        text_analyzer = ContentAnalyzer(nlp_model)
+        text_analyzer = ContentAnalyzerSubprocess()
         llm_analyzer = SemanticAnalyzer()
         
         # Create priority calculator

@@ -429,3 +429,16 @@ class RedisEmailCache(EmailCache):
             'memory_fragmentation_ratio': info.get('mem_fragmentation_ratio', 0),
             'connected_clients': info['connected_clients']
         }
+
+    async def log_cache_size(self) -> None:
+        """Log the size of the Redis cache."""
+        try:
+            redis = await self._ensure_redis_connection('admin@example.com')  # Use a dummy email for connection
+            keys = await async_manager.run_in_loop(redis.keys, f"{self._base_prefix}*")
+            total_size = 0
+            for key in keys:
+                size = await async_manager.run_in_loop(redis.memory_usage, key)
+                total_size += size
+            self.logger.info(f"Total Redis cache size: {total_size / 1024:.2f} KB")
+        except Exception as e:
+            self.logger.error(f"Error logging cache size: {e}")

@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 import random
 from ..email.demo_emails import get_demo_email_bodies
 from ..email.demo_analysis import demo_analysis, load_analysis_cache
+from ..utils.memory_utils import log_memory_cleanup
 
 def async_route(f):
     @wraps(f)
@@ -1199,6 +1200,9 @@ async def get_email_analysis():
         )
         result = await current_app.pipeline.get_analyzed_emails(command)
         
+        # Force memory release after processing
+        log_memory_cleanup(logger, "API Email Analysis Complete")
+        
         return jsonify({
             'status': 'success',
             'emails': [email.dict() for email in result.emails],
@@ -1590,6 +1594,12 @@ def stream_email_analysis():
                     loop.run_until_complete(current_app.pipeline.connection.disconnect())
             except Exception as disconnect_error:
                 current_app.logger.warning(f"Failed to disconnect Gmail client: {disconnect_error}")
+            
+            # Force memory release before closing connection
+            try:
+                log_memory_cleanup(logger, "Stream Complete")
+            except Exception as memory_error:
+                logger.error(f"Error during memory cleanup: {memory_error}")
             
             if loop:
                 loop.close()
