@@ -24,7 +24,6 @@ import os
 from datetime import timedelta
 from asgiref.wsgi import WsgiToAsgi
 import multiprocessing
-import psutil  # Standard library for system utilization
 from datetime import datetime
 
 from .config import Config, configure_logging
@@ -40,6 +39,7 @@ from .email.utils.priority_scoring import PriorityScorer
 from .email.pipeline.pipeline import create_pipeline
 from .email.core.gmail_client import GmailClient
 from .email.storage.cache import RedisEmailCache
+from .utils.memory_utils import MemoryProfilingMiddleware
 
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
@@ -113,41 +113,6 @@ def init_openai_client(app):
         logger = getattr(current_app, 'logger', logging.getLogger(__name__))
         logger.error(f"Unexpected error initializing OpenAI client: {str(e)}")
         raise
-
-def get_process_memory():
-    """Get memory usage info for the current process."""
-    process = psutil.Process(os.getpid())
-    return {
-        'rss': process.memory_info().rss / 1024 / 1024,  # RSS in MB
-        'vms': process.memory_info().vms / 1024 / 1024,  # VMS in MB
-    }
-
-class MemoryProfilingMiddleware:
-    def __init__(self, app):
-        self.app = app
-        self.logger = logging.getLogger('memory_profiler')
-        
-    def __call__(self, environ, start_response):
-        # Capture memory before request
-        start_mem = get_process_memory()
-        start_time = datetime.now()
-        
-        def memory_profiling_start_response(status, headers, exc_info=None):
-            # Capture memory after request
-            end_mem = get_process_memory()
-            duration = (datetime.now() - start_time).total_seconds()
-            
-            # Log memory usage
-            self.logger.info(
-                f"[Memory Profile] Path: {environ.get('PATH_INFO')} "
-                f"Method: {environ.get('REQUEST_METHOD')} "
-                f"RSS: {end_mem['rss']:.1f}MB (Δ{end_mem['rss'] - start_mem['rss']:.1f}MB) "
-                f"VMS: {end_mem['vms']:.1f}MB (Δ{end_mem['vms'] - start_mem['vms']:.1f}MB) "
-                f"Duration: {duration:.3f}s"
-            )
-            return start_response(status, headers, exc_info)
-        
-        return self.app(environ, memory_profiling_start_response)
 
 def create_app(config_class: Optional[object] = Config) -> Flask:
     """Create and configure the Flask application."""

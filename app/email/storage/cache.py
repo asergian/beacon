@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import asyncio
 from datetime import datetime, timedelta, timezone
 import json
@@ -406,3 +406,26 @@ class RedisEmailCache(EmailCache):
         except Exception as e:
             self.logger.error(f"Error clearing old cache entries: {e}")
             raise
+
+    async def get_cache_stats(self) -> Dict[str, Any]:
+        """Get statistics about the Redis cache."""
+        info = await self.redis.info()
+        keys = await self.redis.keys('email:*')
+        users = set()
+        email_count = 0
+        
+        # Count emails per user
+        for key in keys:
+            if key.startswith(b'email:'):
+                user = key.split(b':')[1].decode('utf-8')
+                users.add(user)
+                email_count += 1
+        
+        return {
+            'total_emails_cached': email_count,
+            'unique_users': len(users),
+            'memory_used_mb': info['used_memory'] / 1024 / 1024,
+            'peak_memory_mb': info['used_memory_peak'] / 1024 / 1024,
+            'memory_fragmentation_ratio': info.get('mem_fragmentation_ratio', 0),
+            'connected_clients': info['connected_clients']
+        }

@@ -11,6 +11,7 @@ import asyncio
 from concurrent.futures import ProcessPoolExecutor
 import math
 import gc
+from app.utils.memory_utils import log_memory_usage
 
 class ContentAnalyzer:
     """Analyzes text using spaCy for entities and urgency."""
@@ -92,6 +93,8 @@ class ContentAnalyzer:
 
     async def analyze_batch(self, texts: List[str]) -> List[Dict]:
         """Analyze a batch of texts efficiently."""
+        log_memory_usage(self.logger, "ContentAnalyzer Batch Start")
+        
         try:
             start_time = time.time()
             self.logger.info(
@@ -124,6 +127,8 @@ class ContentAnalyzer:
                 # Flatten results
                 docs = [doc for chunk in chunk_results for doc in chunk]
             
+            log_memory_usage(self.logger, "After SpaCy Processing")
+            
             pipe_time = time.time() - start_time
             self.logger.debug(
                 f"SpaCy processing completed:\n"
@@ -140,6 +145,8 @@ class ContentAnalyzer:
                 finally:
                     # Cleanup spaCy doc
                     self._cleanup_doc(doc)
+            
+            log_memory_usage(self.logger, "After Document Processing")
             
             # Clear references to large objects
             docs = None
@@ -170,6 +177,7 @@ class ContentAnalyzer:
             
             self.logger.info(f"NLP Analysis completed - SpaCy: {pipe_time:.2f}s, Post-processing: {post_process_time:.2f}s, Total: {total_time:.2f}s (avg {total_time/len(results):.3f}s/text)")
             
+            log_memory_usage(self.logger, "ContentAnalyzer Batch Complete")
             return results
             
         except Exception as e:

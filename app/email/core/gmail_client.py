@@ -19,8 +19,8 @@ import time
 import random
 import asyncio
 from functools import lru_cache
-import requests
 from google.oauth2 import id_token
+from app.utils.memory_utils import log_memory_usage
 
 class GmailAPIError(Exception):
     """Exception raised for Gmail API-related errors."""
@@ -347,6 +347,8 @@ class GmailClient:
                 f"    Start Date: {local_midnight.strftime('%Y-%m-%d %H:%M:%S %Z')}"
             )
             
+            log_memory_usage(self.logger, "Before Gmail API Fetch")
+            
             # Get list of message IDs with retry
             results = await self._execute_with_retry(
                 self._service.users().messages().list(
@@ -387,6 +389,8 @@ class GmailClient:
                 
                 all_batches.append((batch_request, len(batch)))
             
+            log_memory_usage(self.logger, "Before Batch Processing")
+            
             # Process batches with controlled concurrency
             for i in range(0, len(all_batches), self._concurrent_batch_limit):
                 current_batches = all_batches[i:i + self._concurrent_batch_limit]
@@ -404,6 +408,8 @@ class GmailClient:
                         except Exception as e:
                             self.logger.error(f"Failed to process batch: {e}")
                             continue
+            
+            log_memory_usage(self.logger, "After Batch Processing")
             
             # Process results
             emails = []
@@ -434,9 +440,11 @@ class GmailClient:
                     self.logger.error(f"Error processing message {msg['id']}: {e}")
                     continue
             
+            log_memory_usage(self.logger, "After Email Processing")
+            
             self.logger.info(f"Retrieved {len(emails)} emails from Gmail API")
             return emails
-            
+                
         except Exception as e:
             if "401" in str(e):
                 self.logger.info("Token expired during fetch, attempting refresh...")

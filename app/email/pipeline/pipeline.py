@@ -10,7 +10,7 @@ The pipeline uses two time-based parameters:
 
 from dataclasses import dataclass
 from typing import List, Optional, Dict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import logging
 from flask import session
 import time
@@ -23,6 +23,7 @@ from ..core.email_parsing import EmailParser
 from ...models import log_activity
 from ..models.analysis_command import AnalysisCommand
 from app.models import User
+from app.utils.memory_utils import log_memory_usage
 
 @dataclass
 class AnalysisResult:
@@ -60,6 +61,7 @@ class EmailPipeline:
                 - cache_duration_days: Number of days to keep in cache
                 - other filtering parameters
         """
+        log_memory_usage(self.logger, "Pipeline Start")
         errors = []
         stats = {
             "emails_fetched": 0,
@@ -112,11 +114,16 @@ class EmailPipeline:
                 cached_emails = await self.cache.get_recent(cache_duration, command.days_back, user_email)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_emails)
+                log_memory_usage(self.logger, "After Cache Retrieval")
             
             # Now that user context is set up, connect to Gmail with user email
             await self.connection.connect(user_email)
             try:
+                # Fetch emails from Gmail
+                log_memory_usage(self.logger, "Before Gmail Fetch")
                 raw_emails = await self.connection.fetch_emails(command.days_back, user_email)
+                log_memory_usage(self.logger, "After Gmail Fetch")
+                
                 stats["emails_fetched"] = len(raw_emails)
                 
                 # Filter out already cached emails
@@ -133,7 +140,9 @@ class EmailPipeline:
                 # Only process new emails if there are any
                 analyzed_emails = []
                 if new_raw_emails:
+                    log_memory_usage(self.logger, "Before Email Parsing")
                     parsed_emails = [email for email in [self.parser.extract_metadata(email) for email in new_raw_emails] if email is not None]
+                    log_memory_usage(self.logger, "After Email Parsing")
                     
                     # If AI is disabled, create basic metadata without batch processing
                     if not ai_enabled:
