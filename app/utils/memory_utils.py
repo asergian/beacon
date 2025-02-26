@@ -20,13 +20,7 @@ def get_process_memory():
 def log_memory_usage(logger, stage: str):
     """Utility function to log memory usage at specific stages."""
     mem = get_process_memory()
-    logger.info(
-        f"Memory Usage [{stage}]:\n"
-        f"    RSS: {mem['rss']:.1f}MB\n"
-        f"    USS: {mem['uss']:.1f}MB\n"
-        f"    Data: {mem['data']:.1f}MB\n"
-        f"    Shared: {mem['shared']:.1f}MB"
-    )
+    logger.info(f"Memory Usage [{stage}]: RSS={mem['rss']:.1f}MB USS={mem['uss']:.1f}MB Data={mem['data']:.1f}MB Shared={mem['shared']:.1f}MB")
 
 class MemoryProfilingMiddleware:
     def __init__(self, app):
