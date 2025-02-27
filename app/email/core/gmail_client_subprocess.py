@@ -2,6 +2,14 @@
 
 This module provides a Gmail client that uses a subprocess to fetch and decode
 emails, which isolates the memory-intensive operations from the main process.
+The subprocess handles all raw message parsing and returns only the essential
+metadata and content, eliminating the transfer of raw message data between processes.
+
+Key features:
+- Full memory isolation for Gmail API operations
+- Elimination of raw message data transfer between processes
+- Efficient subprocess communication using structured data
+- Robust error handling and resource cleanup
 """
 
 import asyncio
@@ -21,6 +29,7 @@ from google.auth.transport.requests import Request as AuthRequest
 from app.utils.memory_utils import log_memory_usage, log_memory_cleanup
 import base64
 from email import message_from_bytes
+import platform
 
 # Directory of this file
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -104,7 +113,12 @@ class GmailClientSubprocess:
     async def fetch_emails(self, days_back: int = 1, user_email: str = None, label_ids: List[str] = None,
                    query: str = None, include_spam_trash: bool = False) -> List[Dict]:
         """
-        Fetch emails from Gmail using subprocess to isolate memory usage
+        Fetch emails from Gmail using subprocess to isolate memory usage.
+        
+        This method runs the Gmail API operations in a separate process to prevent
+        memory leaks in the main application process. The subprocess handles all
+        raw message parsing and returns only the essential metadata and content,
+        without transferring the raw message data back to the main process.
         
         Args:
             days_back: Number of days back to fetch emails for
@@ -114,7 +128,15 @@ class GmailClientSubprocess:
             include_spam_trash: Whether to include emails in spam and trash
             
         Returns:
-            List of email dictionaries with processed message data
+            List of email dictionaries containing processed message data (without raw messages)
+        
+        Raises:
+            ValueError: If user_email is not provided
+            GmailAPIError: If the subprocess fails or returns an error
+        
+        Note:
+            This implementation eliminates memory usage growth in the main process
+            by ensuring raw message data remains only in the subprocess.
         """
         if not self._user_email and not user_email:
             raise ValueError("User email is required")
@@ -148,92 +170,76 @@ class GmailClientSubprocess:
                 date_cutoff = utc_date.strftime('%Y/%m/%d')
                 query = f"after:{date_cutoff}"
                 
-                self.logger.info(
-                    f"Fetching emails with days_back={days_back}, adjusted_days={adjusted_days}\n"
-                    f"    Local midnight cutoff: {local_midnight.strftime('%Y-%m-%d %H:%M:%S %Z')}\n"
-                    f"    Query cutoff (UTC-1): after:{date_cutoff}"
-                )
-                
-            if label_ids:
-                # Add label filters to query
-                for label in label_ids:
-                    query += f" label:{label}"
-                    
-            # Run the subprocess with the processed query
+                self.logger.info(f"Fetching emails with days_back={days_back}, adjusted_days={adjusted_days}\n    Local midnight cutoff: {local_midnight}\n    Query cutoff (UTC-1): {query}")
+            
+            # Modify the query to exclude emails from the SENT folder
+            query = f"{query} -in:sent"
+            self.logger.info(f"Modified query to exclude sent emails: {query}")
+            
+            # Use subprocess script path from the module
+            subprocess_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gmail_subprocess.py")
+            
+            # Execute the subprocess command
             self.logger.info(f"Fetching emails with query: {query}")
             
-            cmd = [
-                sys.executable, 
-                self._script_path,
-                "--credentials", f"@{credentials_path}",
-                "--user_email", user,
-                "--query", query
-            ]
+            # Convert include_spam_trash to a command-line argument
+            include_spam_trash_arg = "--include_spam_trash" if include_spam_trash else ""
             
-            if include_spam_trash:
-                cmd.append("--include_spam_trash")
-                
-            self.logger.debug(f"Running command: {' '.join(cmd)}")
+            # Build Python command
+            python_executable = sys.executable
             
-            # Perform garbage collection before starting subprocess
-            gc.collect()
+            # Pass days_back to the subprocess
+            cmd = f"{python_executable} {subprocess_path} --credentials @{credentials_path} --user_email {user} --query \"{query}\" {include_spam_trash_arg} --days_back {days_back}"
             
-            # Use asyncio to run the subprocess asynchronously
-            process = await asyncio.create_subprocess_exec(
-                *cmd,
+            # Create a process
+            process = await asyncio.create_subprocess_shell(
+                cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE
             )
             
-            # Await the subprocess completion
-            stdout_bytes, stderr_bytes = await process.communicate()
+            # Timing for performance analysis
+            start_time = time.time()
             
-            # Convert bytes to strings
-            stdout = stdout_bytes.decode('utf-8')
-            stderr = stderr_bytes.decode('utf-8')
+            # Initialize metrics collection
+            metrics = {
+                'emails_found': None,
+                'emails_retrieved': None,
+                'raw_data_size': None,
+                'peak_memory': None,
+                'start_memory': None,
+                'end_memory': None
+            }
             
-            # Release byte buffers
-            stdout_bytes = None
-            stderr_bytes = None
-            
-            # Perform garbage collection after subprocess completes
-            gc.collect()
-            
-            # Only log stderr as error if process return code indicates failure
-            # Otherwise forward subprocess logs at INFO level
-            if process.returncode != 0:
-                self.logger.error(f"Subprocess error: {stderr}")
-                raise GmailAPIError(f"Gmail subprocess failed with code {process.returncode}: {stderr}")
-            elif stderr:
-                # Process and format subprocess logs for better readability
-                log_lines = stderr.strip().split('\n')
+            # Create async tasks to read stdout and stderr concurrently
+            # This ensures each stream has only one reader
+            async def read_stdout():
+                data = await process.stdout.read()
+                return data
                 
-                # Create a summary section with key metrics only
-                metrics = {
-                    'emails_found': None,
-                    'emails_retrieved': None,
-                    'start_memory': None,
-                    'peak_memory': None,
-                    'end_memory': None,
-                    'raw_data_size': None
-                }
-                
-                # Parse each line and log individually with proper formatting
-                for line in log_lines:
-                    if not line.strip():
-                        continue
+            async def read_stderr():
+                lines = []
+                while True:
+                    line = await process.stderr.readline()
+                    if not line:  # EOF
+                        break
                         
-                    # Extract metrics for summary while also logging each line
-                    log_parts = line.split(' - ', 2)  # Split into timestamp, module, message
+                    lines.append(line)
+                    decoded_line = line.decode().strip()
                     
-                    if len(log_parts) >= 3:
+                    # Try to parse structured log line
+                    if " - " in decoded_line and " | " in decoded_line:
+                        # Split by pipe character to get components
+                        # Format is typically: TIMESTAMP - MODULE | LEVEL | MESSAGE 
+                        log_parts = [part.strip() for part in decoded_line.split(" | ")]
+                        
                         # Extract the timestamp and message parts
                         timestamp, module, message = log_parts
                         
                         # Log each subprocess line with proper context
-                        if "ERROR" in line or "ERROR" in module:
+                        if "ERROR" in decoded_line or "ERROR" in module:
                             self.logger.error(f"Subprocess: [{module}] {message}")
-                        elif "WARNING" in line or "WARNING" in module:
+                        elif "WARNING" in decoded_line or "WARNING" in module:
                             self.logger.warning(f"Subprocess: [{module}] {message}")
                         else:
                             self.logger.debug(f"Subprocess: [{module}] {message}")  # Changed to debug level to reduce noise
@@ -269,7 +275,21 @@ class GmailClientSubprocess:
                                 pass
                     else:
                         # Fall back for lines that don't match expected format
-                        self.logger.debug(f"Subprocess: {line}")  # Changed to debug level
+                        self.logger.debug(f"Subprocess: {decoded_line}")  # Changed to debug level
+                
+                return lines
+            
+            # Run both tasks concurrently
+            stdout_task = asyncio.create_task(read_stdout())
+            stderr_task = asyncio.create_task(read_stderr())
+            
+            # Wait for both tasks and the process to complete
+            try:
+                # Use asyncio.gather to await both tasks
+                stdout_data, stderr_lines = await asyncio.gather(stdout_task, stderr_task)
+                
+                # Wait for the process to exit
+                await process.wait()
                 
                 # Log a concise summary of key metrics
                 if any(v is not None for v in metrics.values()):
@@ -278,375 +298,79 @@ class GmailClientSubprocess:
                         memory_increase = metrics['peak_memory'] - metrics['start_memory']
                         memory_change = f", Memory +{memory_increase:.1f}MB"
                         
-                    raw_data_info = ""
-                    if metrics['raw_data_size'] is not None:
-                        raw_data_info = f", Raw data: {metrics['raw_data_size']:.2f}MB"
-                        
-                    self.logger.info(
-                        f"Subprocess summary: Found {metrics['emails_found'] or '?'} emails, "
-                        f"Retrieved {metrics['emails_retrieved'] or '?'} emails{memory_change}{raw_data_info}"
-                    )
-                
-                # Clear log data
-                log_lines = None
-                metrics = None
+                    summary_msg = f"Subprocess summary: "
+                    if metrics['emails_found'] is not None:
+                        summary_msg += f"Found {metrics['emails_found']} emails"
+                    if metrics['emails_retrieved'] is not None:
+                        summary_msg += f", Retrieved {metrics['emails_retrieved']} emails"
+                    summary_msg += memory_change
+                    
+                    self.logger.info(summary_msg)
+            except asyncio.CancelledError:
+                # If we're cancelled, make sure to terminate the subprocess
+                process.terminate()
+                raise
+            except Exception as e:
+                self.logger.error(f"Error during subprocess execution: {e}")
+                # Try to terminate the process in case it's still running
+                process.terminate()
+                raise GmailAPIError(f"Error during subprocess execution: {e}")
             
-            # Force garbage collection before JSON parsing
-            gc.collect()
+            # Process duration
+            duration = time.time() - start_time
             
+            # Check if process exited successfully
+            if process.returncode != 0:
+                self.logger.error(f"Subprocess failed with code {process.returncode}")
+                raise GmailAPIError(f"Gmail subprocess failed with code {process.returncode}")
+            
+            # Parse the JSON output
+            log_memory_usage(self.logger, "Before JSON Deserialization")
             try:
-                # After deserializing but before filtering
-                # Process raw_message data - decompress if compressed
-                log_memory_usage(self.logger, "Before JSON Deserialization")
-                result = json.loads(stdout)
-                
-                # Free up the stdout memory immediately
-                stdout = None
-                
-                # Extract emails from result - the subprocess returns {'success': bool, 'emails': []}
-                emails_to_process = result.get("emails", [])
-                
-                # Clear the result object to free memory
-                result = None
-                
-                if not isinstance(emails_to_process, list):
-                    self.logger.error(f"Unexpected result format from subprocess: {type(emails_to_process)}")
-                    raise GmailAPIError(f"Invalid email data format: expected list, got {type(emails_to_process)}")
-                
-                self.logger.info(f"Deserialized {len(emails_to_process)} emails from subprocess")
-                log_memory_usage(self.logger, "After JSON Deserialization")
-                
-                # Import gzip module here to ensure it's available in this scope
-                import gzip
-                
-                # Track memory usage before and after decompression
-                decompression_count = 0
-                log_memory_usage(self.logger, "Before Email Decompression")
-                decompression_start_time = time.time()
-                
-                # Process in smaller batches to manage memory better
-                batch_size = 10
-                email_batches = [emails_to_process[i:i+batch_size] for i in range(0, len(emails_to_process), batch_size)]
-                
-                # Clear the full list to free memory
-                emails_to_process_total = len(emails_to_process)
-                emails_to_process = None
-                
-                # Process each batch of emails
-                all_processed_emails = []
-                
-                for batch_idx, email_batch in enumerate(email_batches):
-                    for email in email_batch:
-                        if email.get('raw_message') and isinstance(email.get('raw_message'), str):
-                            # Check if this is compressed data (it will start with specific prefix)
-                            if email['raw_message'].startswith('COMPRESSED:'):
-                                try:
-                                    decompression_count += 1
-                                    # Remove the prefix and decode base64
-                                    compressed_data = base64.b64decode(email['raw_message'][11:])
-                                    # Store original compressed size for logging
-                                    compressed_size = len(compressed_data)
-                                    # Decompress
-                                    email['raw_message'] = gzip.decompress(compressed_data)
-                                    # Log decompression ratio
-                                    original_size = len(email['raw_message'])
-                                    ratio = (original_size - compressed_size) / original_size * 100 if original_size > 0 else 0
-                                    
-                                    if decompression_count <= 2:  # Only log details for first few emails
-                                        self.logger.debug(
-                                            f"Decompressed email {email['id']}: "
-                                            f"{compressed_size/1024:.1f}KB → {original_size/1024:.1f}KB "
-                                            f"(saved {ratio:.1f}%)"
-                                        )
-                                    
-                                    # Explicitly delete compressed data to free memory immediately
-                                    del compressed_data
-                                except Exception as e:
-                                    self.logger.error(f"Failed to decompress email data: {e}")
-                                    email['raw_message'] = None
-                    
-                    # Append processed batch to results
-                    all_processed_emails.extend(email_batch)
-                    
-                    # Clear batch reference and force GC
-                    email_batch = None
-                    if (batch_idx + 1) % 2 == 0:
-                        log_memory_cleanup(self.logger, f"After decompressing batch {batch_idx+1}/{len(email_batches)}")
-                
-                decompression_time = time.time() - decompression_start_time
-                self.logger.info(f"Decompression completed in {decompression_time:.2f} seconds for {emails_to_process_total} emails")
-                
-                # Force garbage collection after decompression
-                log_memory_cleanup(self.logger, "After Email Decompression")
-                if decompression_count > 0:
-                    self.logger.info(f"Decompressed {decompression_count} emails")
-                
-                # Continue with filtering and post-processing
-                log_memory_usage(self.logger, "Before Email Filtering")
-                
-                filtered_emails = []
-                filtered_out = 0
-                
-                # Recalculate cutoff time for consistency
-                if days_back > 0:
-                    local_tz = datetime.now().astimezone().tzinfo
-                    adjusted_days = max(0, days_back - 1)
-                    local_midnight_cutoff = (datetime.now(local_tz) - timedelta(days=adjusted_days)).replace(
-                        hour=0, minute=0, second=0, microsecond=0
-                    )
-                else:
-                    local_midnight_cutoff = None
-                
-                # Process the emails in batches
-                email_batches = [all_processed_emails[i:i+batch_size] for i in range(0, len(all_processed_emails), batch_size)]
-                all_processed_emails = None  # Clear full list
-                
-                self.logger.debug(f"Timezone: {datetime.now().astimezone().tzinfo}")
-                self.logger.debug(f"Adjusted days: {adjusted_days if 'adjusted_days' in locals() else 'N/A'}")
-                if local_midnight_cutoff:
-                    self.logger.debug(f"Local midnight cutoff: {local_midnight_cutoff}")
-                
-                # Process each batch to reduce memory pressure
-                for batch_idx, email_batch in enumerate(email_batches):
-                    batch_filtered = []
-                    
-                    for email in email_batch:
-                        # Process raw_message regardless of current type
-                        if 'raw_message' in email:
-                            try:
-                                # Handle string raw_message (base64 encoded, not yet decompressed)
-                                if isinstance(email['raw_message'], str):
-                                    # Only non-compressed strings need base64 decoding
-                                    # Compressed strings were already handled in the decompression loop
-                                    if not email['raw_message'].startswith('COMPRESSED:'):
-                                        raw_msg = base64.b64decode(email['raw_message'])
-                                        email['raw_message'] = raw_msg
-                                        del raw_msg  # Explicitly free memory
-                                
-                                # Now extract headers if we have bytes (either from decompression or base64 decoding)
-                                if isinstance(email['raw_message'], bytes):
-                                    # Extract headers from the message bytes
-                                    email_msg = message_from_bytes(email['raw_message'])
-                                    
-                                    # Add Message-ID header to match original client format
-                                    email['Message-ID'] = email_msg.get('Message-ID')
-                                    
-                                    # Add other important headers
-                                    email['subject'] = email_msg.get('subject')
-                                    email['from'] = email_msg.get('from')
-                                    email['to'] = email_msg.get('to')
-                                    date_str = email_msg.get('date')
-                                    email['date'] = date_str
-                                    
-                                    # Filter by date if we have a cutoff and this is a date-filtered query
-                                    if local_midnight_cutoff and date_str:
-                                        try:
-                                            # Parse email date
-                                            from email.utils import parsedate_to_datetime
-                                            
-                                            if not date_str:
-                                                # Skip emails with no date
-                                                continue
-                                                
-                                            try:
-                                                # Remove the "(UTC)" part if it exists
-                                                date_str = date_str.split(' (')[0].strip()
-                                                email_date = parsedate_to_datetime(date_str)
-                                            except Exception as e:
-                                                self.logger.warning(f"Failed to parse email date '{date_str}': {e}")
-                                                # Still include the email if date parsing fails
-                                                batch_filtered.append(email)
-                                                # Clear references to large objects to free memory
-                                                email_msg = None
-                                                continue
-                                            
-                                            if not email_date:
-                                                # Skip emails with unparseable dates
-                                                self.logger.warning(f"Couldn't parse date: {date_str}")
-                                                # Still include the email
-                                                batch_filtered.append(email)
-                                                # Clear references to large objects to free memory
-                                                email_msg = None
-                                                continue
-                                            
-                                            # Convert to local timezone for comparison
-                                            local_email_date = email_date.astimezone(local_tz)
-                                            
-                                            # Only include emails at or after our local midnight cutoff
-                                            if local_email_date >= local_midnight_cutoff:
-                                                batch_filtered.append(email)
-                                                self.logger.debug(
-                                                    f"INCLUDED: Email '{email.get('subject', 'No subject')}' "
-                                                    f"from {local_email_date.strftime('%Y-%m-%d %H:%M:%S %Z')}"
-                                                )
-                                            else:
-                                                self.logger.debug(
-                                                    f"FILTERED OUT: Email '{email.get('subject', 'No subject')}' "
-                                                    f"from {local_email_date.strftime('%Y-%m-%d %H:%M:%S %Z')} - "
-                                                    f"before cutoff {local_midnight_cutoff.strftime('%Y-%m-%d %H:%M:%S %Z')}"
-                                                )
-                                                filtered_out += 1
-                                        except Exception as e:
-                                            # If date parsing fails, include the email to be safe
-                                            self.logger.warning(f"Error in date filtering: {e}")
-                                            batch_filtered.append(email)
-                                    else:
-                                        # No filtering needed, include the email
-                                        batch_filtered.append(email)
-                                    
-                                    # Clear reference to parsed email message - critical for memory!
-                                    email_msg = None
-                                else:
-                                    # If we don't have bytes after processing, include as is
-                                    self.logger.warning(f"Email {email.get('id', 'unknown')} has non-bytes raw_message after processing")
-                                    batch_filtered.append(email)
-                            except Exception as e:
-                                self.logger.error(f"Failed to process raw_message: {e}")
-                                # If processing fails, set to None to avoid parsing errors
-                                email['raw_message'] = None
-                                # Still include the email with the error
-                                batch_filtered.append(email)
-                        else:
-                            # No raw message to process, include as is
-                            self.logger.debug(f"Email {email.get('id', 'unknown')} has no raw_message")
-                            batch_filtered.append(email)
-                    
-                    # Add filtered emails from this batch
-                    filtered_emails.extend(batch_filtered)
-                    batch_filtered = None
-                    
-                    # Every few batches, force cleanup
-                    if (batch_idx + 1) % 2 == 0 or batch_idx == len(email_batches) - 1:
-                        log_memory_cleanup(self.logger, f"After filtering batch {batch_idx+1}/{len(email_batches)}")
-                
-                # Force garbage collection after processing all emails
-                email_batches = None
-                log_memory_cleanup(self.logger, "After Email Filtering")
-                
-                # Calculate and log the total size of raw message data
-                total_raw_size = sum(len(email.get('raw_message', b'')) for email in filtered_emails if email.get('raw_message') is not None)
-                self.logger.info(f"Total size of raw message data: {total_raw_size / 1024 / 1024:.2f} MB")
-                
-                # Calculate memory usage per email to identify potential issues
-                avg_size_per_email = total_raw_size / len(filtered_emails) if filtered_emails else 0
-                self.logger.info(f"Average raw message size: {avg_size_per_email / 1024:.1f} KB per email")
-                
-                # Memory profiling before detailed processing
-                log_memory_usage(self.logger, "Before Email Sample Analysis")
-                
-                # Calculate compressed size benefits if any
-                try:
-                    # Take a representative sample of emails for calculation
-                    sample_count = min(5, len(filtered_emails))
-                    if sample_count > 0:
-                        compression_samples = filtered_emails[:sample_count]
-                        compressed_sizes = []
-                        original_sizes = []
-                        
-                        for sample in compression_samples:
-                            if isinstance(sample.get('raw_message'), bytes):
-                                original_size = len(sample['raw_message'])
-                                compressed = gzip.compress(sample['raw_message'], compresslevel=6)
-                                compressed_size = len(compressed)
-                                
-                                original_sizes.append(original_size)
-                                compressed_sizes.append(compressed_size)
-                                
-                                # Explicitly release compressed data
-                                del compressed
-                        
-                        if original_sizes:
-                            total_original = sum(original_sizes)
-                            total_compressed = sum(compressed_sizes)
-                            ratio = (total_original - total_compressed) / total_original * 100 if total_original > 0 else 0
-                            
-                            self.logger.info(f"Compression analysis (sample of {sample_count} emails):")
-                            self.logger.info(f"  Original: {total_original/1024:.1f}KB, Compressed: {total_compressed/1024:.1f}KB")
-                            self.logger.info(f"  Compression ratio: {ratio:.1f}%, Memory saved: {(total_original-total_compressed)/1024/1024:.2f}MB")
-                        
-                        # Clear sample data
-                        compression_samples = None
-                        original_sizes = None
-                        compressed_sizes = None
-                except Exception as e:
-                    self.logger.debug(f"Error calculating compression stats: {e}")
-                
-                if local_midnight_cutoff:
-                    self.logger.info(
-                        f"Fetched {emails_to_process_total} emails from Gmail API, filtered to {len(filtered_emails)} "
-                        f"(filtered out {filtered_out} before {local_midnight_cutoff.strftime('%Y-%m-%d %H:%M:%S')})"
-                    )
-                else:
-                    self.logger.info(f"Fetched {len(filtered_emails)} emails from Gmail API for {user}")
-                
-                # Log memory usage after all processing
-                log_memory_usage(self.logger, "After Email Processing - Main Process")
-                
-                # Force garbage collection before returning to minimize memory footprint
-                log_memory_cleanup(self.logger, "Before Optimization")
-                
-                # Optimize memory: clear fields not needed for processing to reduce RAM usage
-                optimized_emails = []
-                fields_to_keep = {'id', 'threadId', 'labelIds', 'raw_message', 'Message-ID', 'subject', 'from', 'to', 'date'}
-                
-                # Process in batches to avoid large memory allocation
-                email_batches = [filtered_emails[i:i+batch_size] for i in range(0, len(filtered_emails), batch_size)]
-                filtered_emails = None  # Clear the original list
-                
-                for batch_idx, email_batch in enumerate(email_batches):
-                    for email in email_batch:
-                        # Create slimmer dict with only necessary fields
-                        optimized = {k: v for k, v in email.items() if k in fields_to_keep}
-                        optimized_emails.append(optimized)
-                    
-                    # Free batch memory
-                    email_batch = None
-                    
-                    # Force cleanup every few batches
-                    if (batch_idx + 1) % 3 == 0 or batch_idx == len(email_batches) - 1:
-                        log_memory_cleanup(self.logger, f"After optimizing batch {batch_idx+1}/{len(email_batches)}")
-                
-                # Clear reference to the email batches
-                email_batches = None
-                
-                # Force final garbage collection 
-                log_memory_cleanup(self.logger, "Before Returning Email Data")
-                
-                return optimized_emails
+                email_data = json.loads(stdout_data.decode().strip())
             except json.JSONDecodeError as e:
                 self.logger.error(f"Failed to parse subprocess output: {e}")
-                self.logger.debug(f"Subprocess output: {stdout[:500]}...")
+                self.logger.debug(f"Subprocess output: {stdout_data[:500]}...")
                 raise GmailAPIError(f"Failed to parse subprocess output: {e}")
                 
+            # Check for success
+            if not email_data.get('success', False):
+                error_msg = email_data.get('error', 'Unknown error in Gmail subprocess')
+                self.logger.error(f"Gmail subprocess returned error: {error_msg}")
+                raise GmailAPIError(error_msg)
+            
+            # Get emails
+            emails = email_data.get('emails', [])
+            self.logger.info(f"Deserialized {len(emails)} emails from subprocess")
+            log_memory_usage(self.logger, "After JSON Deserialization")
+            
+            # Since we've already done parsing and filtering in the subprocess,
+            # we can now directly use the emails as is.
+            # The emails no longer contain raw_message data, only processed content,
+            # which significantly reduces memory usage in the main process.
+            
+            # Log final stats
+            fetched_count = len(emails)
+            
+            # Now we can include the filtering info from the subprocess
+            included_days = f" since {days_back} days ago" if days_back > 1 else " from today"
+            self.logger.info(f"Fetched {fetched_count} emails from Gmail API{included_days}")
+            
+            log_memory_usage(self.logger, "After Email Processing - Main Process")
+            
+            return emails
+                
         except Exception as e:
-            self.logger.error(f"Error in fetch_emails: {str(e)}")
-            raise
+            self.logger.error(f"Error fetching emails: {e}")
+            raise GmailAPIError(f"Failed to fetch emails: {e}")
+            
         finally:
-            # Remove temp credentials file
-            if credentials_path:
+            # Always clean up the credentials file
+            if credentials_path and os.path.exists(credentials_path):
                 try:
                     os.unlink(credentials_path)
-                    self.logger.debug("Removed temporary credentials file")
                 except Exception as e:
-                    self.logger.warning(f"Failed to remove temporary credentials file: {e}")
-            
-            # Explicitly close process if still running
-            try:
-                if 'process' in locals() and process and process.returncode is None:
-                    process.terminate()
-                    self.logger.debug("Terminated subprocess")
-            except Exception as e:
-                self.logger.debug(f"Error terminating subprocess: {e}")
-            
-            # Final garbage collection
-            try:
-                gc.collect()
-                gc.collect()
-            except Exception:
-                pass
-                
-            # Log memory usage after all operations
-            log_memory_usage(self.logger, "After Gmail Client Subprocess - Main Process")
+                    self.logger.warning(f"Error removing credentials file: {e}")
     
     async def close(self):
         """Close the Gmail API connection."""

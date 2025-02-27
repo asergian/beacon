@@ -15,6 +15,7 @@ import random
 from ..email.demo_emails import get_demo_email_bodies
 from ..email.demo_analysis import demo_analysis, load_analysis_cache
 from ..utils.memory_utils import log_memory_cleanup
+import gc
 
 def async_route(f):
     @wraps(f)
@@ -1588,12 +1589,31 @@ def stream_email_analysis():
             current_app.logger.error(f"Error in generator: {e}")
             yield f'event: error\ndata: {{"message": "Internal server error: {str(e)}"}}\n\n'
         finally:
-            # Clean up resources
+            # Clean up resources - ensure all async clients are properly closed
+            # This is crucial to prevent memory leaks in streaming responses
             try:
-                if loop and hasattr(current_app.pipeline.connection, 'disconnect'):
-                    loop.run_until_complete(current_app.pipeline.connection.disconnect())
+                if loop:
+                    try:
+                        # First ensure the pipeline connection is closed
+                        if hasattr(current_app.pipeline.connection, 'disconnect'):
+                            loop.run_until_complete(current_app.pipeline.connection.disconnect())
+                        
+                        # Ensure any OpenAI client connections are properly closed
+                        # Get the OpenAI client and close it
+                        if hasattr(current_app, 'get_openai_client'):
+                            openai_client = current_app.get_openai_client()
+                            if openai_client and hasattr(openai_client, 'close'):
+                                loop.run_until_complete(openai_client.close())
+                            elif openai_client and hasattr(openai_client.http_client, 'aclose'):
+                                # If the client has an internal httpx client, close that too
+                                loop.run_until_complete(openai_client.http_client.aclose()) 
+                        
+                        # Run a final garbage collection to clean up any remaining resources
+                        gc.collect()
+                    except Exception as cleanup_error:
+                        current_app.logger.warning(f"Error during async resource cleanup: {cleanup_error}")
             except Exception as disconnect_error:
-                current_app.logger.warning(f"Failed to disconnect Gmail client: {disconnect_error}")
+                current_app.logger.warning(f"Failed to disconnect clients: {disconnect_error}")
             
             # Force memory release before closing connection
             try:
@@ -1601,8 +1621,15 @@ def stream_email_analysis():
             except Exception as memory_error:
                 logger.error(f"Error during memory cleanup: {memory_error}")
             
+            # Now safe to close the loop since all connections have been properly closed
             if loop:
-                loop.close()
+                # Run pending callbacks one more time to ensure everything is properly cleaned up
+                try:
+                    loop.run_until_complete(asyncio.sleep(0.1))
+                except:
+                    pass
+                finally:
+                    loop.close()
             
             # Send a final event to ensure the client knows we're done
             yield 'event: close\ndata: {"message": "Connection closed"}\n\n'

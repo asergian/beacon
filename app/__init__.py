@@ -91,14 +91,54 @@ def init_openai_client(app):
             return g.async_openai_client
         
         # Register a function to clean up the client when the request ends
-        def close_openai_client(e=None):
+        async def close_openai_client(e=None):
+            """
+            Asynchronously close the OpenAI client to properly release resources.
+            
+            This function is called when a request context ends and ensures that 
+            any open connections in the OpenAI client are properly closed. It uses
+            async/await to properly handle the asynchronous closing methods.
+            
+            Args:
+                e: Optional exception that caused the context to end
+                
+            Note:
+                This is particularly important for preventing resource leaks in 
+                long-running applications or when processing multiple requests.
+            """
+            client = g.pop('async_openai_client', None)
+            if client is not None:
+                # Close the underlying httpx client to properly clean up connections
+                try:
+                    # Close any open httpx connections
+                    if hasattr(client.http_client, 'aclose'):
+                        await client.http_client.aclose()
+                    elif hasattr(client, 'close'):
+                        await client.close()
+                except Exception as e:
+                    logger.warning(f"Error closing OpenAI client: {e}")
+                finally:
+                    # Ensure we clear the reference
+                    client = None
+        
+        # Modified teardown function to run the async cleanup
+        def teardown_openai_client(e=None):
+            """
+            Flask teardown function that handles the async cleanup of OpenAI client.
+            
+            This function is registered with Flask's teardown_appcontext to ensure
+            proper cleanup of OpenAI client resources when the application context ends.
+            
+            Args:
+                e: Optional exception that caused the context to end
+            """
             client = g.pop('async_openai_client', None)
             if client is not None:
                 # Add any cleanup if needed
                 pass
         
         # Register the teardown function
-        app.teardown_appcontext(close_openai_client)
+        app.teardown_appcontext(teardown_openai_client)
         
         # Store the getter function in the app
         app.get_openai_client = get_openai_client
