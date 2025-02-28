@@ -40,6 +40,7 @@ class Config:
         # Use the same email and password as IMAP by default
         self.SMTP_EMAIL = os.environ.get('SMTP_EMAIL') or self.EMAIL
         self.SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD') or self.IMAP_PASSWORD
+        self.SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL') or 'support@shronas.com'
         
         # Load environment variables into config
         self.REDIS_TOKEN = os.environ.get('REDIS_TOKEN')
