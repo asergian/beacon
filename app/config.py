@@ -33,15 +33,21 @@ class Config:
         self.EMAIL = os.environ.get('EMAIL') or 'your-email@example.com'
         self.IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD') or 'your-email-password'
         
+        # SMTP Configuration
+        self.SMTP_SERVER = os.environ.get('SMTP_SERVER') or 'smtp.gmail.com'
+        self.SMTP_PORT = int(os.environ.get('SMTP_PORT') or 587)
+        self.SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', '1') == '1'
+        # Use the same email and password as IMAP by default
+        self.SMTP_EMAIL = os.environ.get('SMTP_EMAIL') or self.EMAIL
+        self.SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD') or self.IMAP_PASSWORD
+        self.SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL') or 'support@shronas.com'
+        
         # Load environment variables into config
         self.REDIS_TOKEN = os.environ.get('REDIS_TOKEN')
         self.REDIS_URL = os.environ.get('REDIS_URL')
 
         # OpenAI Configuration
         self.OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY') or 'your-default-openai-key'
-        
-        # TinyMCE Configuration
-        self.TINYMCE_API_KEY = os.environ.get('TINYMCE_API_KEY') or 'your-default-tiny-mce-key'
 
         self.FLASK_SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'your-default-flask-secret-key'
         

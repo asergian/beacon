@@ -1,0 +1,510 @@
+{% extends 'base.html' %}
+
+{% block title %}Support | Beacon{% endblock %}
+
+{% block content %}
+<div class="policy-container support-container">
+    <h1>Support</h1>
+    
+    <section>
+        <h2>How Can We Help You?</h2>
+        <p>Welcome to the Beacon support page. We're here to help you make the most of your email processing experience. Below you'll find answers to frequently asked questions and ways to contact us for additional assistance.</p>
+    </section>
+    
+    <section>
+        <h2>Frequently Asked Questions</h2>
+        
+        <div class="faq-item">
+            <h3>How does Beacon analyze my emails?</h3>
+            <p>Beacon uses advanced artificial intelligence and natural language processing technologies to analyze your emails. The system identifies important information such as action items, priorities, and categories to help you manage your inbox more efficiently. All processing happens securely, and we never share your email content with third parties.</p>
+        </div>
+        
+        <div class="faq-item">
+            <h3>Is my email data secure?</h3>
+            <p>Yes, we take security very seriously. Beacon uses encryption to protect your data both in transit and at rest. We implement strict access controls and follow industry best practices for data security. For more details, please refer to our <a href="{{ url_for('static_pages.privacy_policy') }}">Privacy Policy</a>.</p>
+        </div>
+        
+        <div class="faq-item">
+            <h3>How do I connect my email account?</h3>
+            <p>To connect your email account, go to the Home page and select "Sign in with Google." You'll be guided through the authentication process. For Gmail users, you'll need to allow permissions via Google's OAuth system.</p>
+        </div>
+        
+        <div class="faq-item">
+            <h3>What email providers are supported?</h3>
+            <p>Beacon currently supports Gmail. If you're having trouble connecting, please contact us for assistance.</p>
+        </div>
+        
+        <div class="faq-item">
+            <h3>How do I customize priority settings?</h3>
+            <p>You can customize your priority settings in the Settings page under "Email Processing." There, you can define your data policy, specify a model, and adjust other factors that determine how emails are categorized and prioritized.</p>
+        </div>
+    </section>
+    
+    <section>
+        <h2>Contact Support</h2>
+        <p>If you couldn't find the answer to your question, please contact our support team:</p>
+        
+        <div class="contact-options">
+            <div class="contact-option">
+                <div class="icon-container">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                </div>
+                <div class="contact-details">
+                    <h4>Email Support</h4>
+                    <p>For general inquiries and support:</p>
+                    <a href="mailto:beacon@shronas.com">beacon@shronas.com</a>
+                </div>
+            </div>
+            
+            <div class="contact-option">
+                <div class="icon-container">
+                    <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </div>
+                <div class="contact-details">
+                    <h4>Feedback and Feature Requests</h4>
+                    <p>We love hearing your ideas:</p>
+                    <a href="mailto:beacon@shronas.com">beacon@shronas.com</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="support-form">
+            <h3>Send us a Message</h3>
+            <form action="#" method="post" id="supportForm">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="subject">Subject</label>
+                    <select id="subject" name="subject">
+                        <option value="general">General Question</option>
+                        <option value="account">Account Issues</option>
+                        <option value="technical">Technical Support</option>
+                        <option value="feature">Feature Request</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="message">Message</label>
+                    <textarea id="message" name="message" rows="5" required></textarea>
+                </div>
+                
+                <button type="submit" class="btn-primary">Send Message</button>
+            </form>
+        </div>
+    </section>
+    
+    <section>
+        <h2>Documentation and Resources</h2>
+        <p>For detailed information about Beacon's features and how to use them, check out our documentation:</p>
+        <ul>
+            <li><a href="#" target="_blank">Getting Started</a></li>
+            <li><a href="#" target="_blank">API Documentation</a> (for developers)</li>
+        </ul>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const supportForm = document.getElementById('supportForm');
+        
+        if (supportForm) {
+            supportForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                // Get form data
+                const formData = new FormData(supportForm);
+                const formValues = Object.fromEntries(formData.entries());
+                
+                // Validate form
+                if (!validateForm(formValues)) {
+                    return;
+                }
+                
+                // Show loading state
+                const submitButton = supportForm.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.innerHTML;
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner"></span> Sending...';
+                
+                // Send the form data to the backend
+                fetch('/pages/api/support-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formValues)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        showToast(data.message || 'Thank you for your message. We will get back to you soon!', 'success');
+                        
+                        // Reset form
+                        supportForm.reset();
+                    } else {
+                        // Show error message
+                        showToast(data.message || 'An error occurred. Please try again later.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error submitting form:', error);
+                    showToast('Error sending message. Please try again later.', 'error');
+                })
+                .finally(() => {
+                    // Reset button state
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = originalButtonText;
+                });
+            });
+        }
+        
+        // Form validation function
+        function validateForm(values) {
+            const { name, email, message } = values;
+            
+            // Validate name
+            if (!name || name.trim() === '') {
+                showToast('Please enter your name', 'error');
+                return false;
+            }
+            
+            // Validate email
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showToast('Please enter a valid email address', 'error');
+                return false;
+            }
+            
+            // Validate message
+            if (!message || message.trim() === '') {
+                showToast('Please enter a message', 'error');
+                return false;
+            }
+            
+            // If we get here, validation passed
+            return true;
+        }
+        
+        // Toast notification function (same implementation as email.js)
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                // Create toast container if it doesn't exist
+                const container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'toast-container';
+                document.body.appendChild(container);
+            }
+            
+            const toastId = 'toast-' + Date.now();
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = `toast ${type === 'error' ? 'error' : type}`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="toast-close" aria-label="Close">&times;</button>
+                </div>
+            `;
+            
+            // Add to container
+            document.getElementById('toast-container').appendChild(toast);
+            
+            // Add event listener for close button
+            const closeBtn = toast.querySelector('.toast-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    toast.classList.add('hiding');
+                    setTimeout(() => {
+                        toast.remove();
+                    }, 300);
+                });
+            }
+            
+            // Show the toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                if (document.getElementById(toastId)) {
+                    toast.classList.add('hiding');
+                    setTimeout(() => {
+                        if (document.getElementById(toastId)) {
+                            toast.remove();
+                        }
+                    }, 300);
+                }
+            }, 5000);
+        }
+    });
+</script>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/policy.css') }}">
+<style>
+    /* FAQ styles */
+    .faq-item {
+        margin-bottom: 25px;
+    }
+
+    .policy-container h2 {
+        margin-top: 20px;
+        width: 100%;
+    }
+    
+    .support-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .support-container section {
+        margin-bottom: 0px;
+        width: 100%;
+    }
+
+    .contact-options {
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+        width: 100%;
+    }
+    
+    .contact-option {
+        flex: 1 1 300px;
+        padding: 25px;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .support-form {
+        box-sizing: border-box;
+        width: 100%;
+        margin: 30px 0;
+        padding: 30px;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .support-form h3 {
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-weight: 500;
+        color: var(--text-color);
+    }
+    
+    .contact-form {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .form-group label {
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--text-color);
+        display: block;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        display: block;
+        padding: 10px 15px;
+        border: 1px solid var(--input-border);
+        border-radius: 4px;
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        font-size: 1rem;
+    }
+    
+    .form-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--header-bg);
+        box-shadow: 0 0 0 2px rgba(0, 111, 106, 0.1);
+    }
+    
+    .btn-primary {
+        background-color: var(--header-bg);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 1rem;
+        transition: opacity 0.2s ease;
+    }
+    
+    .btn-primary:hover {
+        opacity: 0.9;
+    }
+    
+    /* Toast container and notifications */
+    .toast-container {
+        position: fixed;
+        bottom: 75px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .toast {
+        min-width: 250px;
+        max-width: 350px;
+        padding: 12px 15px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        color: white;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.3s, transform 0.3s;
+    }
+
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .toast.hiding {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    .toast-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .toast-body {
+        flex: 1;
+        padding-right: 10px;
+    }
+
+    .toast-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+
+    .toast-close:hover {
+        opacity: 1;
+    }
+
+    .toast.success {
+        background-color: #10b981;
+    }
+
+    .toast.error {
+        background-color: #ef4444;
+    }
+
+    .toast.info {
+        background-color: #3b82f6;
+    }
+
+    .toast.warning {
+        background-color: #f59e0b;
+    }
+
+    /* Loading spinner for button */
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 0.8s linear infinite;
+        margin-right: 8px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .contact-option {
+            flex: 1 1 100%;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            font-size: 16px; /* Prevent zoom on mobile */
+        }
+        
+        .toast-container {
+            left: 20px;
+            right: 20px;
+        }
+        
+        .toast {
+            width: calc(100% - 40px);
+            max-width: none;
+        }
+    }
+    
+    /* Dark theme support */
+    [data-theme="dark"] .toast {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    [data-theme="dark"] .toast.success {
+        background-color: #059669;
+    }
+
+    [data-theme="dark"] .toast.error {
+        background-color: #dc2626;
+    }
+
+    [data-theme="dark"] .toast.info {
+        background-color: #2563eb;
+    }
+
+    [data-theme="dark"] .toast.warning {
+        background-color: #d97706;
+    }
+</style>
+{% endblock %} 

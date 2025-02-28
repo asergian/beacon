@@ -16,6 +16,7 @@ from ..email.demo_emails import get_demo_email_bodies
 from ..email.demo_analysis import demo_analysis, load_analysis_cache
 from ..utils.memory_utils import log_memory_cleanup
 import gc
+from app.email.core.email_sender import EmailSender, EmailSendingError
 
 def async_route(f):
     @wraps(f)
@@ -37,8 +38,7 @@ email_bp = Blueprint('email', __name__)
 def home():
     """Home page that loads email UI without waiting for data."""
     return render_template('email_summary.html', 
-                         emails=[],
-                         tiny_mce_api_key=current_app.config.get('TINYMCE_API_KEY', ''))
+                         emails=[])
 
 @email_bp.route('/api/user/settings')
 @login_required
@@ -1645,3 +1645,102 @@ def stream_email_analysis():
         }
     )
     return response
+
+@email_bp.route('/api/send_email', methods=['POST'])
+@login_required
+@async_route
+async def send_email():
+    """API endpoint to send an email response."""
+    try:
+        data = request.json
+        to = data.get('to')
+        subject = data.get('subject')
+        content = data.get('content')
+        cc = data.get('cc')
+        original_email_id = data.get('original_email_id')
+        
+        # Validate required fields
+        if not to or not subject or not content:
+            return jsonify({
+                'success': False,
+                'message': 'Missing required fields'
+            }), 400
+        
+        # Log the email sending attempt
+        logger.info(f"Sending email to: {to}, subject: {subject}")
+        
+        # Process CC recipients if provided
+        cc_list = None
+        if cc:
+            cc_list = [email.strip() for email in cc.split(',') if email.strip()]
+        
+        # Initialize email sender
+        email_config = {
+            'server': current_app.config.get('SMTP_SERVER'),
+            'email': current_app.config.get('SMTP_EMAIL'),
+            'password': current_app.config.get('SMTP_PASSWORD'),
+            'port': current_app.config.get('SMTP_PORT'),
+            'use_tls': current_app.config.get('SMTP_USE_TLS')
+        }
+        
+        # Check if email configuration is complete
+        if not all([email_config['server'], email_config['email'], email_config['password']]):
+            logger.error("Missing SMTP configuration")
+            return jsonify({
+                'success': False,
+                'message': 'Email service not configured'
+            }), 500
+        
+        try:
+            # Create email sender and send the email
+            sender = EmailSender(**email_config)
+            success = await sender.send_email(
+                to=to,
+                subject=subject,
+                content=content,
+                cc=cc_list,
+                html_content=content  # Use the same content for HTML (it's from CKEditor)
+            )
+            
+            if not success:
+                raise EmailSendingError("Failed to send email")
+            
+            # If this is a response to an existing email, update its status
+            if original_email_id:
+                # In a real app, you would update the database
+                logger.info(f"Marking email {original_email_id} as responded")
+            
+            # Log user activity asynchronously
+            if 'user' in session and 'id' in session['user']:
+                user_id = session['user']['id']
+                try:
+                    await current_app.loop.run_in_executor(None, log_activity, 
+                        user_id, 'email_sent', "Email sent", {
+                            'to': to,
+                            'subject': subject,
+                            'original_email_id': original_email_id
+                        }
+                    )
+                except Exception as log_error:
+                    logger.error(f"Failed to log activity: {log_error}")
+                    # Don't fail the request if logging fails
+            
+            # Return success response
+            return jsonify({
+                'success': True,
+                'message': 'Email sent successfully'
+            })
+            
+        except EmailSendingError as e:
+            logger.error(f"Failed to send email: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': f'Failed to send email: {str(e)}'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Error in send_email route: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'An unexpected error occurred'
+        }), 500
