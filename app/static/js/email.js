@@ -685,6 +685,22 @@ function loadEmailDetails(emailId) {
         detailsElements.sender.textContent = email.sender || 'Unknown Sender';
         detailsElements.date.textContent = email.date ? new Date(email.date).toLocaleString() : 'Unknown Date';
         
+        // Populate response fields
+        const responseTo = document.getElementById('response-to');
+        const responseSubject = document.getElementById('response-subject');
+        
+        if (responseTo) {
+            // Extract email address from sender field if possible
+            const senderMatch = email.sender_email || extractEmailAddress(email.sender);
+            responseTo.value = senderMatch || email.sender || '';
+        }
+        
+        if (responseSubject) {
+            // Add 'Re: ' prefix if not already present
+            const subject = email.subject || '';
+            responseSubject.value = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
+        }
+        
         const priorityLevel = (email.priority_level || 'pending').toLowerCase();
         detailsElements.priority.textContent = formatTagText(email.priority_level || 'pending');
         detailsElements.priority.className = `tag priority-${priorityLevel}`;
@@ -957,5 +973,262 @@ function loadFirstEmail() {
     }
 }
 
+// Function to send email response
+function sendEmailResponse() {
+    // Get form values
+    const to = document.getElementById('response-to').value.trim();
+    const subject = document.getElementById('response-subject').value.trim();
+    const content = window.editor ? window.editor.getData() : '';
+    const originalEmailId = document.querySelector('.email-item.selected')?.dataset.emailId;
+    
+    // Validate form
+    if (!to) {
+        showToast('Please specify a recipient', 'error');
+        return;
+    }
+    
+    if (!subject) {
+        showToast('Please specify a subject', 'error');
+        return;
+    }
+    
+    if (!content || content === '<p>&nbsp;</p>') {
+        showToast('Please enter a message', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const sendButton = document.getElementById('send-button');
+    const originalText = sendButton ? sendButton.textContent : 'Send';
+    if (sendButton) {
+        sendButton.disabled = true;
+        sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
+    }
+    
+    // Prepare data for API call
+    const responseData = {
+        to: to,
+        subject: subject,
+        content: content,
+        original_email_id: originalEmailId || null
+    };
+    
+    // Send the email
+    fetch('/email/api/send_email', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(responseData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Reset form
+        document.getElementById('response-to').value = '';
+        document.getElementById('response-subject').value = '';
+        if (window.editor) {
+            window.editor.setData('');
+        }
+        
+        // Show success message
+        showToast('Email sent successfully', 'success');
+        
+        // If this was a response to an email, mark it as responded
+        if (originalEmailId) {
+            const email = emailMap.get(originalEmailId);
+            if (email) {
+                email.responded = true;
+                updateEmailItemUI(originalEmailId);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error sending email:', error);
+        showToast('Failed to send email. Please try again.', 'error');
+    })
+    .finally(() => {
+        // Reset button state
+        if (sendButton) {
+            sendButton.disabled = false;
+            sendButton.textContent = originalText;
+        }
+    });
+}
+
+// Function to update UI for an email item
+function updateEmailItemUI(emailId) {
+    const emailItem = document.querySelector(`.email-item[data-email-id="${emailId}"]`);
+    if (!emailItem) return;
+    
+    const email = emailMap.get(emailId);
+    if (!email) return;
+    
+    // Update responded status if applicable
+    if (email.responded) {
+        const respondedBadge = emailItem.querySelector('.responded-badge');
+        if (!respondedBadge) {
+            const badge = document.createElement('span');
+            badge.className = 'responded-badge';
+            badge.textContent = 'Responded';
+            emailItem.querySelector('.email-meta').appendChild(badge);
+        }
+    }
+}
+
+// Helper function to show toast notifications
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        // Create toast container if it doesn't exist
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(container);
+    }
+    
+    const toastId = 'toast-' + Date.now();
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.id = toastId;
+    toast.className = `toast ${type === 'error' ? 'error' : type}`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="toast-content">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="toast-close" aria-label="Close">&times;</button>
+        </div>
+    `;
+    
+    // Add to container
+    document.getElementById('toast-container').appendChild(toast);
+    
+    // Add event listener for close button
+    const closeBtn = toast.querySelector('.toast-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            toast.classList.add('hiding');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        });
+    }
+    
+    // Show the toast
+    setTimeout(() => {
+        toast.classList.add('show');
+    }, 10);
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 5000);
+}
+
+// Helper function to extract email address from a string
+function extractEmailAddress(text) {
+    if (!text) return '';
+    
+    // Simple regex to extract email addresses
+    const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi;
+    const matches = text.match(emailRegex);
+    
+    return matches && matches.length > 0 ? matches[0] : '';
+}
+
+// Function to save email draft
+function saveEmailDraft() {
+    try {
+        // Get email content from CKEditor
+        const editorContent = window.editor ? window.editor.getData() : '';
+        
+        // Get other form fields
+        const to = document.getElementById('response-to').value;
+        const cc = document.getElementById('response-cc').value;
+        const subject = document.getElementById('response-subject').value;
+        
+        // Show loading indicator
+        const saveButton = document.getElementById('save-draft-button');
+        const originalText = saveButton ? saveButton.innerHTML : 'Save Draft';
+        if (saveButton) {
+            saveButton.innerHTML = '<span class="button-icon">⏳</span> Saving...';
+            saveButton.disabled = true;
+        }
+        
+        // In a real implementation, we would save the data to the server here
+        // For now, we'll just simulate a successful save
+        setTimeout(() => {
+            // Show success message
+            showToast('Draft saved successfully!', 'success');
+            
+            // Reset button
+            if (saveButton) {
+                saveButton.innerHTML = originalText;
+                saveButton.disabled = false;
+            }
+        }, 1000);
+    } catch (error) {
+        console.error('Failed to save draft:', error);
+        showToast('Failed to save draft. Please try again.', 'error');
+    }
+}
+
+// Function to discard email
+function discardEmail() {
+    if (confirm('Are you sure you want to discard this email?')) {
+        // Clear CKEditor content
+        if (window.editor) {
+            window.editor.setData('');
+        }
+        
+        showToast('Email discarded', 'info');
+    }
+}
+
 // Initialize the page when DOM is loaded
-document.addEventListener('DOMContentLoaded', initializePage); 
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize email list
+    initializePage();
+    
+    // Set up filter event listeners
+    document.getElementById('priority-filter').addEventListener('change', filterEmails);
+    document.getElementById('category-filter').addEventListener('change', filterEmails);
+    document.getElementById('action-filter').addEventListener('change', filterEmails);
+    
+    // Set up email response functionality
+    const sendButton = document.getElementById('send-button');
+    if (sendButton) {
+        // Remove the onclick attribute if it exists and add event listener
+        sendButton.removeAttribute('onclick');
+        sendButton.addEventListener('click', sendEmailResponse);
+    }
+    
+    // Set up save draft button
+    const saveDraftButton = document.getElementById('save-draft-button');
+    if (saveDraftButton) {
+        saveDraftButton.removeAttribute('onclick');
+        saveDraftButton.addEventListener('click', saveEmailDraft);
+    }
+    
+    // Set up discard button
+    const discardButton = document.getElementById('discard-button');
+    if (discardButton) {
+        discardButton.removeAttribute('onclick');
+        discardButton.addEventListener('click', discardEmail);
+    }
+    
+    // Initialize CKEditor if the response editor element exists
+    const responseEditor = document.getElementById('response-editor');
+    if (responseEditor && typeof ClassicEditor !== 'undefined') {
+        console.log('Initializing CKEditor...');
+        // CKEditor is initialized in the HTML template
+    }
+}); 

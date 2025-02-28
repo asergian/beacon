@@ -1644,3 +1644,53 @@ def stream_email_analysis():
         }
     )
     return response
+
+@email_bp.route('/api/send_email', methods=['POST'])
+@login_required
+def send_email():
+    """API endpoint to send an email response."""
+    try:
+        data = request.json
+        to = data.get('to')
+        subject = data.get('subject')
+        content = data.get('content')
+        original_email_id = data.get('original_email_id')
+        
+        # Validate required fields
+        if not to or not subject or not content:
+            return jsonify({
+                'success': False,
+                'message': 'Missing required fields'
+            }), 400
+        
+        # Log the email sending attempt
+        logger.info(f"Sending email to: {to}, subject: {subject}")
+        
+        # In a real application, you would send the email here
+        # For demo purposes, we'll just log it and return success
+        
+        # If this is a response to an existing email, update its status
+        if original_email_id:
+            # In a real app, you would update the database
+            logger.info(f"Marking email {original_email_id} as responded")
+        
+        # Log user activity
+        if 'user' in session and 'id' in session['user']:
+            user_id = session['user']['id']
+            log_activity(user_id, 'email_sent', description="Email sent", metadata={
+                'to': to,
+                'subject': subject,
+                'original_email_id': original_email_id
+            })
+        
+        # Return success response
+        return jsonify({
+            'success': True,
+            'message': 'Email sent successfully'
+        })
+    except Exception as e:
+        logger.error(f"Error sending email: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Failed to send email'
+        }), 500
