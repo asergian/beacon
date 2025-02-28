@@ -3,9 +3,9 @@
 {% block title %}Privacy Policy | Beacon{% endblock %}
 
 {% block content %}
-<div class="container policy-container">
+<div class="policy-container">
     <h1>Privacy Policy</h1>
-    <p class="effective-date">Last Updated: May 1, 2024</p>
+    <p class="effective-date">Last Updated: Feb 28, 2025</p>
 
     <section>
         <h2>1. Introduction</h2>
@@ -118,89 +118,5 @@
 
 {% block styles %}
 {{ super() }}
-<style>
-    .policy-container {
-        max-width: 900px;
-        margin: 40px auto;
-        padding: 30px;
-        overflow-y: auto;
-        background-color: var(--card-bg);
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        margin-bottom: calc(var(--footer-height) + 40px); /* Add spacing above footer */
-    }
-    
-    .policy-container h1 {
-        font-size: 2em;
-        margin-bottom: 10px;
-        color: var(--text-color);
-        font-weight: 600;
-    }
-    
-    .policy-container h2 {
-        font-size: 1.5em;
-        margin-top: 30px;
-        margin-bottom: 15px;
-        color: var(--text-color);
-        border-bottom: 1px solid var(--input-border);
-        padding-bottom: 8px;
-        font-weight: 500;
-    }
-    
-    .policy-container h3 {
-        font-size: 1.2em;
-        margin-top: 20px;
-        margin-bottom: 10px;
-        color: var(--text-color);
-        font-weight: 500;
-    }
-    
-    .policy-container p, .policy-container li {
-        line-height: 1.6;
-        margin-bottom: 15px;
-        color: var(--text-color);
-        font-size: 1rem;
-    }
-    
-    .policy-container ul {
-        margin-left: 20px;
-        margin-bottom: 20px;
-        padding-left: 15px;
-    }
-    
-    .policy-container section {
-        margin-bottom: 30px;
-    }
-    
-    .effective-date {
-        font-style: italic;
-        color: var(--description-color);
-        margin-bottom: 30px;
-        font-size: 0.9rem;
-    }
-
-    /* Fix for main content to ensure scrolling */
-    .main-content {
-        height: auto;
-        min-height: calc(100vh - var(--header-height) - var(--footer-height));
-        overflow-y: visible; /* Ensure content can be scrolled */
-        padding-bottom: var(--footer-height);
-    }
-
-    /* Mobile responsiveness */
-    @media (max-width: 768px) {
-        .policy-container {
-            padding: 20px;
-            margin: 20px;
-        }
-        
-        .policy-container h1 {
-            font-size: 1.8em;
-        }
-        
-        .policy-container h2 {
-            font-size: 1.3em;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/policy.css') }}">
 {% endblock %} 
