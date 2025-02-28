@@ -650,9 +650,36 @@ let currentIframe = null;
 let resizeTimeout = null;
 
 function loadEmailDetails(emailId) {
-    const email = emailMap.get(emailId);
-    if (!email) return;
+    // Clear previous details
+    clearEmailDetails();
     
+    // Get email from map
+    const email = emailMap.get(emailId);
+    if (!email) {
+        console.error(`Email with ID ${emailId} not found`);
+        return;
+    }
+    
+    // Update selected state in UI
+    const previousSelected = document.querySelector('.email-item.selected');
+    if (previousSelected) {
+        previousSelected.classList.remove('selected');
+    }
+    
+    const emailItem = document.querySelector(`.email-item[data-email-id="${emailId}"]`);
+    if (emailItem) {
+        emailItem.classList.add('selected');
+    }
+    
+    // Store selected email ID
+    selectedEmailId = emailId;
+    
+    // Format tag text helper
+    const formatTagText = (text) => {
+        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+    };
+    
+    // Define details elements
     const detailsElements = {
         subject: document.getElementById('details-subject'),
         sender: document.getElementById('details-sender'),
@@ -666,39 +693,36 @@ function loadEmailDetails(emailId) {
         emailBody: document.getElementById('email-body')
     };
     
-    // Show all detail elements
-    Object.values(detailsElements).forEach(element => {
-        if (element) {
-            element.style.display = 'block';
-        }
-    });
-    
-    const formatTagText = (text) => {
-        if (text === null || text === undefined) return '';
-        // Convert to string and ensure proper case
-        text = String(text);
-        return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
-    };
-    
     requestAnimationFrame(() => {
+        // Show all detail elements with appropriate display values
+        detailsElements.subject.style.display = 'block';
+        detailsElements.sender.style.display = 'block';
+        detailsElements.date.style.display = 'block';
+        detailsElements.priority.style.display = 'inline-flex';
+        detailsElements.category.style.display = 'inline-flex';
+        detailsElements.summary.style.display = 'block';
+        
         detailsElements.subject.textContent = email.subject || 'No Subject';
         detailsElements.sender.textContent = email.sender || 'Unknown Sender';
         detailsElements.date.textContent = email.date ? new Date(email.date).toLocaleString() : 'Unknown Date';
         
         // Populate response fields
-        const responseTo = document.getElementById('response-to');
-        const responseSubject = document.getElementById('response-subject');
-        
-        if (responseTo) {
-            // Extract email address from sender field if possible
-            const senderMatch = email.sender_email || extractEmailAddress(email.sender);
-            responseTo.value = senderMatch || email.sender || '';
+        const responseToField = document.getElementById('response-to');
+        if (responseToField && email.sender) {
+            // Extract email address from sender (which might be in format "Name <email@example.com>")
+            const senderEmail = extractEmailAddress(email.sender);
+            if (senderEmail) {
+                responseToField.value = senderEmail;
+            } else {
+                responseToField.value = email.sender;
+            }
         }
         
-        if (responseSubject) {
-            // Add 'Re: ' prefix if not already present
-            const subject = email.subject || '';
-            responseSubject.value = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
+        const responseSubjectField = document.getElementById('response-subject');
+        if (responseSubjectField && email.subject) {
+            // Add Re: prefix if not already present
+            const subject = email.subject.startsWith('Re:') ? email.subject : `Re: ${email.subject}`;
+            responseSubjectField.value = subject;
         }
         
         const priorityLevel = (email.priority_level || 'pending').toLowerCase();
@@ -768,7 +792,7 @@ function loadEmailDetails(emailId) {
         iframe.style.border = 'none';
         iframe.style.overflow = 'hidden';
         iframe.scrolling = 'no'; // Disable scrolling
-        iframe.height = '500px'; // Initial height, will be adjusted
+        iframe.height = '200px'; // Initial height, will be adjusted
         
         // Replace the old iframe if it exists
         const oldIframe = detailsElements.emailBody.querySelector('iframe');
@@ -974,109 +998,93 @@ function loadFirstEmail() {
 }
 
 // Function to send email response
-function sendEmailResponse() {
-    // Get form values
-    const to = document.getElementById('response-to').value.trim();
-    const subject = document.getElementById('response-subject').value.trim();
-    const content = window.editor ? window.editor.getData() : '';
-    const originalEmailId = document.querySelector('.email-item.selected')?.dataset.emailId;
-    
+async function sendEmailResponse() {
+    // Get form data
+    const to = document.getElementById('response-to').value;
+    const cc = document.getElementById('response-cc').value;
+    const subject = document.getElementById('response-subject').value;
+    const content = window.editor.getData();
+    const originalEmailId = selectedEmailId;
+
     // Validate form
-    if (!to) {
-        showToast('Please specify a recipient', 'error');
+    if (!to || !subject || !content) {
+        showToast('Please fill in all required fields', 'error');
         return;
     }
-    
-    if (!subject) {
-        showToast('Please specify a subject', 'error');
-        return;
-    }
-    
-    if (!content || content === '<p>&nbsp;</p>') {
-        showToast('Please enter a message', 'error');
-        return;
-    }
-    
+
     // Show loading state
     const sendButton = document.getElementById('send-button');
-    const originalText = sendButton ? sendButton.textContent : 'Send';
     if (sendButton) {
+        const originalText = sendButton.innerHTML;
         sendButton.disabled = true;
         sendButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...';
     }
-    
-    // Prepare data for API call
-    const responseData = {
-        to: to,
-        subject: subject,
-        content: content,
-        original_email_id: originalEmailId || null
-    };
-    
-    // Send the email
-    fetch('/email/api/send_email', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(responseData)
-    })
-    .then(response => {
+
+    try {
+        const response = await fetch('/email/api/send_email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                to,
+                cc,
+                subject,
+                content,
+                original_email_id: originalEmailId
+            })
+        });
+
+        // Check if response is ok and has content
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            const errorData = await response.json().catch(() => ({ message: 'Server error occurred' }));
+            throw new Error(errorData.message || `Server error: ${response.status}`);
         }
-        return response.json();
-    })
-    .then(data => {
-        // Reset form
-        document.getElementById('response-to').value = '';
-        document.getElementById('response-subject').value = '';
-        if (window.editor) {
+
+        let data;
+        try {
+            data = await response.json();
+        } catch (error) {
+            throw new Error('Invalid response from server');
+        }
+        
+        if (data.success) {
+            showToast('Email sent successfully', 'success');
+            
+            // Reset form
             window.editor.setData('');
-        }
-        
-        // Show success message
-        showToast('Email sent successfully', 'success');
-        
-        // If this was a response to an email, mark it as responded
-        if (originalEmailId) {
-            const email = emailMap.get(originalEmailId);
-            if (email) {
-                email.responded = true;
+            
+            // Only update UI if we have a valid original email that exists in our email map
+            if (originalEmailId && emailMap.has(originalEmailId)) {
                 updateEmailItemUI(originalEmailId);
             }
+        } else {
+            throw new Error(data.message || 'Failed to send email');
         }
-    })
-    .catch(error => {
+    } catch (error) {
         console.error('Error sending email:', error);
-        showToast('Failed to send email. Please try again.', 'error');
-    })
-    .finally(() => {
+        showToast(error.message || 'Failed to send email', 'error');
+    } finally {
         // Reset button state
         if (sendButton) {
             sendButton.disabled = false;
-            sendButton.textContent = originalText;
+            sendButton.innerHTML = '<span class="button-icon">📤</span> Send';
         }
-    });
+    }
 }
 
-// Function to update UI for an email item
+// Function to update email item UI after sending a response
 function updateEmailItemUI(emailId) {
     const emailItem = document.querySelector(`.email-item[data-email-id="${emailId}"]`);
     if (!emailItem) return;
-    
-    const email = emailMap.get(emailId);
-    if (!email) return;
-    
-    // Update responded status if applicable
-    if (email.responded) {
-        const respondedBadge = emailItem.querySelector('.responded-badge');
-        if (!respondedBadge) {
-            const badge = document.createElement('span');
-            badge.className = 'responded-badge';
-            badge.textContent = 'Responded';
-            emailItem.querySelector('.email-meta').appendChild(badge);
-        }
+
+    // Add responded badge to email header if not already present
+    const emailHeader = emailItem.querySelector('.tags-container');
+    if (emailHeader && !emailHeader.querySelector('.responded-badge')) {
+        const badge = document.createElement('span');
+        badge.className = 'responded-badge';
+        badge.textContent = 'Responded';
+        emailHeader.appendChild(badge);
     }
 }
 
@@ -1144,52 +1152,15 @@ function extractEmailAddress(text) {
     return matches && matches.length > 0 ? matches[0] : '';
 }
 
-// Function to save email draft
-function saveEmailDraft() {
-    try {
-        // Get email content from CKEditor
-        const editorContent = window.editor ? window.editor.getData() : '';
-        
-        // Get other form fields
-        const to = document.getElementById('response-to').value;
-        const cc = document.getElementById('response-cc').value;
-        const subject = document.getElementById('response-subject').value;
-        
-        // Show loading indicator
-        const saveButton = document.getElementById('save-draft-button');
-        const originalText = saveButton ? saveButton.innerHTML : 'Save Draft';
-        if (saveButton) {
-            saveButton.innerHTML = '<span class="button-icon">⏳</span> Saving...';
-            saveButton.disabled = true;
-        }
-        
-        // In a real implementation, we would save the data to the server here
-        // For now, we'll just simulate a successful save
-        setTimeout(() => {
-            // Show success message
-            showToast('Draft saved successfully!', 'success');
-            
-            // Reset button
-            if (saveButton) {
-                saveButton.innerHTML = originalText;
-                saveButton.disabled = false;
-            }
-        }, 1000);
-    } catch (error) {
-        console.error('Failed to save draft:', error);
-        showToast('Failed to save draft. Please try again.', 'error');
-    }
-}
-
-// Function to discard email
-function discardEmail() {
-    if (confirm('Are you sure you want to discard this email?')) {
+// Function to clear email response
+function clearEmailResponse() {
+    if (confirm('Are you sure you want to clear this email response?')) {
         // Clear CKEditor content
         if (window.editor) {
             window.editor.setData('');
         }
         
-        showToast('Email discarded', 'info');
+        showToast('Email response cleared', 'info');
     }
 }
 
@@ -1211,18 +1182,11 @@ document.addEventListener('DOMContentLoaded', function() {
         sendButton.addEventListener('click', sendEmailResponse);
     }
     
-    // Set up save draft button
-    const saveDraftButton = document.getElementById('save-draft-button');
-    if (saveDraftButton) {
-        saveDraftButton.removeAttribute('onclick');
-        saveDraftButton.addEventListener('click', saveEmailDraft);
-    }
-    
     // Set up discard button
-    const discardButton = document.getElementById('discard-button');
-    if (discardButton) {
-        discardButton.removeAttribute('onclick');
-        discardButton.addEventListener('click', discardEmail);
+    const clearButton = document.getElementById('clear-button');
+    if (clearButton) {
+        clearButton.removeAttribute('onclick');
+        clearButton.addEventListener('click', clearEmailResponse);
     }
     
     // Initialize CKEditor if the response editor element exists

@@ -112,19 +112,18 @@
                 </div>
                 
                 <div class="email-compose-actions">
-                    <div class="left-actions">
-                        <button id="send-button" class="primary-button" onclick="sendEmailResponse()">
-                            <span class="button-icon">📤</span> Send
-                        </button>
-                        <button id="save-draft-button" class="secondary-button" onclick="saveEmailDraft()">
-                            <span class="button-icon">💾</span> Save Draft
-                        </button>
-                    </div>
-                    <div class="right-actions">
-                        <button id="discard-button" class="danger-button" onclick="discardEmail()">
-                            <span class="button-icon">🗑️</span> Discard
-                        </button>
-                    </div>
+                    <button id="send-button" class="primary-button" onclick="sendEmailResponse()">
+                        <svg class="button-icon" viewBox="0 0 24 24" width="18" height="18">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"></path>
+                        </svg>
+                        Send
+                    </button>
+                    <button id="clear-button" class="clear-button" onclick="clearEmailResponse()">
+                        <svg class="button-icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"></path>
+                        </svg>
+                        Clear
+                    </button>
                 </div>
             </div>
         </div>

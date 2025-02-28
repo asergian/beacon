@@ -93,9 +93,11 @@ body {
 /* Header and Navigation */
 header {
     background-color: var(--header-bg);
-    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     color: var(--header-text);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     height: var(--header-height);
     display: flex;
     align-items: center;
@@ -139,10 +141,6 @@ header {
     align-items: center;
 }
 
-.header-nav li {
-    margin: 16px 0px;
-}
-
 .nav-link {
     color: var(--nav-link-color);
     text-decoration: none;
@@ -172,7 +170,7 @@ header {
     width: 100%;
     height: 3px;
     background-color: white;
-    box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
 }
 
 /* User Menu */
@@ -295,11 +293,12 @@ header {
 
 /* Main Container */
 .container {
-    flex: 1;
+    min-height: calc(100vh - var(--header-height) - var(--filters-height) - var(--footer-height));
     display: flex;
+    flex-direction: row;
+    gap: 1px;
+    height: auto;
     overflow: hidden;
-    margin-bottom: 0;
-    height: calc(100vh - var(--header-height) - var(--filters-height) - var(--footer-height));
 }
 
 /* Email List Column */
@@ -310,13 +309,15 @@ header {
     background-color: var(--card-bg);
     border-right: 1px solid var(--email-item-border);
     padding: 10px;
-    overflow-y: scroll;
+    overflow-y: auto;
+    height: calc(100vh - var(--header-height) - var(--filters-height) - var(--footer-height));
 }
 
 .email-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    margin-bottom: 22px;
 }
 
 .email-item {
@@ -466,7 +467,8 @@ header {
     min-width: 500px;
     padding: 16px;
     background-color: var(--bg-color);
-    overflow-y: scroll;
+    overflow-y: auto;
+    height: calc(100vh - var(--header-height) - var(--filters-height) - var(--footer-height));
     border-left: 1px solid var(--email-item-border);
     box-shadow: -4px 0 10px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
@@ -681,7 +683,7 @@ header {
 #email-body iframe {
     width: 100%;
     border: none;
-    min-height: 300px;
+    min-height: 200px;
     background: #ffffff;  /* Always keep white background for email content */
     overflow: hidden;
     scrollbar-width: none; /* Firefox */
@@ -721,6 +723,7 @@ header {
     padding: 1.5rem;
     margin-top: 2rem;
     border: 1px solid var(--input-border);
+    margin-bottom: 35px;
 }
 
 .email-compose-header {
@@ -953,22 +956,12 @@ header {
     background-color: #0056b3;
 }
 
-.btn-secondary {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    color: #212529;
-}
-
-.btn-secondary:hover {
-    background-color: #e2e6ea;
-}
-
-.btn-danger {
+.btn-clear {
     background-color: #dc3545;
     color: white;
 }
 
-.btn-danger:hover {
+.btn-clear:hover {
     background-color: #c82333;
 }
 
@@ -1339,17 +1332,18 @@ header {
 
 /* Loading Bar and Text */
 .loading-bar {
-    height: 3px;
-    width: 100%;
-    background: linear-gradient(90deg, var(--header-bg) 0%, var(--header-hover) 100%);
     position: fixed;
-    top: 0;
+    top: calc(var(--header-height));
     left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--accent-color);
     transform: scaleX(0);
     transform-origin: left;
     opacity: 0;
-    transition: transform 0.3s ease, opacity 0.2s ease;
-    z-index: 1000;
+    transition: opacity 0.2s ease;
+    z-index: 999;
+    box-shadow: 0 0 10px rgba(79, 209, 197, 0.5);
 }
 
 .loading-bar.visible {
@@ -1357,38 +1351,17 @@ header {
     animation: loading 2s infinite ease-in-out;
 }
 
-.loading-text {
-    position: fixed;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 6px 16px;
-    border-radius: 0 0 6px 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    z-index: 1001;  /* Above the loading bar */
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.loading-text.visible {
-    opacity: 1;
-}
-
-.loading-text.stage-change {
-    animation: fadeInOut 0.3s ease;
-}
-
 @keyframes loading {
     0% {
         transform: scaleX(0);
+        transform-origin: left;
     }
     50% {
         transform: scaleX(1);
+    }
+    51% {
+        transform: scaleX(1);
+        transform-origin: right;
     }
     100% {
         transform: scaleX(0);
@@ -1396,34 +1369,38 @@ header {
     }
 }
 
-@keyframes fadeInOut {
-    0% {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-    50% {
-        opacity: 0;
-        transform: translate(-50%, -10px);
-    }
-    51% {
-        transform: translate(-50%, 10px);
-    }
-    100% {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
+.loading-text {
+    position: fixed;
+    top: calc(var(--header-height) + 0.5rem);
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--accent-color);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 999;
+    box-shadow: 0 2px 8px rgba(79, 209, 197, 0.3);
+}
+
+.loading-text.visible {
+    opacity: 1;
 }
 
 /* Dark theme loading states */
 [data-theme="dark"] .loading-bar {
-    background: linear-gradient(90deg, var(--accent-color) 0%, var(--header-hover) 100%);
-    box-shadow: 0 0 10px rgba(79, 209, 197, 0.3);
+    background: var(--accent-color);
+    box-shadow: 0 0 15px rgba(79, 209, 197, 0.4);
 }
 
 [data-theme="dark"] .loading-text {
-    background: rgba(0, 0, 0, 0.85);
-    color: #4FD1C5;  /* Using the teal accent color for better visibility */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    background: var(--accent-color);
+    color: #121212;
+    font-weight: 600;
+    box-shadow: 0 2px 12px rgba(79, 209, 197, 0.4);
 }
 
 /* Remove error message styles */
@@ -1674,194 +1651,109 @@ footer {
 /* Email action buttons */
 .email-compose-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    justify-content: flex-start;
+    align-items: flex-start;
     margin-top: 1.5rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--input-border);
-}
-
-.left-actions, .right-actions {
-    display: flex;
     gap: 0.75rem;
-    align-items: center;
 }
 
 /* Button styles */
-.primary-button, .secondary-button, .danger-button {
+.primary-button, .clear-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.625rem;
-    padding: 0.625rem 1rem;
-    border-radius: 0.5rem;
-    font-weight: 500;
+    gap: 0.75rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.625rem;
+    font-weight: 600;
     font-size: 0.875rem;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid transparent;
-    min-width: 100px;
-    height: 38px;
+    border: none;
+    min-width: 120px;
+    height: 42px;
     white-space: nowrap;
+    position: relative;
+    overflow: hidden;
 }
 
 .primary-button {
-    background: var(--header-bg);
+    background: linear-gradient(135deg, #4FD1C5 0%, #38B2AC 100%);
     color: white;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    border: 1px solid transparent;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(79, 209, 197, 0.2), 0 4px 8px rgba(79, 209, 197, 0.1);
 }
 
 .primary-button:hover {
-    background: #00837D; /* Slightly darker than var(--header-bg) */
     transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(0, 111, 106, 0.3);
+    box-shadow: 0 4px 8px rgba(79, 209, 197, 0.3), 0 8px 16px rgba(79, 209, 197, 0.1);
+    filter: brightness(1.05);
 }
 
 .primary-button:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    background: var(--header-bg);
-    opacity: 0.9;
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(79, 209, 197, 0.2);
+    filter: brightness(0.95);
 }
 
-.primary-button::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 5px;
-    height: 5px;
-    background: rgba(255, 255, 255, 0.5);  /* Light ripple for dark button */
-    opacity: 0;
-    border-radius: 100%;
-    transform: scale(1, 1) translate(-50%);
-    transform-origin: 50% 50%;
+.clear-button {
+    background: transparent;
+    color: #666;
+    border: 2px solid #ddd;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.primary-button:active::after {
-    animation: ripple 0.6s ease-out;
-}
-
-@keyframes ripple {
-    0% {
-        transform: scale(0, 0);
-        opacity: 0.5;
-    }
-    100% {
-        transform: scale(20, 20);
-        opacity: 0;
-    }
-}
-
-.secondary-button {
-    background: var(--input-bg);
-    color: var(--text-color);
-    border: 1px solid var(--input-border);
-}
-
-.secondary-button:hover {
-    background: var(--email-item-hover);
-    border-color: var(--text-color);
+.clear-button:hover {
+    background: #f5f5f5;
+    border-color: #ccc;
+    color: #444;
     transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.secondary-button:active {
-    transform: translateY(0);
-}
-
-.danger-button {
-    background: var(--input-bg);
-    color: #dc2626;
-    border: 1px solid #dc2626;
-}
-
-.danger-button:hover {
-    background: #dc2626;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(220, 38, 38, 0.2);
-}
-
-.danger-button:active {
-    transform: translateY(0);
+.clear-button:active {
+    transform: translateY(1px);
+    background: #eeeeee;
     box-shadow: none;
 }
 
 .button-icon {
-    font-size: 1rem;
-    line-height: 1;
+    font-size: 1.125rem;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
 }
 
-/* Dark theme button overrides */
+/* Dark theme button styles */
 [data-theme="dark"] .primary-button {
-    background: #4FD1C5;  /* Using the teal accent color for better visibility */
-    color: #1a202c;  /* Dark text for contrast */
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    border: 1px solid transparent;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.2s ease;
+    background: linear-gradient(135deg, #4FD1C5 0%, #319795 100%);
+    box-shadow: 0 2px 4px rgba(79, 209, 197, 0.1), 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] .primary-button:hover {
-    background: #38B2AC;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 6px rgba(79, 209, 197, 0.3);
+    box-shadow: 0 4px 8px rgba(79, 209, 197, 0.2), 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] .primary-button:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    background: #4FD1C5;
-    opacity: 0.9;
+    box-shadow: 0 1px 2px rgba(79, 209, 197, 0.1);
 }
 
-[data-theme="dark"] .primary-button::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 5px;
-    height: 5px;
-    background: rgba(26, 32, 44, 0.3);  /* Dark ripple for light button */
-    opacity: 0;
-    border-radius: 100%;
-    transform: scale(1, 1) translate(-50%);
-    transform-origin: 50% 50%;
-}
-
-[data-theme="dark"] .primary-button:active::after {
-    animation: ripple 0.6s ease-out;
-}
-
-[data-theme="dark"] .secondary-button {
-    background: var(--input-bg);
-    color: var(--text-color);
-    border-color: #4a5568;
-}
-
-[data-theme="dark"] .secondary-button:hover {
-    background: #2d3748;
-    border-color: #4FD1C5;
-}
-
-[data-theme="dark"] .danger-button {
+[data-theme="dark"] .clear-button {
     background: transparent;
-    color: #f87171;
-    border-color: #f87171;
+    color: #aaa;
+    border: 2px solid #444;
 }
 
-[data-theme="dark"] .danger-button:hover {
-    background: #dc2626;
-    color: white;
-    border-color: #dc2626;
-    box-shadow: 0 4px 6px rgba(248, 113, 113, 0.2);
+[data-theme="dark"] .clear-button:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #555;
+    color: #eee;
+}
+
+[data-theme="dark"] .clear-button:active {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #666;
 }
 
 /* Toast Notifications */
@@ -1957,4 +1849,19 @@ footer {
 
 [data-theme="dark"] .toast.warning {
     background-color: #d97706;
+}
+
+.responded-badge {
+    background-color: #4FD1C5;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 16px;
+    font-size: 0.75em;
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+[data-theme="dark"] .responded-badge {
+    background-color: #2C7A7B;
+    color: #E6FFFA;
 }
