@@ -24,6 +24,7 @@ import os
 from datetime import timedelta
 from asgiref.wsgi import WsgiToAsgi
 import multiprocessing
+from datetime import datetime
 
 from .config import Config, configure_logging
 from .models import db, User
@@ -34,10 +35,13 @@ from .email.core.email_parsing import EmailParser
 from .email.models.analysis_settings import ProcessingConfig
 from .email.analyzers.semantic_analyzer import SemanticAnalyzer
 from .email.analyzers.content_analyzer import ContentAnalyzer
+from .email.analyzers.content_analyzer_subprocess import ContentAnalyzerSubprocess
 from .email.utils.priority_scoring import PriorityScorer
 from .email.pipeline.pipeline import create_pipeline
 from .email.core.gmail_client import GmailClient
+from .email.core.gmail_client_subprocess import GmailClientSubprocess
 from .email.storage.cache import RedisEmailCache
+from .utils.memory_utils import MemoryProfilingMiddleware
 
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
@@ -114,12 +118,15 @@ def init_openai_client(app):
 
 def create_app(config_class: Optional[object] = Config) -> Flask:
     """Create and configure the Flask application."""
+    # Configure logging first
+    configure_logging()
+    logger = logging.getLogger(__name__)
+
     flask_app = Flask(__name__)
-    
+
     # Get worker information
     worker_id = os.environ.get('HYPERCORN_WORKER_ID')
     is_worker = bool(worker_id)
-    logger = logging.getLogger(__name__)
     
     # Basic setup (no logging needed)
     flask_app.logger.handlers.clear()
@@ -128,7 +135,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     flask_app.config['SESSION_TYPE'] = 'filesystem'
     flask_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     flask_app.config['SESSION_PERMANENT'] = True
-    
+
     # Trust proxy headers for HTTPS detection
     if os.environ.get('RENDER'):
         flask_app.config['PREFERRED_URL_SCHEME'] = 'https'
@@ -163,7 +170,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         nlp_model = create_nlp_model()
         
         # Initialize analyzers
-        text_analyzer = ContentAnalyzer(nlp_model)
+        text_analyzer = ContentAnalyzerSubprocess()
         llm_analyzer = SemanticAnalyzer()
         
         # Create priority calculator
@@ -174,7 +181,8 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         priority_calculator.set_priority_threshold(50)
 
         # Create Gmail client and parser
-        gmail_client = GmailClient()
+        # Use the subprocess version for better memory isolation
+        gmail_client = GmailClientSubprocess()
         parser = EmailParser()
         
         # Create and store email processor
@@ -304,6 +312,11 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     # Create and store the ASGI application globally
     global application
     application = WsgiToAsgi(flask_app)
+    
+    # Add memory profiling middleware
+    if os.environ.get('PROFILE_MEMORY'):
+        flask_app.wsgi_app = MemoryProfilingMiddleware(flask_app.wsgi_app)
+        logger.info("Memory profiling enabled")
     
     return flask_app
 

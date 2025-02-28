@@ -12,3 +12,4 @@ playground/*
 __pycache__/
 .coverage
 beacon-gmail-client.json
+.cursor/

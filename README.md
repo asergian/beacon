@@ -60,6 +60,23 @@ Once the application is running, you can access it in your web browser at `http:
 - **NLP Integration**: Utilizes spaCy for natural language processing to enhance email understanding.
 - **Priority Calculation**: Automatically calculates email priorities based on urgency and sender importance.
 - **Error Handling**: Robust error handling for email fetching and processing.
+- **Memory Management**: Implements subprocess isolation for NLP tasks to optimize memory usage in resource-constrained environments.
+
+### Memory Management Strategy
+
+This application uses a subprocess-based approach for memory-intensive NLP operations:
+
+1. **Process Isolation**: SpaCy models are loaded in separate processes to prevent memory leaks and fragmentation.
+2. **Memory Optimization**: NLP components are selectively enabled to minimize the memory footprint.
+3. **Garbage Collection**: Explicit memory cleanup is performed after processing.
+4. **Resource Monitoring**: Memory usage is logged at various stages to track consumption patterns.
+
+To switch between memory management strategies:
+
+- Standard in-process analyzer: `ContentAnalyzer` (uses more memory but slightly faster)
+- Subprocess-based analyzer: `ContentAnalyzerSubprocess` (better memory isolation, recommended for production)
+
+The default configuration uses the subprocess approach to maintain stable memory usage, which is especially important for servers with limited resources.
 
 ## Contributing
 

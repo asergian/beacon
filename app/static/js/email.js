@@ -10,6 +10,7 @@ let eventSource = null;
 let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 3;
 const RECONNECT_DELAY = 2000; // 2 seconds
+const MAX_CACHED_EMAILS = 500; // Maximum number of emails to keep in memory
 
 // Update config with email-specific defaults
 config.days_back = 1;  // Increased default to show more emails
@@ -35,15 +36,54 @@ async function fetchUserSettings() {
     }
 }
 
+// Function to cleanup old emails
+function cleanupOldEmails() {
+    if (emailMap.size <= MAX_CACHED_EMAILS) return;
+    
+    console.log(`Cleaning up old emails (current size: ${emailMap.size})`);
+    
+    // Convert to array for sorting
+    const emailArray = Array.from(emailMap.values());
+    
+    // Sort by date, newest first
+    emailArray.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Keep only the newest MAX_CACHED_EMAILS
+    const emailsToKeep = emailArray.slice(0, MAX_CACHED_EMAILS);
+    
+    // Clear the map and add back only the emails we want to keep
+    emailMap.clear();
+    emailsToKeep.forEach(email => emailMap.set(email.id, email));
+    
+    // Clear references to removed emails
+    emails = emailsToKeep;
+    
+    console.log(`Cleanup complete (new size: ${emailMap.size})`);
+    
+    // Force garbage collection if available
+    if (window.gc) window.gc();
+}
+
 // Function to clear all email state
 function clearEmailState() {
     console.log('Clearing email state');
-    emails = [];
+    
+    // Clear email data
+    emails.length = 0;
     emailMap.clear();
     selectedEmailId = null;
     hasInitialized = false;
-    clearEmailList();
     
+    // Clear UI
+    clearEmailList();
+    clearEmailDetails();
+    
+    // Force garbage collection if available
+    if (window.gc) window.gc();
+}
+
+// Function to clear email details
+function clearEmailDetails() {
     const detailsElements = {
         subject: document.getElementById('details-subject'),
         sender: document.getElementById('details-sender'),
@@ -62,6 +102,13 @@ function clearEmailState() {
             if (element.style.display !== undefined) element.style.display = 'none';
         }
     });
+    
+    // Cleanup any existing iframe
+    if (currentIframe) {
+        currentIframe.cleanup?.();
+        currentIframe.remove();
+        currentIframe = null;
+    }
 }
 
 // Expose the clear function globally for logout
@@ -169,11 +216,48 @@ async function setupSSEConnection() {
             }
         });
         
+        // Add listener for individual email events
+        eventSource.addEventListener('email', (event) => {
+            const data = JSON.parse(event.data);
+            console.log(`Received individual email: ${data.id}`);
+            
+            // Add new email to map
+            emailMap.set(data.id, { ...data, isAnalyzed: true });
+            
+            // Cleanup old emails if needed
+            cleanupOldEmails();
+            
+            // Update UI
+            updateEmailList();
+            
+            // Load first email if none selected yet
+            if (!selectedEmailId) {
+                loadFirstEmail();
+            }
+            
+            const emailList = document.querySelector('.email-list');
+            if (emailList) {
+                emailList.style.display = 'block';
+            }
+            
+            const emailDetails = document.getElementById('email-details');
+            if (emailDetails) {
+                emailDetails.style.display = 'block';
+            }
+        });
+        
         eventSource.addEventListener('batch', (event) => {
             const data = JSON.parse(event.data);
             if (data.emails && data.emails.length > 0) {
                 console.log(`Received batch of ${data.emails.length} analyzed emails`);
+                
+                // Add new emails to map
                 data.emails.forEach(email => emailMap.set(email.id, { ...email, isAnalyzed: true }));
+                
+                // Cleanup old emails if needed
+                cleanupOldEmails();
+                
+                // Update UI
                 updateEmailList();
                 
                 // Load first email if none selected yet
@@ -190,6 +274,38 @@ async function setupSSEConnection() {
                 if (emailDetails) {
                     emailDetails.style.display = 'block';
                 }
+            }
+        });
+        
+        // Add listener for complete event
+        eventSource.addEventListener('complete', (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Processing complete:', data);
+            
+            // Display final processing stats
+            const processed = data.processed || 0;
+            const cached = data.cached || 0;
+            const total = data.total || 0;
+            
+            // Show the completion message
+            showLoadingBar(`Processing complete. Total emails: ${total} (${cached} cached, ${processed} new)`);
+            setTimeout(() => {
+                hideLoadingBar();
+            }, 3000);
+            
+            // Ensure email list is visible
+            const emailList = document.querySelector('.email-list');
+            if (emailList) {
+                emailList.style.display = 'block';
+            }
+            
+            // Mark initialization as complete
+            hasInitialized = true;
+            
+            // Close SSE connection
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
             }
         });
         
@@ -292,7 +408,9 @@ async function setupSSEConnection() {
                 currentTimeout = setTimeout(() => {
                     // Only timeout if we haven't received any data
                     if (!hasResolved) {
-                        eventSource.close();
+                        if (eventSource) {
+                            eventSource.close();
+                        }
                         reject(new Error(timeouts[index].message));
                     }
                 }, timeouts[index].time);
@@ -714,6 +832,7 @@ function updateLoadingText(stage) {
     
     let message = '';
     
+    // If stage is a pre-defined key, use mapped message
     switch(stage) {
         case 'fetch':
             message = 'Fetching emails...';
@@ -728,6 +847,7 @@ function updateLoadingText(stage) {
             message = 'Loading cached emails...';
             break;
         default:
+            // If it's not a pre-defined stage, use the text directly
             message = 'Loading...';
     }
     

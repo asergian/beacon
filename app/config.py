@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 import logging
 import logging.config
 
+# Load environment variables immediately
+load_dotenv()
+
 class SafeStreamHandler(logging.StreamHandler):
     """A StreamHandler that safely handles string encoding."""
     def emit(self, record):
@@ -25,9 +28,6 @@ class Config:
     
     def __init__(self):
         """Initialize configuration with environment variables."""
-        # Load environment variables
-        load_dotenv()
-        
         # IMAP Configuration
         self.IMAP_SERVER = os.environ.get('IMAP_SERVER') or 'imap.gmail.com'
         self.EMAIL = os.environ.get('EMAIL') or 'your-email@example.com'
@@ -72,6 +72,9 @@ class Config:
 
 def configure_logging():
     """Configure application-wide logging."""
+    # Get the logging level from environment
+    log_level = os.environ.get('LOGGING_LEVEL', 'ERROR').upper()
+    
     logging.config.dictConfig({
         'version': 1,
         'disable_existing_loggers': False,
@@ -81,19 +84,19 @@ def configure_logging():
                 'datefmt': '%H:%M:%S'
             },
             'operation': {
-                'format': '%(asctime)s | %(name)-32s | %(levelname)-8s\n%(message)s',
+                'format': '%(asctime)s | %(name)-32s | %(levelname)-8s | %(message)s',
                 'datefmt': '%H:%M:%S'
             }
         },
         'handlers': {
             'console': {
-                'level': 'INFO',
+                'level': log_level,  # Use environment-specified level
                 'formatter': 'standard',
                 'class': 'app.config.SafeStreamHandler',
                 'stream': 'ext://sys.stdout',
             },
             'operation': {
-                'level': 'INFO',
+                'level': log_level,  # Use environment-specified level
                 'formatter': 'operation',
                 'class': 'app.config.SafeStreamHandler',
                 'stream': 'ext://sys.stdout',
@@ -102,32 +105,37 @@ def configure_logging():
         'loggers': {
             '': {  # Root logger
                 'handlers': ['console'],
-                'level': 'INFO',
+                'level': log_level,  # Use environment-specified level
                 'propagate': False
             },
             'app.email.pipeline': {
                 'handlers': ['operation'],
-                'level': 'INFO',
+                'level': log_level,  # Use environment-specified level
                 'propagate': False
             },
             'app.email.storage.cache': {
                 'handlers': ['console'],
-                'level': 'INFO',
+                'level': log_level,  # Use environment-specified level
                 'propagate': False
             },
             'app.email.core': {
                 'handlers': ['console'],
-                'level': 'INFO',
+                'level': log_level,  # Use environment-specified level
                 'propagate': False
             },
             'app.email.analyzers': {
                 'handlers': ['console'],
-                'level': 'INFO',
+                'level': log_level,  # Use environment-specified level
                 'propagate': False
             },
             'app.models': {
                 'handlers': ['console'],
-                'level': 'INFO',
+                'level': log_level,  # Use environment-specified level
+                'propagate': False
+            },
+            'app.email.core.gmail_client': {
+                'handlers': ['console'],
+                'level': log_level,  # Use environment-specified level
                 'propagate': False
             }
         }
