@@ -24,6 +24,7 @@
     --footer-padding: 1rem;
     --header-height: 64px;  /* Updated header height */
     --filters-height: 69px; /* Adjust based on your filters row's actual height */
+    --accent-color: #4FD1C5; /* Added accent color for light theme */
 }
 
 [data-theme="dark"] {
