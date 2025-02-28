@@ -341,10 +341,14 @@ class GmailClient:
             utc_date = (local_midnight - timedelta(days=1)).astimezone(timezone.utc)
             query = f'after:{utc_date.strftime("%Y/%m/%d")}'
             
+            # Exclude emails from the SENT folder
+            query = f'{query} -in:sent'
+            
             self.logger.info(
                 "Fetching emails\n"
                 f"    Days Back: {days_back}\n"
-                f"    Start Date: {local_midnight.strftime('%Y-%m-%d %H:%M:%S %Z')}"
+                f"    Start Date: {local_midnight.strftime('%Y-%m-%d %H:%M:%S %Z')}\n"
+                f"    Query: {query}"
             )
             
             log_memory_usage(self.logger, "Before Gmail API Fetch")

@@ -133,6 +133,18 @@ class EmailPipeline:
                 
                 stats["emails_fetched"] = len(raw_emails)
                 
+                # Get the IDs of emails currently in Gmail for filtering out deleted emails from cache
+                gmail_email_ids = {email.get('id') for email in raw_emails}
+                
+                # Filter cached emails to keep only those still in Gmail
+                if cached_emails:
+                    original_cached_count = len(cached_emails)
+                    cached_emails = [email for email in cached_emails if email.id in gmail_email_ids]
+                    filtered_out_count = original_cached_count - len(cached_emails)
+                    if filtered_out_count > 0:
+                        self.logger.info(f"Filtered out {filtered_out_count} cached emails that were deleted from Gmail")
+                        stats["deleted_emails_filtered"] = filtered_out_count
+                
                 # Filter out already cached emails
                 new_raw_emails = [email for email in raw_emails if email.get('id') not in [email.id for email in cached_emails]]
                 stats["new_emails"] = len(new_raw_emails)
@@ -453,6 +465,26 @@ class EmailPipeline:
                 
                 # Log memory after Gmail fetch
                 log_memory_usage(self.logger, "After Streaming Gmail Fetch")
+                
+                # Get the IDs of emails currently in Gmail for filtering out deleted emails from cache
+                gmail_email_ids = {email.get('id') for email in raw_emails}
+                
+                # Filter cached emails to keep only those still in Gmail
+                if len(cached_ids) > 0:
+                    original_cached_count = len(cached_emails)
+                    cached_emails = [email for email in cached_emails if email.id in gmail_email_ids]
+                    filtered_out_count = original_cached_count - len(cached_emails)
+                    cached_ids = {email.id for email in cached_emails}  # Update cached_ids
+                    
+                    if filtered_out_count > 0:
+                        self.logger.info(f"Filtered out {filtered_out_count} cached emails that were deleted from Gmail")
+                        stats["deleted_emails_filtered"] = filtered_out_count
+                        
+                        # If we've filtered some emails, re-send the updated cached emails
+                        yield {
+                            'type': 'cached',
+                            'data': {'emails': [email.dict() for email in cached_emails]}
+                        }
                 
                 # Filter out already cached emails
                 new_raw_emails = [email for email in raw_emails if email.get('id') not in cached_ids]

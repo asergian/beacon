@@ -747,32 +747,54 @@ function loadEmailDetails(emailId) {
         }
         
         const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'width: 100%; border: none; min-height: 100px;';
+        iframe.className = 'email-body-frame';
+        iframe.style.width = '100%';
+        iframe.style.border = 'none';
+        iframe.style.overflow = 'hidden';
+        iframe.scrolling = 'no'; // Disable scrolling
+        iframe.height = '500px'; // Initial height, will be adjusted
+        
+        // Replace the old iframe if it exists
+        const oldIframe = detailsElements.emailBody.querySelector('iframe');
+        if (oldIframe) {
+            if (oldIframe.cleanup) {
+                oldIframe.cleanup();
+            }
+            detailsElements.emailBody.removeChild(oldIframe);
+        }
+        
+        // Append the new iframe
         detailsElements.emailBody.appendChild(iframe);
         
-        const secureBody = email.body.replace(
-            /(http:\/\/[^"']*)/gi,
-            (match) => match.replace('http://', 'https://')
-        );
-        
+        // Get the document inside the iframe
         const doc = iframe.contentWindow.document;
+        
+        // Create more secure body content by replacing http:// with https://
+        // This ensures all resources are loaded securely to prevent mixed content warnings
+        let secureBody = email.body.replace(/http:\/\//g, 'https://');
+        
+        // Write the HTML template to the iframe
+        // We use a complete HTML document with proper meta tags and styles
+        // to ensure consistent rendering and proper security policies
         doc.open();
         doc.write(`
-            <html>
+            <!DOCTYPE html>
+            <html lang="en">
                 <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <base target="_blank">
                     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
                     <style>
                         body {
                             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                            margin: 0;
-                            padding: 16px;
-                            color: #333;
-                            overflow: hidden;
+                            line-height: 1.5;
+                            background-color: white;
                         }
-                        img { max-width: 100%; height: auto; }
-                        a { color: #0366d6; }
-                        a:visited { color: #6f42c1; }
+                        pre, code {
+                            white-space: pre-wrap;
+                            overflow-wrap: break-word;
+                        }
                     </style>
                 </head>
                 <body>${secureBody}</body>
@@ -780,25 +802,80 @@ function loadEmailDetails(emailId) {
         `);
         doc.close();
         
-        const resizeObserver = new ResizeObserver(() => {
-            if (resizeTimeout) {
-                clearTimeout(resizeTimeout);
+        // Keep track of whether we've finalized height
+        let heightFinalized = false;
+        
+        // Function to set iframe height once
+        const setFinalHeight = () => {
+            if (heightFinalized) return;
+            
+            const bodyEl = iframe.contentWindow.document.body;
+            const docEl = iframe.contentWindow.document.documentElement;
+            
+            // Get the maximum height considering all content
+            const finalHeight = Math.max(
+                bodyEl.scrollHeight,
+                bodyEl.offsetHeight,
+                docEl.clientHeight,
+                docEl.scrollHeight,
+                docEl.offsetHeight
+            );
+            
+            // Only set height if it's reasonable
+            if (finalHeight > 100) {
+                iframe.style.height = (finalHeight + 50) + 'px'; // Add more padding to prevent scrollbars
+                heightFinalized = true;
             }
-            resizeTimeout = setTimeout(() => {
-                const newHeight = iframe.contentWindow.document.body.scrollHeight;
-                if (newHeight > 100) {
-                    iframe.style.height = newHeight + 'px';
-                }
-            }, 100);
-        });
+        };
         
-        resizeObserver.observe(iframe.contentWindow.document.body);
+        // Initial height setting
+        setTimeout(setFinalHeight, 100);
+        
+        // Setup for handling images
+        iframe.onload = () => {
+            const images = iframe.contentWindow.document.querySelectorAll('img');
+            
+            if (images.length > 0) {
+                let loadedImages = 0;
+                const totalImages = images.length;
+                
+                // Function to check if all images are loaded
+                const checkAllImagesLoaded = () => {
+                    loadedImages++;
+                    if (loadedImages >= totalImages) {
+                        // All images loaded, set final height
+                        setTimeout(setFinalHeight, 200);
+                    }
+                };
+                
+                // Set up load handlers for each image
+                images.forEach(img => {
+                    if (img.complete) {
+                        checkAllImagesLoaded();
+                    } else {
+                        img.onload = checkAllImagesLoaded;
+                        img.onerror = checkAllImagesLoaded;
+                    }
+                });
+                
+                // Safety timeout in case some images never load
+                setTimeout(setFinalHeight, 2000);
+            } else {
+                // No images, set height immediately
+                setTimeout(setFinalHeight, 100);
+            }
+        };
+        
+        // Keep a reference to the current iframe for cleanup
         currentIframe = iframe;
-        
-        iframe.cleanup = () => {
-            resizeObserver.disconnect();
-            if (resizeTimeout) {
-                clearTimeout(resizeTimeout);
+        currentIframe.cleanup = () => {
+            // Clear any event listeners if needed
+            if (iframe.contentWindow) {
+                const images = iframe.contentWindow.document.querySelectorAll('img');
+                images.forEach(img => {
+                    img.onload = null;
+                    img.onerror = null;
+                });
             }
         };
     }

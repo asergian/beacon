@@ -679,6 +679,12 @@ header {
     border: none;
     min-height: 300px;
     background: #ffffff;  /* Always keep white background for email content */
+    overflow: hidden;
+    scrollbar-width: none; /* Firefox */
+}
+
+#email-body iframe::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
 }
 
 /* Dark theme email body container */

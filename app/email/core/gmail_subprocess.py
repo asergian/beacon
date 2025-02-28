@@ -1,8 +1,20 @@
-"""Gmail API subprocess handler for memory isolation.
+"""Gmail subprocess for memory-isolated email processing.
 
-This module provides a self-contained script that can be run in a separate
-process to handle Gmail API operations, particularly fetching and decoding
-emails, which can be memory-intensive operations.
+This module provides a self-contained process for fetching and processing emails from 
+the Gmail API. It's designed to run as a separate process to isolate memory-intensive
+operations from the main application process. The subprocess handles all raw email
+data processing and returns only the parsed metadata and content to the main process,
+significantly reducing memory usage in the parent process.
+
+Key features:
+- Complete Gmail API interaction
+- Raw email parsing and content extraction
+- Memory isolation from main process
+- Efficient data filtering and processing
+
+Typical usage:
+  python gmail_subprocess.py --credentials @/path/to/creds --user_email user@gmail.com 
+                            --query "after:2023/01/01" --days_back 7
 """
 
 import argparse
@@ -21,6 +33,12 @@ from email import message_from_bytes
 from email.utils import parsedate_to_datetime
 from typing import Dict, List, Optional, Any
 from functools import lru_cache
+import email.header
+import quopri
+import re
+import email.utils
+import platform
+import socket
 
 # Set more aggressive garbage collection thresholds
 # This helps reclaim memory more frequently
@@ -49,12 +67,12 @@ log_memory_usage(logger, "Subprocess Start")
 # Import Google API libraries - These are heavy imports
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from googleapiclient.http import HttpRequest
-import googleapiclient.discovery_cache
-from googleapiclient.http import HttpError
 from googleapiclient.discovery_cache.base import Cache
 import httplib2
 from google.auth.transport.requests import Request as AuthRequest
+
+# Set lower connection timeout for faster failure/retry
+socket.setdefaulttimeout(10)  # 10 seconds instead of default 60
 
 class MemoryCache(Cache):
     """In-memory cache for Gmail API discovery document."""
@@ -96,7 +114,10 @@ async def create_gmail_service(creds_data: Dict) -> any:
             credentials.refresh(AuthRequest())
         
         # Build the service
-        service = build('gmail', 'v1', credentials=credentials, cache=MemoryCache())
+        service = build('gmail', 'v1', 
+                        credentials=credentials,
+                        static_discovery=True,
+                        cache=MemoryCache())
         return service
     
     except Exception as e:
@@ -104,11 +125,124 @@ async def create_gmail_service(creds_data: Dict) -> any:
         raise GmailAPIError(f"Failed to create Gmail service: {e}")
 
 
-async def fetch_and_process_emails(service, user_email, query, include_spam_trash=False):
+def decode_header(header_text):
+    """
+    Decodes email headers that may contain encoded words (RFC 2047).
+    
+    This function implements a multi-stage approach to header decoding:
+    1. Tries email.header.make_header for standard decoding
+    2. Falls back to part-by-part decoding with multiple charsets
+    3. Attempts direct Base64/QuotedPrintable decoding as last resort
+    
+    Args:
+        header_text (str): The header text to decode
+        
+    Returns:
+        str: The decoded header text with all encoding artifacts removed
+    """
+    if not header_text:
+        return ""
+        
+    try:
+        # Primary approach: Use email.header.make_header
+        decoded_pairs = email.header.decode_header(header_text)
+        decoded = str(email.header.make_header(decoded_pairs))
+        
+        # Check if we still have MIME encoding patterns
+        if not '=?' in decoded and not '?=' in decoded:
+            return decoded
+        
+        # Secondary approach: Part-by-part decoding
+        result_parts = []
+        for part, charset in decoded_pairs:
+            if isinstance(part, bytes):
+                try:
+                    # Try with the specified charset first
+                    if charset:
+                        result_parts.append(part.decode(charset, errors='replace'))
+                    else:
+                        # Try common encodings in sequence
+                        for enc in ['utf-8', 'latin-1', 'iso-8859-1', 'cp1252']:
+                            try:
+                                decoded_part = part.decode(enc)
+                                result_parts.append(decoded_part)
+                                break
+                            except UnicodeDecodeError:
+                                continue
+                        else:
+                            # If all charset attempts fail, use replace mode
+                            result_parts.append(part.decode('utf-8', errors='replace'))
+                except Exception:
+                    # Last resort fallback
+                    result_parts.append(part.decode('utf-8', errors='ignore'))
+            else:
+                # String parts can be used directly
+                result_parts.append(str(part))
+        
+        decoded = ' '.join(result_parts).strip()
+        if not '=?' in decoded and not '?=' in decoded:
+            return decoded
+            
+        # Tertiary approach: Direct Base64/QuotedPrintable decoding
+        if '=?' in header_text and '?=' in header_text:
+            # Pattern to match MIME encoded words
+            pattern = r'=\?([^?]*)\?([BQ])\?([^?]*)\?='
+            
+            def decode_match(match):
+                charset, encoding, encoded_text = match.groups()
+                if encoding.upper() == 'B':
+                    # Base64 encoding
+                    try:
+                        decoded_bytes = base64.b64decode(encoded_text)
+                        return decoded_bytes.decode(charset, errors='replace')
+                    except Exception:
+                        return match.group(0)
+                elif encoding.upper() == 'Q':
+                    # Quoted-Printable encoding
+                    try:
+                        # Convert _ to space first (part of Q encoding)
+                        text = encoded_text.replace('_', ' ')
+                        decoded_bytes = quopri.decodestring(text.encode('ascii', errors='replace'))
+                        return decoded_bytes.decode(charset, errors='replace')
+                    except Exception:
+                        return match.group(0)
+                return match.group(0)
+            
+            # Apply regex substitution to decode all encoded parts
+            decoded = re.sub(pattern, decode_match, header_text)
+            
+            # If we made any progress, return the result
+            if decoded != header_text:
+                return decoded
+    except Exception as e:
+        logger.debug(f"Header decoding failed completely: {e}")
+    
+    # Last resort, return the original
+    return header_text
+
+
+async def fetch_and_process_emails(service, user_email, query, include_spam_trash=False, cutoff_time=None):
     """Fetch and process emails from Gmail API.
     
     This function fetches emails from Gmail API, processes them to extract 
-    raw message data, and returns a list of processed emails.
+    necessary metadata and content, and returns only the parsed data (not raw messages).
+    It handles date filtering, attachment detection, and content extraction.
+    
+    Args:
+        service: Gmail API service object
+        user_email: Email address of the user
+        query: Gmail search query string
+        include_spam_trash: Whether to include emails from spam and trash
+        cutoff_time: Optional datetime to filter emails by date
+    
+    Returns:
+        list: List of processed email dictionaries containing metadata and content 
+              but NOT the raw message data
+              
+    Note:
+        This function explicitly avoids returning raw message data to reduce
+        memory usage in the calling process. All necessary content extraction
+        happens within this function.
     """
     global TOTAL_PROCESSED_BYTES, EMAILS_PROCESSED, MAX_EMAIL_SIZE
     
@@ -120,7 +254,8 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
         request = messages_resource.list(
             userId=user_email,
             q=query,
-            includeSpamTrash=include_spam_trash
+            includeSpamTrash=include_spam_trash,
+            maxResults=args.max_results  # Use command line argument
         )
         
         # Fetch all matching message IDs
@@ -146,11 +281,12 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
             return []
             
         # Process emails in smaller batches to limit memory usage
-        # Decrease batch size from 25 to 10 to reduce memory peaks
-        batch_size = 10
+        # Increase batch size from 10 to 25 emails for better throughput
+        batch_size = 25
         batches = [messages[i:i+batch_size] for i in range(0, len(messages), batch_size)]
         
         all_results = []
+        filtered_out = 0
         
         # Process each batch
         for batch_idx, batch in enumerate(batches):
@@ -158,12 +294,37 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
             batch_results = []
             batch_message_ids = {}
             
-            # Force garbage collection before processing batch content
-            gc.collect()
+            # Only do garbage collection after every 2 batches instead of every batch
+            if batch_idx % 2 == 0:
+                gc.collect()
+            
+            # Log memory status every 4th batch instead of every batch
+            if batch_idx % 4 == 0:
+                log_memory_usage(logger, f"Processing batch {batch_idx+1}/{len(batches)}")
+            else:
+                logger.debug(f"Processing batch {batch_idx+1}/{len(batches)}")
             
             def create_callback(msg_id):
-                """Create a callback function that captures the message ID through closure."""
+                """Creates a callback function for processing each email.
+                
+                Args:
+                    msg_id: The email ID to process
+                    
+                Returns:
+                    function: A callback function to handle the API response
+                """
                 def callback(request_id, response, exception):
+                    """Process a single email response from the Gmail API.
+                    
+                    This callback extracts metadata and content from the email without
+                    returning the raw message to the main process, which significantly
+                    reduces memory usage.
+                    
+                    Args:
+                        request_id: The ID of the batch request
+                        response: The Gmail API response
+                        exception: Exception if the request failed
+                    """
                     if exception:
                         logger.warning(f"Error fetching message {msg_id}: {exception}")
                         return
@@ -192,39 +353,127 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
                     # Parse email message - this is the most memory-intensive part
                     email_msg = message_from_bytes(raw_msg)
                     
-                    # Compress the raw message data for transfer
-                    compressed_data = gzip.compress(raw_msg, compresslevel=6)
-                    # Encode as base64 for JSON serialization and add prefix
-                    compressed_b64 = base64.b64encode(compressed_data).decode('utf-8')
-                    compressed_with_prefix = f"COMPRESSED:{compressed_b64}"
+                    # Extract date for filtering
+                    date_str = email_msg.get('date', '')
+                    email_date = None
+                    if date_str:
+                        try:
+                            email_date = parsedate_to_datetime(date_str)
+                            # Ensure date is in UTC for consistent comparison
+                            if email_date.tzinfo is None:
+                                email_date = email_date.replace(tzinfo=timezone.utc)
+                            else:
+                                email_date = email_date.astimezone(timezone.utc)
+                        except Exception as e:
+                            logger.warning(f"Failed to parse date '{date_str}': {e}")
                     
-                    # Log compression stats for the first few emails
-                    if EMAILS_PROCESSED <= 3:
-                        original_size = len(raw_msg)
-                        compressed_size = len(compressed_data)
-                        compression_ratio = (original_size - compressed_size) / original_size * 100 if original_size > 0 else 0
-                        logger.debug(
-                            f"Email {msg_id}: Original: {original_size/1024:.1f}KB, "
-                            f"Compressed: {compressed_size/1024:.1f}KB, Ratio: {compression_ratio:.1f}%"
-                        )
+                    # Apply time filtering if cutoff_time is provided
+                    if cutoff_time and email_date and email_date < cutoff_time:
+                        nonlocal filtered_out
+                        filtered_out += 1
+                        logger.debug(f"Filtering out email {msg_id} with date {email_date} (before {cutoff_time})")
+                        return
                     
-                    # Extract minimal headers - we'll do full parsing in the main process
-                    # to avoid duplicating the memory overhead
+                    # Extract headers with special handling for From field
                     headers = {
-                        'subject': email_msg.get('subject', ''),
-                        'from': email_msg.get('from', ''),
-                        'to': email_msg.get('to', ''),
-                        'date': email_msg.get('date', '')
+                        'subject': decode_header(email_msg.get('subject', '')),
+                        'to': decode_header(email_msg.get('to', '')),
+                        'date': date_str,
+                        'parsed_date': email_date.isoformat() if email_date else None
                     }
                     
-                    # Process and add to results - only keep essential fields
+                    # Special handling for From field which often has display name + email address
+                    from_header = email_msg.get('from', '')
+                    if from_header:
+                        # First try standard decoding
+                        decoded_from = decode_header(from_header)
+                        
+                        # If it still contains encoded parts, try special handling
+                        if '=?' in decoded_from and '?=' in decoded_from:
+                            try:
+                                # Parse into name and address
+                                name, addr = email.utils.parseaddr(from_header)
+                                
+                                # Decode just the name part
+                                decoded_name = decode_header(name)
+                                
+                                # Reconstruct the From header
+                                if addr:
+                                    if decoded_name:
+                                        headers['from'] = f"{decoded_name} <{addr}>"
+                                    else:
+                                        headers['from'] = addr
+                                else:
+                                    headers['from'] = decoded_from
+                            except Exception:
+                                # Fall back to the standard decoded version
+                                headers['from'] = decoded_from
+                        else:
+                            headers['from'] = decoded_from
+                    else:
+                        headers['from'] = ''
+                    
+                    # Extract plain text content and HTML content if available
+                    plain_text = ""
+                    html_content = ""
+                    has_attachments = False
+                    
+                    if email_msg.is_multipart():
+                        for part in email_msg.walk():
+                            content_type = part.get_content_type()
+                            content_disposition = str(part.get("Content-Disposition"))
+                            
+                            # Check for attachments
+                            if "attachment" in content_disposition:
+                                has_attachments = True
+                                continue
+                                
+                            # Get the payload
+                            try:
+                                payload = part.get_payload(decode=True)
+                                if payload:
+                                    charset = part.get_content_charset() or 'utf-8'
+                                    try:
+                                        decoded_payload = payload.decode(charset, errors='replace')
+                                        
+                                        if content_type == 'text/plain':
+                                            plain_text = decoded_payload
+                                        elif content_type == 'text/html':
+                                            html_content = decoded_payload
+                                    except Exception as e:
+                                        logger.warning(f"Failed to decode payload: {e}")
+                            except Exception as e:
+                                logger.warning(f"Error processing email part: {e}")
+                    else:
+                        # Not multipart - just get the content directly
+                        try:
+                            payload = email_msg.get_payload(decode=True)
+                            if payload:
+                                charset = email_msg.get_content_charset() or 'utf-8'
+                                try:
+                                    decoded_payload = payload.decode(charset, errors='replace')
+                                    
+                                    if email_msg.get_content_type() == 'text/plain':
+                                        plain_text = decoded_payload
+                                    elif email_msg.get_content_type() == 'text/html':
+                                        html_content = decoded_payload
+                                except Exception as e:
+                                    logger.warning(f"Failed to decode payload: {e}")
+                        except Exception as e:
+                            logger.warning(f"Error processing email payload: {e}")
+                    
+                    # Process and add to results - create a complete processed result
+                    # Note: raw_message is intentionally not included to reduce memory usage
                     result = {
                         'id': msg_id,
                         'threadId': response.get('threadId', ''),
                         'labelIds': response.get('labelIds', []),
-                        'raw_message': compressed_with_prefix,  # Use compressed data
-                        # Include a minimal snippet to help with display
-                        'snippet': response.get('snippet', '')
+                        # 'raw_message': raw_base64,  # Removed: no longer sending raw message
+                        'snippet': response.get('snippet', ''),
+                        'body_text': plain_text,
+                        'body_html': html_content,
+                        'parsed_date': email_date.isoformat() if email_date else None,
+                        'has_attachments': has_attachments,
                     }
                     
                     # Add extracted headers
@@ -240,7 +489,7 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
                     headers = None
                     
                     # Free individual message memory more aggressively
-                    if (len(batch_results) % 5 == 0):
+                    if (len(batch_results) % 10 == 0):  # Changed from 5 to 10
                         gc.collect()
                 
                 return callback
@@ -274,12 +523,11 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
             # Clear batch data
             batch_results = None
             
-            # Force garbage collection between batches
-            gc.collect()
+            # Force garbage collection between batches - only once is sufficient
             gc.collect()
             
-            # Log memory status after each batch
-            if batch_idx == 0 or (batch_idx+1) % 2 == 0:  # Log more frequently
+            # Log memory status after each batch - reduce frequency for speed
+            if batch_idx == 0 or (batch_idx+1) % 4 == 0:  # Log less frequently (every 4th batch)
                 log_memory_usage(logger, f"After Batch {batch_idx+1}/{len(batches)}")
         
         # Clear batches data
@@ -292,7 +540,7 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
         # Log stats about the data we processed
         avg_size = TOTAL_PROCESSED_BYTES / EMAILS_PROCESSED if EMAILS_PROCESSED > 0 else 0
         logger.info(
-            f"Successfully retrieved {EMAILS_PROCESSED} emails\n"
+            f"Successfully retrieved {EMAILS_PROCESSED} emails, filtered out {filtered_out}\n"
             f"    Total data processed: {TOTAL_PROCESSED_BYTES/1024/1024:.2f} MB\n"
             f"    Average email size: {avg_size/1024:.1f} KB\n"
             f"    Largest email: {MAX_EMAIL_SIZE/1024:.1f} KB"
@@ -308,7 +556,7 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
         return []
 
 
-async def main(credentials_json, user_email, query, include_spam_trash):
+async def main(credentials_json, user_email, query, include_spam_trash, days_back, max_results=100):
     """Main function to run Gmail API operations."""
     try:
         # Get credentials from JSON file or direct JSON string
@@ -321,12 +569,36 @@ async def main(credentials_json, user_email, query, include_spam_trash):
             # It's a JSON string
             credentials_data = json.loads(credentials_json)
             
+        # Set thread count for better performance
+        if hasattr(gc, 'set_threshold'):
+            # Use more conservative GC settings for better performance
+            original_threshold = gc.get_threshold()
+            # Less aggressive GC for better performance during short-lived process
+            gc.set_threshold(900, 15, 15)  # Changed from (700, 10, 10) to be less aggressive
+            
         # Build Gmail service
         service = await create_gmail_service(credentials_data)
         
-        # Fetch and process emails
+        # Calculate date cutoff for filtering
+        local_tz = datetime.now().astimezone().tzinfo
+        if days_back > 0:
+            # Adjust days_back to match cache logic (days_back=1 means today only)
+            adjusted_days = max(0, days_back - 1)
+            
+            # Calculate the time range using local timezone
+            local_midnight = (datetime.now(local_tz) - timedelta(days=adjusted_days)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            
+            # Convert to UTC for filtering
+            cutoff_time = local_midnight.astimezone(timezone.utc)
+            logger.info(f"Filtering emails with cutoff time: {cutoff_time.isoformat()}")
+        else:
+            cutoff_time = None
+        
+        # Fetch and process emails with cutoff time for filtering
         log_memory_usage(logger, "Before Email Processing")
-        emails = await fetch_and_process_emails(service, user_email, query, include_spam_trash)
+        emails = await fetch_and_process_emails(service, user_email, query, include_spam_trash, cutoff_time)
         
         # Clear service reference
         service = None
@@ -334,7 +606,7 @@ async def main(credentials_json, user_email, query, include_spam_trash):
         # Force garbage collection and log results
         log_memory_cleanup(logger, "After Email Processing")
         
-        # Return JSON with success flag and emails
+        # Use ujson for faster JSON serialization if available
         result = {
             "success": True,
             "emails": emails
@@ -345,8 +617,12 @@ async def main(credentials_json, user_email, query, include_spam_trash):
         credentials_data = None
         log_memory_cleanup(logger, "Before Exit")
         
-        # Return the result
-        print(json.dumps(result))
+        # Return the result - use ujson if available for faster serialization
+        try:
+            import ujson
+            print(ujson.dumps(result))
+        except ImportError:
+            print(json.dumps(result))
         
         return 0
         
@@ -370,6 +646,8 @@ if __name__ == "__main__":
     parser.add_argument("--user_email", required=True, help="User email address")
     parser.add_argument("--query", default="", help="Gmail search query")
     parser.add_argument("--include_spam_trash", action="store_true", help="Include emails in spam and trash")
+    parser.add_argument("--days_back", type=int, default=1, help="Number of days back to fetch emails")
+    parser.add_argument('--max_results', type=int, default=100, help='Maximum number of results to fetch')
     
     args = parser.parse_args()
     
@@ -402,12 +680,22 @@ if __name__ == "__main__":
         signal.signal(signal.SIGALRM, handle_timeout)
         signal.alarm(300)  # 5 minutes timeout
         
+        # Set process priority higher on Unix systems
+        if platform.system() != 'Windows':
+            try:
+                os.nice(-15)  # Even higher priority (-20 is highest, 19 is lowest)
+                logger.info(f"Set process nice value to -15 for better performance")
+            except Exception as e:
+                logger.warning(f"Could not set process priority: {e}")
+        
         # Run the main function
         asyncio.run(main(
             credentials_json=credentials_json,
             user_email=args.user_email,
             query=args.query,
-            include_spam_trash=args.include_spam_trash
+            include_spam_trash=args.include_spam_trash,
+            days_back=args.days_back,
+            max_results=args.max_results
         ))
         
     except Exception as e:
