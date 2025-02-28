@@ -39,9 +39,6 @@ class Config:
 
         # OpenAI Configuration
         self.OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY') or 'your-default-openai-key'
-        
-        # TinyMCE Configuration
-        self.TINYMCE_API_KEY = os.environ.get('TINYMCE_API_KEY') or 'your-default-tiny-mce-key'
 
         self.FLASK_SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'your-default-flask-secret-key'
         

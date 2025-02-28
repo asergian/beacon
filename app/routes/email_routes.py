@@ -37,8 +37,7 @@ email_bp = Blueprint('email', __name__)
 def home():
     """Home page that loads email UI without waiting for data."""
     return render_template('email_summary.html', 
-                         emails=[],
-                         tiny_mce_api_key=current_app.config.get('TINYMCE_API_KEY', ''))
+                         emails=[])
 
 @email_bp.route('/api/user/settings')
 @login_required
