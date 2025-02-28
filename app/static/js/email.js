@@ -617,14 +617,14 @@ function updateEmailList() {
                 <div class="email-header">
                     <span class="email-subject">${email.subject || 'No Subject'}</span>
                     <div class="tags-container">
+                        ${email.needs_action ? '<span class="tag action-required">Action Required</span>' : ''}
                         <span class="tag priority-${(email.priority_level || 'pending').toLowerCase()}">${formatTagText(email.priority_level) || 'Pending'}</span>
                         <span class="tag category" data-category="${email.category || 'Informational'}">${formatTagText(email.category) || 'Pending'}</span>
-                        ${email.needs_action ? '<span class="tag action-required">Action Required</span>' : ''}
                         ${customCategoriesHtml}
                     </div>
+                    <span class="sender-name">${(email.sender || '').split('<')[0].trim() || 'Unknown Sender'}</span>
+                    <p class="email-summary-preview">${email.summary || 'Analysis in progress...'}</p>
                 </div>
-                <span class="sender-name">${(email.sender || '').split('<')[0].trim() || 'Unknown Sender'}</span>
-                <p class="email-summary-preview">${email.summary || 'Analysis in progress...'}</p>
             `;
             
             fragment.appendChild(li);
@@ -812,6 +812,30 @@ function loadEmailDetails(emailId) {
         // Create more secure body content by replacing http:// with https://
         // This ensures all resources are loaded securely to prevent mixed content warnings
         let secureBody = email.body.replace(/http:\/\//g, 'https://');
+        
+        // Check if this is a plain text email (no HTML tags) - use more robust detection
+        // Look for opening tags that would indicate HTML content
+        const hasHtmlTags = /<(html|body|div|p|span|table|a|img|h[1-6])[>\s]/i.test(secureBody);
+        
+        // Only format emails that appear to be plain text
+        if (!hasHtmlTags) {
+            // Check if the content has multiple consecutive newlines or spaces
+            // which would indicate it's a structured plain text email
+            const hasStructuredText = /\n\s*\n/.test(secureBody) || /\s{4,}/.test(secureBody);
+            
+            if (hasStructuredText) {
+                // Replace line breaks with <br> tags
+                secureBody = secureBody.replace(/\n/g, '<br>');
+                
+                // Replace runs of spaces with non-breaking spaces to preserve formatting
+                secureBody = secureBody.replace(/( {2,})/g, match => 
+                    Array(match.length + 1).join('&nbsp;')
+                );
+                
+                // Wrap in a pre-formatted div with appropriate styling
+                secureBody = `<div style="white-space: pre-wrap; font-family: system-ui, -apple-system, sans-serif;">${secureBody}</div>`;
+            }
+        }
         
         // Write the HTML template to the iframe
         // We use a complete HTML document with proper meta tags and styles
