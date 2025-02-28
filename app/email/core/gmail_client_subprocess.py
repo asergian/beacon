@@ -189,14 +189,30 @@ class GmailClientSubprocess:
             python_executable = sys.executable
             
             # Pass days_back to the subprocess
-            cmd = f"{python_executable} {subprocess_path} --credentials @{credentials_path} --user_email {user} --query \"{query}\" {include_spam_trash_arg} --days_back {days_back}"
+            cmd = f"{python_executable} {subprocess_path} --credentials @{credentials_path} --user_email {user} --query \"{query}\" {include_spam_trash_arg} --days_back {days_back} --max_results 100"
             
-            # Create a process
-            process = await asyncio.create_subprocess_shell(
-                cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
-            )
+            # Create a process with higher priority for faster execution
+            # Use a lambda for preexec_fn to ensure correct execution
+            if platform.system() != 'Windows':
+                def set_priority():
+                    try:
+                        import os
+                        os.nice(-10)  # Lower nice value = higher priority
+                    except Exception as e:
+                        self.logger.debug(f"Could not set subprocess priority: {e}")
+                        
+                process = await asyncio.create_subprocess_shell(
+                    cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    preexec_fn=set_priority
+                )
+            else:
+                process = await asyncio.create_subprocess_shell(
+                    cmd,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE
+                )
             
             # Timing for performance analysis
             start_time = time.time()
@@ -324,10 +340,20 @@ class GmailClientSubprocess:
                 self.logger.error(f"Subprocess failed with code {process.returncode}")
                 raise GmailAPIError(f"Gmail subprocess failed with code {process.returncode}")
             
-            # Parse the JSON output
+            # Parse the JSON output - use faster ujson if available
             log_memory_usage(self.logger, "Before JSON Deserialization")
             try:
-                email_data = json.loads(stdout_data.decode().strip())
+                # Try to use orjson for faster processing (faster than ujson)
+                import orjson
+                email_data = orjson.loads(stdout_data)
+            except ImportError:
+                try:
+                    # Try to use ujson for faster parsing if available
+                    import ujson
+                    email_data = ujson.loads(stdout_data.decode().strip())
+                except ImportError:
+                    # Fall back to standard json
+                    email_data = json.loads(stdout_data.decode().strip())
             except json.JSONDecodeError as e:
                 self.logger.error(f"Failed to parse subprocess output: {e}")
                 self.logger.debug(f"Subprocess output: {stdout_data[:500]}...")

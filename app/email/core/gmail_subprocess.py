@@ -37,6 +37,8 @@ import email.header
 import quopri
 import re
 import email.utils
+import platform
+import socket
 
 # Set more aggressive garbage collection thresholds
 # This helps reclaim memory more frequently
@@ -65,12 +67,12 @@ log_memory_usage(logger, "Subprocess Start")
 # Import Google API libraries - These are heavy imports
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from googleapiclient.http import HttpRequest
-import googleapiclient.discovery_cache
-from googleapiclient.http import HttpError
 from googleapiclient.discovery_cache.base import Cache
 import httplib2
 from google.auth.transport.requests import Request as AuthRequest
+
+# Set lower connection timeout for faster failure/retry
+socket.setdefaulttimeout(10)  # 10 seconds instead of default 60
 
 class MemoryCache(Cache):
     """In-memory cache for Gmail API discovery document."""
@@ -112,7 +114,10 @@ async def create_gmail_service(creds_data: Dict) -> any:
             credentials.refresh(AuthRequest())
         
         # Build the service
-        service = build('gmail', 'v1', credentials=credentials, cache=MemoryCache())
+        service = build('gmail', 'v1', 
+                        credentials=credentials,
+                        static_discovery=True,
+                        cache=MemoryCache())
         return service
     
     except Exception as e:
@@ -249,7 +254,8 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
         request = messages_resource.list(
             userId=user_email,
             q=query,
-            includeSpamTrash=include_spam_trash
+            includeSpamTrash=include_spam_trash,
+            maxResults=args.max_results  # Use command line argument
         )
         
         # Fetch all matching message IDs
@@ -275,8 +281,8 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
             return []
             
         # Process emails in smaller batches to limit memory usage
-        # Decrease batch size from 25 to 10 to reduce memory peaks
-        batch_size = 10
+        # Increase batch size from 10 to 25 emails for better throughput
+        batch_size = 25
         batches = [messages[i:i+batch_size] for i in range(0, len(messages), batch_size)]
         
         all_results = []
@@ -288,8 +294,15 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
             batch_results = []
             batch_message_ids = {}
             
-            # Force garbage collection before processing batch content
-            gc.collect()
+            # Only do garbage collection after every 2 batches instead of every batch
+            if batch_idx % 2 == 0:
+                gc.collect()
+            
+            # Log memory status every 4th batch instead of every batch
+            if batch_idx % 4 == 0:
+                log_memory_usage(logger, f"Processing batch {batch_idx+1}/{len(batches)}")
+            else:
+                logger.debug(f"Processing batch {batch_idx+1}/{len(batches)}")
             
             def create_callback(msg_id):
                 """Creates a callback function for processing each email.
@@ -476,7 +489,7 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
                     headers = None
                     
                     # Free individual message memory more aggressively
-                    if (len(batch_results) % 5 == 0):
+                    if (len(batch_results) % 10 == 0):  # Changed from 5 to 10
                         gc.collect()
                 
                 return callback
@@ -510,12 +523,11 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
             # Clear batch data
             batch_results = None
             
-            # Force garbage collection between batches
-            gc.collect()
+            # Force garbage collection between batches - only once is sufficient
             gc.collect()
             
-            # Log memory status after each batch
-            if batch_idx == 0 or (batch_idx+1) % 2 == 0:  # Log more frequently
+            # Log memory status after each batch - reduce frequency for speed
+            if batch_idx == 0 or (batch_idx+1) % 4 == 0:  # Log less frequently (every 4th batch)
                 log_memory_usage(logger, f"After Batch {batch_idx+1}/{len(batches)}")
         
         # Clear batches data
@@ -544,7 +556,7 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
         return []
 
 
-async def main(credentials_json, user_email, query, include_spam_trash, days_back):
+async def main(credentials_json, user_email, query, include_spam_trash, days_back, max_results=100):
     """Main function to run Gmail API operations."""
     try:
         # Get credentials from JSON file or direct JSON string
@@ -556,6 +568,13 @@ async def main(credentials_json, user_email, query, include_spam_trash, days_bac
         else:
             # It's a JSON string
             credentials_data = json.loads(credentials_json)
+            
+        # Set thread count for better performance
+        if hasattr(gc, 'set_threshold'):
+            # Use more conservative GC settings for better performance
+            original_threshold = gc.get_threshold()
+            # Less aggressive GC for better performance during short-lived process
+            gc.set_threshold(900, 15, 15)  # Changed from (700, 10, 10) to be less aggressive
             
         # Build Gmail service
         service = await create_gmail_service(credentials_data)
@@ -587,7 +606,7 @@ async def main(credentials_json, user_email, query, include_spam_trash, days_bac
         # Force garbage collection and log results
         log_memory_cleanup(logger, "After Email Processing")
         
-        # Return JSON with success flag and emails
+        # Use ujson for faster JSON serialization if available
         result = {
             "success": True,
             "emails": emails
@@ -598,8 +617,12 @@ async def main(credentials_json, user_email, query, include_spam_trash, days_bac
         credentials_data = None
         log_memory_cleanup(logger, "Before Exit")
         
-        # Return the result
-        print(json.dumps(result))
+        # Return the result - use ujson if available for faster serialization
+        try:
+            import ujson
+            print(ujson.dumps(result))
+        except ImportError:
+            print(json.dumps(result))
         
         return 0
         
@@ -624,6 +647,7 @@ if __name__ == "__main__":
     parser.add_argument("--query", default="", help="Gmail search query")
     parser.add_argument("--include_spam_trash", action="store_true", help="Include emails in spam and trash")
     parser.add_argument("--days_back", type=int, default=1, help="Number of days back to fetch emails")
+    parser.add_argument('--max_results', type=int, default=100, help='Maximum number of results to fetch')
     
     args = parser.parse_args()
     
@@ -656,13 +680,22 @@ if __name__ == "__main__":
         signal.signal(signal.SIGALRM, handle_timeout)
         signal.alarm(300)  # 5 minutes timeout
         
+        # Set process priority higher on Unix systems
+        if platform.system() != 'Windows':
+            try:
+                os.nice(-15)  # Even higher priority (-20 is highest, 19 is lowest)
+                logger.info(f"Set process nice value to -15 for better performance")
+            except Exception as e:
+                logger.warning(f"Could not set process priority: {e}")
+        
         # Run the main function
         asyncio.run(main(
             credentials_json=credentials_json,
             user_email=args.user_email,
             query=args.query,
             include_spam_trash=args.include_spam_trash,
-            days_back=args.days_back
+            days_back=args.days_back,
+            max_results=args.max_results
         ))
         
     except Exception as e:

@@ -20,7 +20,7 @@ def get_process_memory():
 def log_memory_usage(logger, stage: str):
     """Utility function to log memory usage at specific stages."""
     mem = get_process_memory()
-    logger.info(f"Memory Usage [{stage}]: RSS={mem['rss']:.1f}MB USS={mem['uss']:.1f}MB Data={mem['data']:.1f}MB Shared={mem['shared']:.1f}MB")
+    logger.debug(f"Memory Usage [{stage}]: RSS={mem['rss']:.1f}MB USS={mem['uss']:.1f}MB Data={mem['data']:.1f}MB Shared={mem['shared']:.1f}MB")
 
 class MemoryProfilingMiddleware:
     def __init__(self, app):
@@ -61,7 +61,7 @@ class MemoryProfilingMiddleware:
                 abs(end_mem['rss'] - start_mem['rss']) > 1 or  # 1MB threshold
                 abs(end_mem['uss'] - start_mem['uss']) > 1
             ):
-                self.logger.info(
+                self.logger.debug(
                     f"[Memory Profile] {method} {path}\n"
                     f"    Duration: {duration:.3f}s\n"
                     f"    Memory: {self._format_memory_diff(end_mem)}"
@@ -78,7 +78,7 @@ def log_memory_cleanup(logger, stage: str):
     try:
         # Log memory before cleanup
         mem_before = get_process_memory()
-        logger.info(f"Memory Before Cleanup [{stage}]: RSS={mem_before['rss']:.1f}MB USS={mem_before['uss']:.1f}MB")
+        logger.debug(f"Memory Before Cleanup [{stage}]: RSS={mem_before['rss']:.1f}MB USS={mem_before['uss']:.1f}MB")
         
         # Run multiple collection cycles
         freed_objects = gc.collect()
@@ -89,7 +89,7 @@ def log_memory_cleanup(logger, stage: str):
         mem_after = get_process_memory()
         diff = {k: mem_before[k] - mem_after[k] for k in mem_before}
         
-        logger.info(
+        logger.debug(
             f"Memory Cleanup [{stage}]: "
             f"Freed {freed_objects+additional_freed+final_freed} objects, "
             f"RSS diff: {diff['rss']:.1f}MB, "
