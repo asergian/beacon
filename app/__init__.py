@@ -24,6 +24,7 @@ import os
 from datetime import timedelta
 from asgiref.wsgi import WsgiToAsgi
 import multiprocessing
+from datetime import datetime
 
 from .config import Config, configure_logging
 from .models import db, User
@@ -34,10 +35,13 @@ from .email.core.email_parsing import EmailParser
 from .email.models.analysis_settings import ProcessingConfig
 from .email.analyzers.semantic_analyzer import SemanticAnalyzer
 from .email.analyzers.content_analyzer import ContentAnalyzer
+from .email.analyzers.content_analyzer_subprocess import ContentAnalyzerSubprocess
 from .email.utils.priority_scoring import PriorityScorer
 from .email.pipeline.pipeline import create_pipeline
 from .email.core.gmail_client import GmailClient
+from .email.core.gmail_client_subprocess import GmailClientSubprocess
 from .email.storage.cache import RedisEmailCache
+from .utils.memory_utils import MemoryProfilingMiddleware
 
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
@@ -87,14 +91,54 @@ def init_openai_client(app):
             return g.async_openai_client
         
         # Register a function to clean up the client when the request ends
-        def close_openai_client(e=None):
+        async def close_openai_client(e=None):
+            """
+            Asynchronously close the OpenAI client to properly release resources.
+            
+            This function is called when a request context ends and ensures that 
+            any open connections in the OpenAI client are properly closed. It uses
+            async/await to properly handle the asynchronous closing methods.
+            
+            Args:
+                e: Optional exception that caused the context to end
+                
+            Note:
+                This is particularly important for preventing resource leaks in 
+                long-running applications or when processing multiple requests.
+            """
+            client = g.pop('async_openai_client', None)
+            if client is not None:
+                # Close the underlying httpx client to properly clean up connections
+                try:
+                    # Close any open httpx connections
+                    if hasattr(client.http_client, 'aclose'):
+                        await client.http_client.aclose()
+                    elif hasattr(client, 'close'):
+                        await client.close()
+                except Exception as e:
+                    logger.warning(f"Error closing OpenAI client: {e}")
+                finally:
+                    # Ensure we clear the reference
+                    client = None
+        
+        # Modified teardown function to run the async cleanup
+        def teardown_openai_client(e=None):
+            """
+            Flask teardown function that handles the async cleanup of OpenAI client.
+            
+            This function is registered with Flask's teardown_appcontext to ensure
+            proper cleanup of OpenAI client resources when the application context ends.
+            
+            Args:
+                e: Optional exception that caused the context to end
+            """
             client = g.pop('async_openai_client', None)
             if client is not None:
                 # Add any cleanup if needed
                 pass
         
         # Register the teardown function
-        app.teardown_appcontext(close_openai_client)
+        app.teardown_appcontext(teardown_openai_client)
         
         # Store the getter function in the app
         app.get_openai_client = get_openai_client
@@ -114,12 +158,15 @@ def init_openai_client(app):
 
 def create_app(config_class: Optional[object] = Config) -> Flask:
     """Create and configure the Flask application."""
+    # Configure logging first
+    configure_logging()
+    logger = logging.getLogger(__name__)
+
     flask_app = Flask(__name__)
-    
+
     # Get worker information
     worker_id = os.environ.get('HYPERCORN_WORKER_ID')
     is_worker = bool(worker_id)
-    logger = logging.getLogger(__name__)
     
     # Basic setup (no logging needed)
     flask_app.logger.handlers.clear()
@@ -128,7 +175,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     flask_app.config['SESSION_TYPE'] = 'filesystem'
     flask_app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     flask_app.config['SESSION_PERMANENT'] = True
-    
+
     # Trust proxy headers for HTTPS detection
     if os.environ.get('RENDER'):
         flask_app.config['PREFERRED_URL_SCHEME'] = 'https'
@@ -163,7 +210,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         nlp_model = create_nlp_model()
         
         # Initialize analyzers
-        text_analyzer = ContentAnalyzer(nlp_model)
+        text_analyzer = ContentAnalyzerSubprocess()
         llm_analyzer = SemanticAnalyzer()
         
         # Create priority calculator
@@ -174,7 +221,8 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         priority_calculator.set_priority_threshold(50)
 
         # Create Gmail client and parser
-        gmail_client = GmailClient()
+        # Use the subprocess version for better memory isolation
+        gmail_client = GmailClientSubprocess()
         parser = EmailParser()
         
         # Create and store email processor
@@ -304,6 +352,11 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     # Create and store the ASGI application globally
     global application
     application = WsgiToAsgi(flask_app)
+    
+    # Add memory profiling middleware
+    if os.environ.get('PROFILE_MEMORY'):
+        flask_app.wsgi_app = MemoryProfilingMiddleware(flask_app.wsgi_app)
+        logger.info("Memory profiling enabled")
     
     return flask_app
 
