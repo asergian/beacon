@@ -26,6 +26,27 @@
                         </div>
                     </div>
                 </div>
+                
+                <div class="setting-item">
+                    <div class="setting-content">
+                        <div class="setting-info">
+                            <span class="setting-title">Timezone</span>
+                            <span class="setting-description">Your local timezone for email retrieval</span>
+                        </div>
+                        <div class="select-container">
+                            <select id="timezone" name="timezone" class="modern-select">
+                                {% for tz in common_timezones %}
+                                    <option value="{{ tz }}" {% if user_settings.timezone == tz %}selected{% endif %}>{{ tz }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="select-arrow">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -128,10 +149,17 @@
                                 <span class="setting-title">Model Selection</span>
                                 <span class="setting-description">Choose between speed and accuracy (affects cost)</span>
                             </div>
-                            <select id="model_type" name="ai_features.model_type" class="form-select">
-                                <option value="gpt-4o-mini" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o-mini' %}selected{% endif %}>Standard (GPT-4o-mini)</option>
-                                <option value="gpt-4o" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o' %}selected{% endif %}>Premium (GPT-4o)</option>
-                            </select>
+                            <div class="select-container">
+                                <select id="model_type" name="ai_features.model_type" class="modern-select">
+                                    <option value="gpt-4o-mini" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o-mini' %}selected{% endif %}>Standard (GPT-4o-mini)</option>
+                                    <option value="gpt-4o" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o' %}selected{% endif %}>Premium (GPT-4o)</option>
+                                </select>
+                                <div class="select-arrow">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -452,11 +480,11 @@
         flex-shrink: 0;
     }
     
-    .form-select:hover, .form-input:hover {
+    .form-input:hover {
         border-color: #cbd5e1;
     }
     
-    .form-select:focus, .form-input:focus {
+    .form-input:focus {
         outline: none;
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
@@ -477,7 +505,7 @@
             width: 100%;
         }
         
-        .form-select, .form-input {
+        .form-input {
             width: 100%;
             text-align: left;
         }
@@ -738,6 +766,52 @@
     .btn-icon {
         font-size: 1.25rem;
         line-height: 1;
+    }
+
+    .select-container {
+        position: relative;
+        min-width: 200px;
+    }
+
+    .modern-select {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        padding: 10px 15px;
+        font-size: 14px;
+        border: 1px solid var(--input-border);
+        border-radius: 8px;
+        background-color: var(--input-bg);
+        color: var(--input-text);
+        transition: all 0.2s ease;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .modern-select:hover {
+        border-color: #a0aec0;
+    }
+
+    .modern-select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .select-arrow {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: var(--input-text);
+        opacity: 0.5;
+    }
+
+    @media (max-width: 640px) {
+        .select-container {
+            width: 100%;
+        }
     }
 </style>
 

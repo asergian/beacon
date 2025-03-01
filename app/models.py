@@ -101,7 +101,8 @@ class User(db.Model):
                     'color': '#EC4899'
                 }
             ]
-        }
+        },
+        'timezone': 'US/Pacific'
     }
     
     def get_setting(self, key: str, default: Any = None) -> Any:

@@ -30,6 +30,7 @@ from app.utils.memory_utils import log_memory_usage, log_memory_cleanup
 import base64
 from email import message_from_bytes
 import platform
+from zoneinfo import ZoneInfo
 
 # Directory of this file
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -111,7 +112,7 @@ class GmailClientSubprocess:
             raise GmailAPIError(f"Failed to connect: {e}")
     
     async def fetch_emails(self, days_back: int = 1, user_email: str = None, label_ids: List[str] = None,
-                   query: str = None, include_spam_trash: bool = False) -> List[Dict]:
+                   query: str = None, include_spam_trash: bool = False, user_timezone: str = 'US/Pacific') -> List[Dict]:
         """
         Fetch emails from Gmail using subprocess to isolate memory usage.
         
@@ -126,6 +127,7 @@ class GmailClientSubprocess:
             label_ids: List of label IDs to filter by
             query: Gmail query string
             include_spam_trash: Whether to include emails in spam and trash
+            user_timezone: User's timezone (e.g., 'America/New_York')
             
         Returns:
             List of email dictionaries containing processed message data (without raw messages)
@@ -159,18 +161,30 @@ class GmailClientSubprocess:
                 # Adjust days_back to match cache logic (days_back=1 means today only)
                 adjusted_days = max(0, days_back - 1)  # Ensure we don't use negative days
                 
-                # Calculate the time range using local timezone
-                local_tz = datetime.now().astimezone().tzinfo
-                local_midnight = (datetime.now(local_tz) - timedelta(days=adjusted_days)).replace(
+                # Calculate the time range using user's timezone
+                try:
+                    # Create timezone object from string
+                    user_tz = ZoneInfo(user_timezone)
+                    self.logger.info(f"Using user timezone: {user_timezone}")
+                except (ImportError, Exception) as e:
+                    self.logger.warning(f"Could not use user timezone ({user_timezone}), falling back to US/Pacific: {e}")
+                    try:
+                        user_tz = ZoneInfo('US/Pacific')
+                    except Exception:
+                        user_tz = timezone.utc
+                
+                # Calculate the time range using user's timezone
+                user_now = datetime.now(user_tz)
+                user_midnight = (user_now - timedelta(days=adjusted_days)).replace(
                     hour=0, minute=0, second=0, microsecond=0
                 )
                 
-                # Calculate one day before the local midnight in UTC for the query
-                utc_date = (local_midnight).astimezone(timezone.utc)
+                # Convert to UTC for the Gmail query
+                utc_date = user_midnight.astimezone(timezone.utc)
                 date_cutoff = utc_date.strftime('%Y/%m/%d')
                 query = f"after:{date_cutoff}"
                 
-                self.logger.info(f"Fetching emails with days_back={days_back}, adjusted_days={adjusted_days}\n    Local midnight cutoff: {local_midnight}\n    Query cutoff (UTC-1): {query}")
+                self.logger.info(f"Fetching emails with days_back={days_back}, adjusted_days={adjusted_days}\n    User timezone: {user_timezone}\n    User now: {user_now}\n    User midnight cutoff: {user_midnight}\n    UTC query cutoff: {utc_date}\n    Gmail query: {query}")
             
             # Modify the query to exclude emails from the SENT folder
             query = f"{query} -in:sent"
@@ -189,7 +203,7 @@ class GmailClientSubprocess:
             python_executable = sys.executable
             
             # Pass days_back to the subprocess
-            cmd = f"{python_executable} {subprocess_path} --credentials @{credentials_path} --user_email {user} --query \"{query}\" {include_spam_trash_arg} --days_back {days_back} --max_results 100"
+            cmd = f"{python_executable} {subprocess_path} --credentials @{credentials_path} --user_email {user} --query \"{query}\" {include_spam_trash_arg} --days_back {days_back} --max_results 100 --user_timezone \"{user_timezone}\""
             
             # Create a process with higher priority for faster execution
             # Use a lambda for preexec_fn to ensure correct execution
@@ -345,15 +359,40 @@ class GmailClientSubprocess:
             try:
                 # Try to use orjson for faster processing (faster than ujson)
                 import orjson
-                email_data = orjson.loads(stdout_data)
+                # Handle potential extra data by finding the JSON object
+                stdout_str = stdout_data.decode().strip()
+                # Find the first '{' and last '}' to extract the JSON object
+                json_start = stdout_str.find('{')
+                json_end = stdout_str.rfind('}') + 1
+                if json_start >= 0 and json_end > json_start:
+                    json_str = stdout_str[json_start:json_end]
+                    email_data = orjson.loads(json_str)
+                else:
+                    raise ValueError(f"Could not find valid JSON object in subprocess output")
             except ImportError:
                 try:
                     # Try to use ujson for faster parsing if available
                     import ujson
-                    email_data = ujson.loads(stdout_data.decode().strip())
+                    stdout_str = stdout_data.decode().strip()
+                    # Find the first '{' and last '}' to extract the JSON object
+                    json_start = stdout_str.find('{')
+                    json_end = stdout_str.rfind('}') + 1
+                    if json_start >= 0 and json_end > json_start:
+                        json_str = stdout_str[json_start:json_end]
+                        email_data = ujson.loads(json_str)
+                    else:
+                        raise ValueError(f"Could not find valid JSON object in subprocess output")
                 except ImportError:
                     # Fall back to standard json
-                    email_data = json.loads(stdout_data.decode().strip())
+                    stdout_str = stdout_data.decode().strip()
+                    # Find the first '{' and last '}' to extract the JSON object
+                    json_start = stdout_str.find('{')
+                    json_end = stdout_str.rfind('}') + 1
+                    if json_start >= 0 and json_end > json_start:
+                        json_str = stdout_str[json_start:json_end]
+                        email_data = json.loads(json_str)
+                    else:
+                        raise ValueError(f"Could not find valid JSON object in subprocess output")
             except json.JSONDecodeError as e:
                 self.logger.error(f"Failed to parse subprocess output: {e}")
                 self.logger.debug(f"Subprocess output: {stdout_data[:500]}...")

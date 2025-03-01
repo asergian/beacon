@@ -8,6 +8,7 @@ from redis.asyncio import Redis
 from app.utils.async_utils import async_manager
 from app.models import User
 import hashlib
+from zoneinfo import ZoneInfo
 
 from ..models.processed_email import ProcessedEmail
 
@@ -73,32 +74,43 @@ class RedisEmailCache(EmailCache):
             self.logger.error(f"Redis connection check failed: {e}")
             raise
 
-    async def get_recent(self, cache_duration_days: int, days_back: int, user_email: str) -> List[ProcessedEmail]:
+    async def get_recent(self, cache_duration_days: int, days_back: int, user_email: str, user_timezone: str = 'US/Pacific') -> List[ProcessedEmail]:
         """Get recent emails from cache for a specific user"""
         self._validate_user_email(user_email)
         try:
             redis = await self._ensure_redis_connection(user_email)
             
-            # Calculate the cutoff times in UTC
-            now = datetime.now()  # Local time
-            local_tz = now.astimezone().tzinfo  # Get the local timezone
+            # Use the user's timezone for date calculations
+            try:
+                # Create timezone object from string
+                user_tz = ZoneInfo(user_timezone)
+                self.logger.info(f"Using user timezone for cache: {user_timezone}")
+            except (ImportError, Exception) as e:
+                self.logger.warning(f"Could not use user timezone ({user_timezone}) for cache, falling back to US/Pacific: {e}")
+                try:
+                    user_tz = ZoneInfo('US/Pacific')
+                except Exception:
+                    user_tz = timezone.utc
             
-            cache_cutoff = (now - timedelta(days=cache_duration_days)).astimezone(timezone.utc)
+            # Calculate the cutoff times using user's timezone
+            now = datetime.now(user_tz)
             
-            # Make it timezone-aware in local time first
-            start_date = now.replace(tzinfo=local_tz)
+            cache_cutoff = (now - timedelta(days=cache_duration_days))
             
             # Calculate start date using days_back-1 to match Gmail logic
             # where days_back=1 means today, days_back=2 means today and yesterday
-            start_date = (start_date - timedelta(days=days_back - 1))
-            start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            adjusted_days = max(0, days_back - 1)
+            start_date = (now - timedelta(days=adjusted_days)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             
-            # Then convert to UTC
+            # Convert to UTC for consistent comparison with stored dates
+            cache_cutoff = cache_cutoff.astimezone(timezone.utc)
             start_date = start_date.astimezone(timezone.utc)
             
             self.logger.debug(
                 f"Cache parameters - Start: {start_date.isoformat()}, "
-                f"Cutoff: {cache_cutoff.isoformat()}, Days back: {days_back}"
+                f"Cutoff: {cache_cutoff.isoformat()}, Days back: {days_back}, User timezone: {user_timezone}"
             )
             
             # Get all keys for the specific user
@@ -339,13 +351,24 @@ class RedisEmailCache(EmailCache):
             self.logger.error(f"Failed to clear all caches: {e}")
             raise
 
-    async def clear_old_entries(self, cache_duration_days: int, user_email: str) -> None:
+    async def clear_old_entries(self, cache_duration_days: int, user_email: str, user_timezone: str = 'US/Pacific') -> None:
         """Proactively clear old cache entries"""
         try:
             redis = await self._ensure_redis_connection(user_email)
             
-            now = datetime.now()
-            local_tz = now.astimezone().tzinfo
+            # Use the user's timezone for date calculations
+            try:
+                # Create timezone object from string
+                user_tz = ZoneInfo(user_timezone)
+                self.logger.info(f"Using user timezone for cache cleanup: {user_timezone}")
+            except (ImportError, Exception) as e:
+                self.logger.warning(f"Could not use user timezone ({user_timezone}) for cache cleanup, falling back to US/Pacific: {e}")
+                try:
+                    user_tz = ZoneInfo('US/Pacific')
+                except Exception:
+                    user_tz = timezone.utc
+            
+            now = datetime.now(user_tz)
             cache_cutoff = (now - timedelta(days=cache_duration_days)).astimezone(timezone.utc)
             
             pattern = f"{self._get_key_prefix(user_email)}*"

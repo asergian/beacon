@@ -15,6 +15,7 @@ import logging
 from flask import session
 import time
 import gc
+from zoneinfo import ZoneInfo
 
 from ..core.email_processor import EmailProcessor
 from ..models.processed_email import ProcessedEmail
@@ -98,7 +99,21 @@ class EmailPipeline:
                 
             # Verify user email matches database
             if user.email != user_email:
-                raise ValueError("User email mismatch between session and database")
+                raise ValueError("User email mismatch")
+                
+            # Get user timezone setting, fall back to PST if not set
+            user_timezone = user.get_setting('timezone', 'US/Pacific')
+            timezone_obj = timezone.utc
+            try:
+                # Try to parse the timezone from string (e.g., 'America/New_York')
+                timezone_obj = ZoneInfo(user_timezone)
+                self.logger.info(f"Using user timezone: {user_timezone}")
+            except (ImportError, Exception) as e:
+                self.logger.warning(f"Could not use user timezone ({user_timezone}), falling back to US/Pacific: {e}")
+                try:
+                    timezone_obj = ZoneInfo('US/Pacific')
+                except Exception:
+                    timezone_obj = timezone.utc
             
             # Check AI features once at the pipeline level
             ai_enabled = user.get_setting('ai_features.enabled', True)
@@ -115,7 +130,8 @@ class EmailPipeline:
                     cached_emails = await self.cache.get_recent(
                         cache_duration, 
                         command.days_back,
-                        user_email
+                        user_email,
+                        user_timezone
                     )
                     
                     self.logger.info(f"Retrieved {len(cached_emails)} cached emails")
@@ -129,7 +145,11 @@ class EmailPipeline:
             await self.connection.connect(user_email)
             try:
                 # Fetch emails from Gmail
-                raw_emails = await self.connection.fetch_emails(command.days_back, user_email)
+                raw_emails = await self.connection.fetch_emails(
+                    days_back=command.days_back,
+                    user_email=user_email,
+                    user_timezone=user_timezone
+                )
                 
                 stats["emails_fetched"] = len(raw_emails)
                 
@@ -425,6 +445,20 @@ class EmailPipeline:
             if user.email != user_email:
                 raise ValueError("User email mismatch between session and database")
             
+            # Get user timezone setting, fall back to PST if not set
+            user_timezone = user.get_setting('timezone', 'US/Pacific')
+            timezone_obj = timezone.utc
+            try:
+                # Try to parse the timezone from string (e.g., 'America/New_York')
+                timezone_obj = ZoneInfo(user_timezone)
+                self.logger.info(f"Using user timezone: {user_timezone}")
+            except (ImportError, Exception) as e:
+                self.logger.warning(f"Could not use user timezone ({user_timezone}), falling back to US/Pacific: {e}")
+                try:
+                    timezone_obj = ZoneInfo('US/Pacific')
+                except Exception:
+                    timezone_obj = timezone.utc
+            
             # Check AI features once at the pipeline level
             ai_enabled = user.get_setting('ai_features.enabled', True)
             if not ai_enabled:
@@ -442,7 +476,7 @@ class EmailPipeline:
                     'data': {'message': 'Checking cache...'}
                 }
                 
-                cached_emails = await self.cache.get_recent(command.cache_duration_days, command.days_back, user_email)
+                cached_emails = await self.cache.get_recent(command.cache_duration_days, command.days_back, user_email, user_timezone)
                 cached_ids = {email.id for email in cached_emails}
                 stats["cached"] = len(cached_ids)
                 
@@ -460,7 +494,11 @@ class EmailPipeline:
             # Now that user context is set up, connect to Gmail
             await self.connection.connect(user_email)
             try:
-                raw_emails = await self.connection.fetch_emails(command.days_back, user_email)
+                raw_emails = await self.connection.fetch_emails(
+                    days_back=command.days_back,
+                    user_email=user_email,
+                    user_timezone=user_timezone
+                )
                 stats["emails_fetched"] = len(raw_emails)
                 
                 # Log memory after Gmail fetch

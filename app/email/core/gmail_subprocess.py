@@ -39,6 +39,7 @@ import re
 import email.utils
 import platform
 import socket
+from zoneinfo import ZoneInfo
 
 # Set more aggressive garbage collection thresholds
 # This helps reclaim memory more frequently
@@ -556,7 +557,7 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
         return []
 
 
-async def main(credentials_json, user_email, query, include_spam_trash, days_back, max_results=100):
+async def main(credentials_json, user_email, query, include_spam_trash, days_back, max_results=100, user_timezone='US/Pacific'):
     """Main function to run Gmail API operations."""
     try:
         # Get credentials from JSON file or direct JSON string
@@ -580,19 +581,29 @@ async def main(credentials_json, user_email, query, include_spam_trash, days_bac
         service = await create_gmail_service(credentials_data)
         
         # Calculate date cutoff for filtering
-        local_tz = datetime.now().astimezone().tzinfo
         if days_back > 0:
             # Adjust days_back to match cache logic (days_back=1 means today only)
             adjusted_days = max(0, days_back - 1)
             
-            # Calculate the time range using local timezone
-            local_midnight = (datetime.now(local_tz) - timedelta(days=adjusted_days)).replace(
+            # Use the user's timezone for date calculations
+            try:
+                # Create timezone object from string
+                user_tz = ZoneInfo(user_timezone)
+                logger.info(f"Using user timezone: {user_timezone}")
+            except (ImportError, Exception) as e:
+                logger.warning(f"Could not use user timezone ({user_timezone}), falling back to US/Pacific: {e}")
+                try:
+                    user_tz = ZoneInfo('US/Pacific')
+                except Exception:
+                    user_tz = timezone.utc
+            
+            # Calculate the time range using user's timezone
+            user_now = datetime.now(user_tz)
+            cutoff_time = (user_now - timedelta(days=adjusted_days)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
             
-            # Convert to UTC for filtering
-            cutoff_time = local_midnight.astimezone(timezone.utc)
-            logger.info(f"Filtering emails with cutoff time: {cutoff_time.isoformat()}")
+            logger.info(f"Filtering emails with user timezone ({user_timezone}):\n    User now: {user_now}\n    User timezone cutoff: {cutoff_time}\n    UTC cutoff: {cutoff_time.astimezone(timezone.utc)}")
         else:
             cutoff_time = None
         
@@ -624,6 +635,8 @@ async def main(credentials_json, user_email, query, include_spam_trash, days_bac
         except ImportError:
             print(json.dumps(result))
         
+        logger.info(f"Using user timezone: {user_timezone} for email filtering")
+        
         return 0
         
     except Exception as e:
@@ -648,6 +661,7 @@ if __name__ == "__main__":
     parser.add_argument("--include_spam_trash", action="store_true", help="Include emails in spam and trash")
     parser.add_argument("--days_back", type=int, default=1, help="Number of days back to fetch emails")
     parser.add_argument('--max_results', type=int, default=100, help='Maximum number of results to fetch')
+    parser.add_argument('--user_timezone', default='US/Pacific', help='User timezone (e.g., "America/New_York")')
     
     args = parser.parse_args()
     
@@ -695,7 +709,8 @@ if __name__ == "__main__":
             query=args.query,
             include_spam_trash=args.include_spam_trash,
             days_back=args.days_back,
-            max_results=args.max_results
+            max_results=args.max_results,
+            user_timezone=args.user_timezone
         ))
         
     except Exception as e:

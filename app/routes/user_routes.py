@@ -6,9 +6,40 @@ from ..auth.decorators import login_required, admin_required
 import logging
 from datetime import datetime
 from .. import db
+from zoneinfo import ZoneInfo, available_timezones
 
 user_bp = Blueprint('user', __name__)
 logger = logging.getLogger(__name__)
+
+# Common timezones list for the dropdown
+COMMON_TIMEZONES = [
+    'UTC',
+    'US/Pacific',
+    'US/Eastern', 
+    'US/Central',
+    'US/Mountain',
+    'US/Hawaii',
+    'US/Alaska',
+    'Europe/London',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Europe/Moscow',
+    'Asia/Tokyo',
+    'Asia/Shanghai',
+    'Asia/Singapore',
+    'Asia/Dubai',
+    'Australia/Sydney',
+    'Pacific/Auckland',
+    'America/Toronto',
+    'America/Vancouver',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'America/Phoenix',
+    'America/Anchorage',
+    'America/Honolulu',
+]
 
 @user_bp.route('/analytics')
 @admin_required
@@ -86,9 +117,12 @@ def settings():
         
         # Get all user settings
         user_settings = user.get_all_settings()
+            
         logger.info(f"Retrieved settings for display: {user_settings}")
             
-        return render_template('settings.html', user_settings=user_settings)
+        return render_template('settings.html', 
+                               user_settings=user_settings,
+                               common_timezones=COMMON_TIMEZONES)
         
     except Exception as e:
         logger.error(f"Failed to handle settings request: {e}", exc_info=True)
