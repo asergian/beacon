@@ -86,11 +86,11 @@ def configure_logging():
         'disable_existing_loggers': False,
         'formatters': {
             'standard': {
-                'format': '%(asctime)s | %(name)-32s | %(levelname)-8s | %(message)s',
+                'format': '%(asctime)s | %(shortname)-40s | %(levelname)-8s | %(message)s',
                 'datefmt': '%H:%M:%S'
             },
             'operation': {
-                'format': '%(asctime)s | %(name)-32s | %(levelname)-8s | %(message)s',
+                'format': '%(asctime)s | %(shortname)-40s | %(levelname)-8s | %(message)s',
                 'datefmt': '%H:%M:%S'
             }
         },
@@ -146,6 +146,21 @@ def configure_logging():
             }
         }
     })
+
+    # Patch the logger to add `shortname`
+    old_factory = logging.getLogRecordFactory()
+
+    def record_factory(*args, **kwargs):
+        record = old_factory(*args, **kwargs)
+        parts = record.name.split(".")
+        
+        if len(parts) > 3:  # If the logger name is long
+            record.shortname = f"{'.'.join(parts[-2:])}"
+        else:
+            record.shortname = record.name  # Keep full name if short enough
+        return record
+
+    logging.setLogRecordFactory(record_factory)
 
 def format_log_message(msg: str, wrap_length: int = 100) -> str:
     """Format a log message with proper wrapping"""

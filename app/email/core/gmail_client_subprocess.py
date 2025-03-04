@@ -523,7 +523,7 @@ class GmailClientSubprocess:
             
             # Create process
             cmd = " ".join(cmd_parts)
-            self.logger.info(f"Executing command: {cmd}")
+            #self.logger.info(f"Executing command: {cmd}")
             
             # Use asyncio.create_subprocess_exec for better security and argument handling
             process = await asyncio.create_subprocess_exec(
