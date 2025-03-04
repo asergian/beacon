@@ -45,7 +45,7 @@ from .utils.memory_utils import MemoryProfilingMiddleware
 
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
-from .utils.async_utils import async_manager
+#from .utils.async_utils import async_manager
 
 # This will be our ASGI application instance
 application = None
@@ -267,11 +267,11 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
                             raise
 
                     # Run the test using async_manager's run_in_loop method
-                    await async_manager.run_in_loop(test_redis_connection)
+                    test_redis_connection()
                     return True
 
                 # Execute the initialization
-                async_manager.get_loop().run_until_complete(init_redis())
+                init_redis()
                 logger.info("Upstash Redis connection initialized successfully")
                 flask_app.config['REDIS_CLIENT'] = redis_client
             else:
@@ -299,10 +299,8 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
                     # In production, use the Upstash client directly
                     g.redis_client = flask_app.config['REDIS_CLIENT']
                 else:
-                    # In development, use async Redis
-                    loop = async_manager.ensure_loop()
-                    g.redis_client = Redis(
-                        connection_pool=flask_app.config.get('REDIS_POOL'),
+                    g.redis_client = Redis.from_url(
+                        url=flask_app.config.get('REDIS_URL'),
                         decode_responses=True
                     )
             return g.redis_client

@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 import json
 import logging
 from redis.asyncio import Redis
-from app.utils.async_utils import async_manager
 from app.models import User
 import hashlib
 from zoneinfo import ZoneInfo
@@ -68,7 +67,7 @@ class RedisEmailCache(EmailCache):
             if not redis:
                 raise ValueError("Failed to get Redis client")
             # Test the connection with a simple ping
-            await async_manager.run_in_loop(redis.ping)
+            await redis.ping()
             return redis
         except Exception as e:
             self.logger.error(f"Redis connection check failed: {e}")
@@ -117,10 +116,9 @@ class RedisEmailCache(EmailCache):
             pattern = f"{self._get_key_prefix(user_email)}*"
             keys = []
             try:
-                # Use scan_iter through async_manager.run_in_loop
                 cursor = 0
                 while True:
-                    cursor, temp_keys = await async_manager.run_in_loop(redis.scan, cursor, match=pattern)
+                    cursor, temp_keys = await redis.scan(cursor, match=pattern)
                     keys.extend(temp_keys)
                     if cursor == 0:
                         break
@@ -186,7 +184,7 @@ class RedisEmailCache(EmailCache):
                         else:
                             # Delete emails older than cache cutoff
                             try:
-                                await async_manager.run_in_loop(redis.delete, key)
+                                await redis.delete(key)
                                 deleted += 1
                             except Exception as e:
                                 self.logger.error(f"Failed to delete expired key {key}: {e}")
@@ -250,14 +248,9 @@ class RedisEmailCache(EmailCache):
                         email_dict['date'] = email_dict['date'].isoformat()
                     
                     # Store with TTL using Redis SETEX command
-                    await async_manager.run_in_loop(
-                        redis.setex,
-                        key,
-                        ttl_seconds,
-                        json.dumps(email_dict)
-                    )
+                    await redis.setex(key, ttl_seconds, json.dumps(email_dict))
                     
-                    exists = await async_manager.run_in_loop(redis.exists, key)
+                    exists = await redis.exists(key)
                     if exists:
                         stored_count += 1
                     else:
@@ -287,10 +280,10 @@ class RedisEmailCache(EmailCache):
             try:
                 cursor = 0
                 while True:
-                    cursor, temp_keys = await async_manager.run_in_loop(redis.scan, cursor, match=pattern)
+                    cursor, temp_keys = await redis.scan(cursor, match=pattern)
                     for key in temp_keys:
                         try:
-                            await async_manager.run_in_loop(redis.delete, key)
+                            await redis.delete(key)
                             deleted_count += 1
                         except Exception as e:
                             self.logger.error(f"Failed to delete key {key}: {e}")
@@ -332,10 +325,10 @@ class RedisEmailCache(EmailCache):
             try:
                 cursor = 0
                 while True:
-                    cursor, temp_keys = await async_manager.run_in_loop(redis.scan, cursor, match=pattern)
+                    cursor, temp_keys = await redis.scan(cursor, match=pattern)
                     for key in temp_keys:
                         try:
-                            await async_manager.run_in_loop(redis.delete, key)
+                            await redis.delete(key)
                             deleted_count += 1
                         except Exception as e:
                             self.logger.error(f"Failed to delete key {key}: {e}")
@@ -378,10 +371,10 @@ class RedisEmailCache(EmailCache):
             
             cursor = 0
             while True:
-                cursor, temp_keys = await async_manager.run_in_loop(redis.scan, cursor, match=pattern)
+                cursor, temp_keys = await redis.scan(cursor, match=pattern)
                 for key in temp_keys:
                     try:
-                        email_data = await async_manager.run_in_loop(redis.get, key)
+                        email_data = await redis.get(key)
                         if not email_data:
                             continue
                             
@@ -389,7 +382,7 @@ class RedisEmailCache(EmailCache):
                         date_str = email_dict.get('date')
                         
                         if not date_str:
-                            await async_manager.run_in_loop(redis.delete, key)
+                            await redis.delete(key)
                             invalid_count += 1
                             continue
                             
@@ -407,11 +400,11 @@ class RedisEmailCache(EmailCache):
                                 parsed_date = parsed_date.astimezone(timezone.utc)
                                 
                             if parsed_date < cache_cutoff:
-                                await async_manager.run_in_loop(redis.delete, key)
+                                await redis.delete(key)
                                 deleted_count += 1
                                 
                         except ValueError:
-                            await async_manager.run_in_loop(redis.delete, key)
+                            await redis.delete(key)
                             invalid_count += 1
                             
                     except Exception as e:
@@ -457,10 +450,10 @@ class RedisEmailCache(EmailCache):
         """Log the size of the Redis cache."""
         try:
             redis = await self._ensure_redis_connection('admin@example.com')  # Use a dummy email for connection
-            keys = await async_manager.run_in_loop(redis.keys, f"{self._base_prefix}*")
+            keys = await redis.keys(f"{self._base_prefix}*")
             total_size = 0
             for key in keys:
-                size = await async_manager.run_in_loop(redis.memory_usage, key)
+                size = await redis.memory_usage(key)
                 total_size += size
             self.logger.info(f"Total Redis cache size: {total_size / 1024:.2f} KB")
         except Exception as e:

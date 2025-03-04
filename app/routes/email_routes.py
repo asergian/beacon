@@ -4,9 +4,7 @@ from flask import Blueprint, current_app, render_template, jsonify, request, red
 import logging
 from ..auth.decorators import login_required
 from ..email.models.analysis_command import AnalysisCommand
-from ..models import log_activity
 import asyncio
-from functools import wraps
 from ..models import User
 import json
 import time
@@ -16,18 +14,6 @@ from ..email.demo_emails import get_demo_email_bodies
 from ..email.demo_analysis import demo_analysis, load_analysis_cache
 from ..utils.memory_utils import log_memory_cleanup
 import gc
-from app.email.core.email_sender import EmailSender, EmailSendingError
-
-def async_route(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        return loop.run_until_complete(f(*args, **kwargs))
-    return wrapper
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -906,7 +892,6 @@ def get_demo_emails():
 
 @email_bp.route('/api/emails/cached')
 @login_required
-@async_route
 async def get_cached_emails():
     """Get only cached emails without fetching from Gmail."""
     try:
@@ -1145,7 +1130,6 @@ async def get_cached_emails():
 
 @email_bp.route('/api/emails/analysis')
 @login_required
-@async_route
 async def get_email_analysis():
     """Get analyzed emails in batches."""
     try:
@@ -1229,14 +1213,12 @@ def email_stream():
 # Deprecated routes below - will be removed in future versions
 @email_bp.route('/emails')
 @login_required
-@async_route
 async def get_emails():
     """Deprecated: Use /api/emails/analysis instead"""
     return redirect(url_for('email.get_email_analysis'))
 
 @email_bp.route('/emails/refresh', methods=['POST'])
 @login_required
-@async_route
 async def refresh_emails():
     """Refresh email cache"""
     try:
@@ -1648,7 +1630,6 @@ def stream_email_analysis():
 
 @email_bp.route('/api/send_email', methods=['POST'])
 @login_required
-@async_route
 async def send_email():
     """API endpoint to send an email response."""
     try:
