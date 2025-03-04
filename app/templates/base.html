@@ -14,7 +14,9 @@
     <header>
         <div class="header-container">
             <div class="logo-container">
-                <img src="{{ url_for('static', filename='images/beacon-logo-hero.svg') }}" alt="Beacon" height="40">
+                <a href="{{ url_for('email.home') }}">
+                    <img src="{{ url_for('static', filename='images/beacon-logo-hero.svg') }}" alt="Beacon" height="40">
+                </a>
             </div>
             {% if session.get('user') %}
             <nav class="header-nav">

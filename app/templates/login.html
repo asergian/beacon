@@ -17,6 +17,7 @@
             </div>
             <div class="nav-links">
                 <a href="#features">Features</a>
+                <a href="#screenshots">Screenshots</a>
                 <a href="#about">About</a>
                 <a href="{{ url_for('auth.oauth_login') }}" class="login-button">
                     <svg class="google-icon" width="18" height="18" viewBox="0 0 18 18">
@@ -67,31 +68,73 @@
         <div class="features-grid">
             <div class="feature-card">
                 <div class="feature-header">
+                    <div class="feature-icon">🔔</div>
+                    <h3>Action Item Detection</h3>
+                </div>
+                <p>Automatically identifies emails that require your response or action, with detailed extraction of tasks, deadlines, and priorities so nothing falls through the cracks.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-header">
                     <div class="feature-icon">📊</div>
                     <h3>Smart Prioritization</h3>
                 </div>
-                <p>AI-powered email analysis that automatically identifies important messages and action items.</p>
+                <p>AI-powered email scoring system categorizes messages as High, Medium, or Low priority based on content, sender, urgency, and deadlines to help you focus on what matters.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-header">
-                    <div class="feature-icon">📝</div>
-                    <h3>Instant Summaries</h3>
+                    <div class="feature-icon">🏷️</div>
+                    <h3>Automatic Categorization</h3>
                 </div>
-                <p>Get the key points from long email threads at a glance with AI-generated summaries.</p>
+                <p>Emails are intelligently sorted into Work, Personal, Promotional, and Informational categories, with custom category support to match your personal workflow.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-header">
-                    <div class="feature-icon">📅</div>
-                    <h3>Calendar Integration</h3>
+        </div>
+    </section>
+
+    <!-- Screenshots Section -->
+    <section id="screenshots" class="screenshots">
+        <h2>See Beacon in Action</h2>
+        <div class="screenshots-grid">
+            <div class="screenshot-card">
+                <img src="{{ url_for('static', filename='images/screenshots/dashboard.png') }}" alt="Beacon Dashboard" class="screenshot-img">
+                <div class="screenshot-caption">
+                    <h3>Smart Dashboard</h3>
+                    <p>Prioritized view of your inbox with emails automatically organized by importance and action requirements.</p>
                 </div>
-                <p>Automatically detect and manage meeting requests and deadlines from your emails.</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-header">
-                    <div class="feature-icon">🔍</div>
-                    <h3>Smart Search</h3>
+            <div class="screenshot-card">
+                <img src="{{ url_for('static', filename='images/screenshots/email-analysis.png') }}" alt="Email Analysis" class="screenshot-img">
+                <div class="screenshot-caption">
+                    <h3>Email Analysis</h3>
+                    <p>See key action items, priority levels, and sentiment indicators for each email at a glance.</p>
                 </div>
-                <p>Find any email instantly with our powerful semantic search capabilities.</p>
+            </div>
+            <div class="screenshot-card">
+                <img src="{{ url_for('static', filename='images/screenshots/categories.png') }}" alt="Smart Categories" class="screenshot-img">
+                <div class="screenshot-caption">
+                    <h3>Smart Categories</h3>
+                    <p>Emails automatically sorted into Work, Personal, Promotional, and Informational categories for easier management.</p>
+                </div>
+            </div>
+            <div class="screenshot-card">
+                <img src="{{ url_for('static', filename='images/screenshots/response.png') }}" alt="Email Response" class="screenshot-img">
+                <div class="screenshot-caption">
+                    <h3>Email Response</h3>
+                    <p>Clean, focused interface for composing email replies without distractions or clutter.</p>
+                </div>
+            </div>
+            <div class="screenshot-card">
+                <img src="{{ url_for('static', filename='images/screenshots/custom-category.png') }}" alt="Custom Categories" class="screenshot-img">
+                <div class="screenshot-caption">
+                    <h3>Custom Categories</h3>
+                    <p>Define your own email categories with custom names and color-coding to organize emails your way.</p>
+                </div>
+            </div>
+            <div class="screenshot-card">
+                <img src="{{ url_for('static', filename='images/screenshots/settings.png') }}" alt="Customizable Settings" class="screenshot-img">
+                <div class="screenshot-caption">
+                    <h3>Personalized Settings</h3>
+                    <p>Configure priority thresholds, email fetch periods, summary lengths, and other preferences to tailor the experience.</p>
+                </div>
             </div>
         </div>
     </section>
@@ -100,19 +143,19 @@
     <section id="about" class="about">
         <div class="about-content">
             <h2>About Beacon</h2>
-            <p>Beacon was created with a simple mission: to help professionals take back control of their inbox. Our AI-powered email assistant transforms how you interact with your emails, making email management effortless and intelligent.</p>
+            <p>Beacon is an intelligent email assistant that transforms how you manage your inbox. Using cutting-edge AI technology, we help professionals take back control of their email by providing smart analysis, prioritization, and organization tools that save time and reduce stress.</p>
             <div class="about-stats">
                 <div class="stat">
-                    <h3>50%</h3>
-                    <p>Less Time Spent on Email</p>
+                    <h3>1.5s</h3>
+                    <p>Average Analysis Time<br/>Per Email</p>
                 </div>
                 <div class="stat">
-                    <h3>100%</h3>
-                    <p>Secure & Private</p>
+                    <h3>3x</h3>
+                    <p>Faster Email Review</p>
                 </div>
                 <div class="stat">
-                    <h3>24/7</h3>
-                    <p>Email Monitoring</p>
+                    <h3>90%</h3>
+                    <p>Reduced Email Overload</p>
                 </div>
             </div>
         </div>
@@ -330,6 +373,71 @@
         .features-grid {
             grid-template-columns: 1fr;
             padding: 1rem;
+        }
+    }
+
+    /* Screenshots Section Styles */
+    .screenshots {
+        padding: 4rem 2rem;
+        background-color: white;
+    }
+
+    .screenshots h2 {
+        text-align: center;
+        color: #006F6A;
+        margin-bottom: 3rem;
+        margin-top: 0rem;
+        font-size: 2.5rem;
+    }
+
+    .screenshots-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .screenshot-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+
+    .screenshot-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .screenshot-img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        object-position: top left;
+    }
+
+    .screenshot-caption {
+        padding: 1.5rem;
+    }
+
+    .screenshot-caption h3 {
+        color: #006F6A;
+        margin-bottom: 0.5rem;
+        font-size: 1.25rem;
+    }
+
+    .screenshot-caption p {
+        color: #4B5563;
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+        .screenshots-grid {
+            grid-template-columns: 1fr;
+            padding: 0 1rem;
         }
     }
     </style>
