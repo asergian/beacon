@@ -547,24 +547,43 @@ class GmailClientSubprocess:
             # Wait for process to complete
             exit_code = await process.wait()
             
-            # Process the output
-            if exit_code == 0 and stdout_data:
-                try:
-                    result = json.loads(stdout_data)
-                    if result.get('success', False):
-                        self.logger.info(f"Email sent successfully via Gmail API: {result.get('message_id')}")
-                        return result
-                    else:
-                        error = result.get('error', 'Unknown error')
-                        self.logger.error(f"Gmail API error: {error}")
-                        raise GmailAPIError(f"Failed to send email: {error}")
-                except json.JSONDecodeError:
-                    self.logger.error(f"Failed to parse output: {stdout_data}")
-                    raise GmailAPIError("Failed to parse subprocess output")
-            else:
+            # If process failed, raise error
+            if exit_code != 0:
                 error = stderr_data or f"Process exited with code {exit_code}"
                 self.logger.error(f"Subprocess error: {error}")
                 raise GmailAPIError(f"Subprocess error: {error}")
+            
+            # Fix JSON parsing by extracting just the JSON part from stdout
+            try:
+                # Try to find JSON in the output - look for the first '{' and last '}'
+                json_start = stdout_data.find('{')
+                json_end = stdout_data.rfind('}') + 1
+                
+                if json_start >= 0 and json_end > json_start:
+                    json_str = stdout_data[json_start:json_end]
+                    self.logger.debug(f"Extracted JSON: {json_str}")
+                    result = json.loads(json_str)
+                else:
+                    self.logger.error(f"Could not find JSON in output: {stdout_data}")
+                    raise GmailAPIError(f"Could not find JSON in subprocess output: {stdout_data[:100]}...")
+            except json.JSONDecodeError as e:
+                self.logger.error(f"JSON parsing error: {e}")
+                self.logger.error(f"Raw output: {stdout_data}")
+                raise GmailAPIError("Failed to parse subprocess output")
+            except Exception as e:
+                self.logger.error(f"Error processing subprocess output: {e}")
+                self.logger.error(f"Stdout: {stdout_data}")
+                self.logger.error(f"Stderr: {stderr_data}")
+                raise GmailAPIError("Failed to parse subprocess output")
+            
+            # Check for success
+            if result.get('success', False):
+                self.logger.info(f"Email sent successfully via Gmail API: {result.get('message_id')}")
+                return result
+            else:
+                error = result.get('error', 'Unknown error')
+                self.logger.error(f"Gmail API error: {error}")
+                raise GmailAPIError(f"Failed to send email: {error}")
         
         finally:
             # Clean up temporary files
