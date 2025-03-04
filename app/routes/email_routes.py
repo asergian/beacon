@@ -1652,6 +1652,18 @@ def stream_email_analysis():
 async def send_email():
     """API endpoint to send an email response."""
     try:
+        # Debug environment information
+        import os
+        import sys
+        import platform
+        logger.info(f"Environment: Python {sys.version}, Platform: {platform.platform()}")
+        logger.info(f"Running on: {os.environ.get('RENDER', 'Local')}")
+        logger.info(f"App config keys: {[k for k in current_app.config.keys() if not k.startswith('_')]}")
+        
+        # Log the request details for debugging
+        logger.info(f"Request to send_email: {request.path}, method: {request.method}")
+        logger.info(f"Request headers: {dict(request.headers)}")
+        
         data = request.json
         to = data.get('to')
         subject = data.get('subject')
@@ -1694,7 +1706,9 @@ async def send_email():
                     await gmail_client.connect(user_email)
                     logger.info(f"Will send email via Gmail API as {user_email}")
                 except Exception as e:
+                    import traceback
                     logger.error(f"Failed to initialize Gmail client: {e}")
+                    logger.error(f"Gmail client initialization traceback: {traceback.format_exc()}")
                     send_via_gmail = False
         
         success = False
@@ -1715,10 +1729,14 @@ async def send_email():
                 if success:
                     logger.info(f"Email sent successfully via Gmail API to {to}")
                 else:
-                    raise Exception(result.get('error', 'Unknown error'))
+                    error_msg = result.get('error', 'Unknown error')
+                    logger.error(f"Gmail API sending error: {error_msg}")
+                    raise Exception(error_msg)
                     
             except Exception as e:
+                import traceback
                 logger.error(f"Failed to send email via Gmail API: {e}")
+                logger.error(f"Gmail API traceback: {traceback.format_exc()}")
                 # Fall back to SMTP if Gmail API fails
                 send_via_gmail = False
         
@@ -1733,12 +1751,28 @@ async def send_email():
                 'use_tls': current_app.config.get('SMTP_USE_TLS')
             }
             
+            # Log the SMTP configuration (without sensitive info)
+            logger.info(f"SMTP configuration: server={email_config['server']}, email={email_config['email']}, port={email_config['port']}, use_tls={email_config['use_tls']}")
+            
             # Check if email configuration is complete
             if not all([email_config['server'], email_config['email'], email_config['password']]):
-                logger.error("Missing SMTP configuration")
+                missing_fields = []
+                if not email_config['server']:
+                    missing_fields.append('SMTP_SERVER')
+                if not email_config['email']:
+                    missing_fields.append('SMTP_EMAIL')
+                if not email_config['password']:
+                    missing_fields.append('SMTP_PASSWORD')
+                    
+                logger.error(f"Missing SMTP configuration: {', '.join(missing_fields)}")
+                
+                # Check if fallbacks are configured correctly
+                logger.error(f"Checking fallbacks - SMTP_EMAIL fallback to EMAIL: {current_app.config.get('EMAIL')}")
+                logger.error(f"Checking fallbacks - SMTP_PASSWORD fallback to IMAP_PASSWORD: {current_app.config.get('IMAP_PASSWORD') is not None}")
+                
                 return jsonify({
                     'success': False,
-                    'message': 'Email service not configured'
+                    'message': f'Email service not configured: missing {", ".join(missing_fields)}'
                 }), 500
             
             try:
@@ -1762,7 +1796,9 @@ async def send_email():
                     raise EmailSendingError("Failed to send email")
                     
             except EmailSendingError as e:
+                import traceback
                 logger.error(f"Failed to send email via SMTP: {str(e)}")
+                logger.error(f"SMTP traceback: {traceback.format_exc()}")
                 return jsonify({
                     'success': False,
                     'message': f'Failed to send email: {str(e)}'
@@ -1802,7 +1838,15 @@ async def send_email():
         })
         
     except Exception as e:
+        import traceback
         logger.error(f"Error in send_email route: {e}")
+        logger.error(f"Complete traceback: {traceback.format_exc()}")
+        
+        # Check configuration state
+        logger.error(f"App config SMTP_SERVER: {current_app.config.get('SMTP_SERVER')}")
+        logger.error(f"App config SMTP_EMAIL: {current_app.config.get('SMTP_EMAIL')}")
+        logger.error(f"App config SMTP_PASSWORD exists: {current_app.config.get('SMTP_PASSWORD') is not None}")
+        
         return jsonify({
             'success': False,
             'message': f'An unexpected error occurred: {str(e)}'
