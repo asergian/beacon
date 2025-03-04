@@ -1073,7 +1073,14 @@ async function sendEmailResponse() {
         }
         
         if (data.success) {
-            showToast('Email sent successfully', 'success');
+            // Show success message with information about which method was used
+            let successMessage = 'Email sent successfully';
+            if (data.sent_via === 'gmail_api') {
+                successMessage += ' via your Gmail account';
+            } else {
+                successMessage += ' via Beacon mail server';
+            }
+            showToast(successMessage, 'success');
             
             // Reset form
             window.editor.setData('');
@@ -1092,7 +1099,7 @@ async function sendEmailResponse() {
         // Reset button state
         if (sendButton) {
             sendButton.disabled = false;
-            sendButton.innerHTML = '<span class="button-icon">📤</span> Send';
+            sendButton.innerHTML = '<svg class="button-icon" viewBox="0 0 24 24" width="18" height="18"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"></path></svg> Send';
         }
     }
 }

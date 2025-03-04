@@ -40,6 +40,8 @@ import email.utils
 import platform
 import socket
 from zoneinfo import ZoneInfo
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 # Set more aggressive garbage collection thresholds
 # This helps reclaim memory more frequently
@@ -557,6 +559,81 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
         return []
 
 
+async def send_email_with_gmail_api(service, to: str, subject: str, content: str, cc: List[str] = None, 
+                                    bcc: List[str] = None, html_content: str = None) -> Dict:
+    """
+    Send an email using the Gmail API.
+    
+    Args:
+        service: The Gmail API service object
+        to: Recipient email address(es) - comma-separated string or single address
+        subject: Email subject
+        content: Plain text email content
+        cc: Optional list of CC recipients
+        bcc: Optional list of BCC recipients
+        html_content: Optional HTML content (if not provided, plain text content will be used)
+        
+    Returns:
+        Dict: Response containing message ID and other details
+        
+    Raises:
+        GmailAPIError: If the email sending fails
+    """
+    try:
+        # Create message
+        message = MIMEMultipart('alternative')
+        message['to'] = to
+        message['subject'] = subject
+        
+        # Add CC if provided
+        if cc:
+            if isinstance(cc, list):
+                message['cc'] = ','.join(cc)
+            else:
+                message['cc'] = cc
+                
+        # Add BCC if provided
+        if bcc:
+            if isinstance(bcc, list):
+                message['bcc'] = ','.join(bcc)
+            else:
+                message['bcc'] = bcc
+        
+        # Attach plain text part
+        plain_part = MIMEText(content, 'plain')
+        message.attach(plain_part)
+        
+        # Attach HTML part if provided
+        if html_content:
+            html_part = MIMEText(html_content, 'html')
+            message.attach(html_part)
+        
+        # Encode the message for the Gmail API
+        encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+        
+        # Create the message body for the API
+        message_body = {
+            'raw': encoded_message
+        }
+        
+        # Send the message
+        logger.info(f"Sending email to {to} with subject: {subject}")
+        message = service.users().messages().send(userId='me', body=message_body).execute()
+        logger.info(f"Email sent successfully. Message ID: {message.get('id')}")
+        
+        return {
+            'success': True,
+            'message_id': message.get('id'),
+            'thread_id': message.get('threadId'),
+            'label_ids': message.get('labelIds', [])
+        }
+        
+    except Exception as e:
+        error_msg = f"Failed to send email via Gmail API: {str(e)}"
+        logger.error(error_msg)
+        raise GmailAPIError(error_msg)
+
+
 async def main(credentials_json, user_email, query, include_spam_trash, days_back, max_results=100, user_timezone='US/Pacific'):
     """Main function to run Gmail API operations."""
     try:
@@ -663,6 +740,16 @@ if __name__ == "__main__":
     parser.add_argument('--max_results', type=int, default=100, help='Maximum number of results to fetch')
     parser.add_argument('--user_timezone', default='US/Pacific', help='User timezone (e.g., "America/New_York")')
     
+    # Add new arguments for email sending functionality
+    parser.add_argument('--action', choices=['fetch_emails', 'send_email'], default='fetch_emails',
+                      help='Action to perform (fetch_emails or send_email)')
+    parser.add_argument('--to', help='Recipient email address(es) for send_email action')
+    parser.add_argument('--subject', help='Email subject for send_email action')
+    parser.add_argument('--content', help='Email content (plain text) or @file path for send_email action')
+    parser.add_argument('--html_content', help='Email HTML content or @file path for send_email action')
+    parser.add_argument('--cc', help='CC recipients for send_email action')
+    parser.add_argument('--bcc', help='BCC recipients for send_email action')
+    
     args = parser.parse_args()
     
     # Handle credentials from file (if specified with @)
@@ -675,6 +762,21 @@ if __name__ == "__main__":
     else:
         credentials_json = credentials_data
     
+    # Handle content and html_content from file (if specified with @)
+    content = args.content
+    if content and content.startswith("@"):
+        # Read content from file
+        file_path = content[1:]
+        with open(file_path, 'r') as f:
+            content = f.read()
+            
+    html_content = args.html_content
+    if html_content and html_content.startswith("@"):
+        # Read HTML content from file
+        file_path = html_content[1:]
+        with open(file_path, 'r') as f:
+            html_content = f.read()
+    
     try:
         # Log starting memory usage
         logger.info(f"Initial memory usage: {os.popen(f'ps -p {os.getpid()} -o rss=').read().strip()} KB")
@@ -684,10 +786,16 @@ if __name__ == "__main__":
         
         # Set up signal handler
         def handle_timeout(signum, frame):
-            print(json.dumps({
-                "error": "Timeout reached while fetching emails",
-                "emails": []
-            }))
+            if args.action == 'send_email':
+                print(json.dumps({
+                    "success": False,
+                    "error": "Timeout reached while processing request",
+                }))
+            else:
+                print(json.dumps({
+                    "error": "Timeout reached while fetching emails",
+                    "emails": []
+                }))
             sys.exit(1)
             
         # Set a timeout (e.g. 5 minutes) to prevent hanging
@@ -702,24 +810,65 @@ if __name__ == "__main__":
             except Exception as e:
                 logger.warning(f"Could not set process priority: {e}")
         
-        # Run the main function
-        asyncio.run(main(
-            credentials_json=credentials_json,
-            user_email=args.user_email,
-            query=args.query,
-            include_spam_trash=args.include_spam_trash,
-            days_back=args.days_back,
-            max_results=args.max_results,
-            user_timezone=args.user_timezone
-        ))
-        
+        # Handle different actions
+        if args.action == 'send_email':
+            # Validate required parameters for sending email
+            if not args.to or not content:
+                print(json.dumps({
+                    "success": False,
+                    "error": "Missing required parameters for send_email action: to and content"
+                }))
+                sys.exit(1)
+                
+            # Execute send_email function
+            try:
+                # Use asyncio.run for send_email action
+                async def send_email_task():
+                    service = await create_gmail_service(json.loads(credentials_json))
+                    return await send_email_with_gmail_api(
+                        service,
+                        to=args.to,
+                        subject=args.subject or "",
+                        content=content,
+                        cc=args.cc,
+                        bcc=args.bcc,
+                        html_content=html_content
+                    )
+                
+                result = asyncio.run(send_email_task())
+                print(json.dumps(result))
+                sys.exit(0)
+            except Exception as e:
+                print(json.dumps({
+                    "success": False,
+                    "error": str(e)
+                }))
+                sys.exit(1)
+        else:
+            # Run the main function for fetch_emails action (original behavior)
+            asyncio.run(main(
+                credentials_json=credentials_json,
+                user_email=args.user_email,
+                query=args.query,
+                include_spam_trash=args.include_spam_trash,
+                days_back=args.days_back,
+                max_results=args.max_results,
+                user_timezone=args.user_timezone
+            ))
+            
     except Exception as e:
         # Print error as JSON response
-        error_response = {
-            "error": str(e),
-            "emails": []
-        }
-        print(json.dumps(error_response))
+        if args.action == 'send_email':
+            print(json.dumps({
+                "success": False,
+                "error": str(e)
+            }))
+        else:
+            error_response = {
+                "error": str(e),
+                "emails": []
+            }
+            print(json.dumps(error_response))
         sys.exit(1)
     finally:
         # Ensure all resources are cleaned up before exit

@@ -437,6 +437,144 @@ class GmailClientSubprocess:
                 except Exception as e:
                     self.logger.warning(f"Error removing credentials file: {e}")
     
+    async def send_email(self, to: str, subject: str, content: str, cc: List[str] = None, 
+                         bcc: List[str] = None, html_content: str = None, user_email: str = None) -> Dict:
+        """
+        Send an email using the Gmail API through a subprocess.
+        
+        Args:
+            to: Recipient email address(es) - comma-separated string or single address
+            subject: Email subject
+            content: Plain text email content
+            cc: Optional list of CC recipients
+            bcc: Optional list of BCC recipients
+            html_content: Optional HTML content (if not provided, plain text content will be used)
+            user_email: Optional user email to send as (defaults to connected user)
+            
+        Returns:
+            Dict: Response containing message ID and other details
+            
+        Raises:
+            GmailAPIError: If the email sending fails or credentials are invalid
+        """
+        if not self._credentials:
+            if not user_email and not self._user_email:
+                raise GmailAPIError("Not connected to Gmail API. Call connect() first.")
+            await self.connect(user_email or self._user_email)
+        
+        user = user_email or self._user_email
+        
+        # Temporary file for credentials
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as credentials_file:
+            credentials_path = credentials_file.name
+            # Extract credentials data from the credentials object
+            creds_data = {
+                'token': self._credentials.token,
+                'refresh_token': self._credentials.refresh_token,
+                'token_uri': self._credentials.token_uri,
+                'client_id': self._credentials.client_id,
+                'client_secret': self._credentials.client_secret,
+                'scopes': self._credentials.scopes
+            }
+            # Write credentials to temp file
+            json.dump(creds_data, credentials_file)
+        
+        try:
+            # Build command to execute subprocess
+            python_executable = sys.executable
+            subprocess_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gmail_subprocess.py")
+            
+            # Create command for sending email
+            cmd_parts = [
+                python_executable,
+                subprocess_path,
+                "--credentials", f"@{credentials_path}",
+                "--user_email", user,
+                "--action", "send_email",
+                "--to", to,
+                "--subject", f"{subject}"
+            ]
+            
+            # Add optional parameters
+            if cc:
+                if isinstance(cc, list):
+                    cmd_parts.extend(["--cc", ",".join(cc)])
+                else:
+                    cmd_parts.extend(["--cc", cc])
+            
+            if bcc:
+                if isinstance(bcc, list):
+                    cmd_parts.extend(["--bcc", ",".join(bcc)])
+                else:
+                    cmd_parts.extend(["--bcc", bcc])
+            
+            # Content and HTML content need to be written to temporary files to avoid command line issues
+            with tempfile.NamedTemporaryFile(mode='w+', delete=False) as content_file:
+                content_path = content_file.name
+                content_file.write(content)
+            
+            cmd_parts.extend(["--content", f"@{content_path}"])
+            
+            if html_content:
+                with tempfile.NamedTemporaryFile(mode='w+', delete=False) as html_file:
+                    html_path = html_file.name
+                    html_file.write(html_content)
+                cmd_parts.extend(["--html_content", f"@{html_path}"])
+            
+            # Create process
+            cmd = " ".join(cmd_parts)
+            self.logger.info(f"Executing command: {cmd}")
+            
+            # Use asyncio.create_subprocess_exec for better security and argument handling
+            process = await asyncio.create_subprocess_exec(
+                *cmd_parts,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            # Set up concurrent readers for stdout and stderr
+            async def read_stdout():
+                data = await process.stdout.read()
+                return data.decode('utf-8')
+            
+            async def read_stderr():
+                data = await process.stderr.read()
+                return data.decode('utf-8')
+            
+            # Wait for both readers
+            stdout_data, stderr_data = await asyncio.gather(read_stdout(), read_stderr())
+            
+            # Wait for process to complete
+            exit_code = await process.wait()
+            
+            # Process the output
+            if exit_code == 0 and stdout_data:
+                try:
+                    result = json.loads(stdout_data)
+                    if result.get('success', False):
+                        self.logger.info(f"Email sent successfully via Gmail API: {result.get('message_id')}")
+                        return result
+                    else:
+                        error = result.get('error', 'Unknown error')
+                        self.logger.error(f"Gmail API error: {error}")
+                        raise GmailAPIError(f"Failed to send email: {error}")
+                except json.JSONDecodeError:
+                    self.logger.error(f"Failed to parse output: {stdout_data}")
+                    raise GmailAPIError("Failed to parse subprocess output")
+            else:
+                error = stderr_data or f"Process exited with code {exit_code}"
+                self.logger.error(f"Subprocess error: {error}")
+                raise GmailAPIError(f"Subprocess error: {error}")
+        
+        finally:
+            # Clean up temporary files
+            if 'credentials_path' in locals():
+                os.unlink(credentials_path)
+            if 'content_path' in locals():
+                os.unlink(content_path)
+            if 'html_path' in locals() and html_content:
+                os.unlink(html_path)
+    
     async def close(self):
         """Close the Gmail API connection."""
         # No connection to close in the subprocess model

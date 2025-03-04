@@ -1674,73 +1674,136 @@ async def send_email():
         if cc:
             cc_list = [email.strip() for email in cc.split(',') if email.strip()]
         
-        # Initialize email sender
-        email_config = {
-            'server': current_app.config.get('SMTP_SERVER'),
-            'email': current_app.config.get('SMTP_EMAIL'),
-            'password': current_app.config.get('SMTP_PASSWORD'),
-            'port': current_app.config.get('SMTP_PORT'),
-            'use_tls': current_app.config.get('SMTP_USE_TLS')
-        }
+        # Check if user is authenticated with Gmail
+        user_email = None
+        send_via_gmail = False
+        gmail_client = None
         
-        # Check if email configuration is complete
-        if not all([email_config['server'], email_config['email'], email_config['password']]):
-            logger.error("Missing SMTP configuration")
-            return jsonify({
-                'success': False,
-                'message': 'Email service not configured'
-            }), 500
-        
-        try:
-            # Create email sender and send the email
-            sender = EmailSender(**email_config)
-            success = await sender.send_email(
-                to=to,
-                subject=subject,
-                content=content,
-                cc=cc_list,
-                html_content=content  # Use the same content for HTML (it's from CKEditor)
-            )
+        if 'user' in session and 'email' in session['user']:
+            user_email = session['user']['email']
             
-            if not success:
-                raise EmailSendingError("Failed to send email")
-            
-            # If this is a response to an existing email, update its status
-            if original_email_id:
-                # In a real app, you would update the database
-                logger.info(f"Marking email {original_email_id} as responded")
-            
-            # Log user activity asynchronously
-            if 'user' in session and 'id' in session['user']:
-                user_id = session['user']['id']
+            # Check if Gmail credentials are available
+            if 'credentials' in session:
+                send_via_gmail = True
+                
+                # Initialize Gmail client
                 try:
-                    await current_app.loop.run_in_executor(None, log_activity, 
-                        user_id, 'email_sent', "Email sent", {
-                            'to': to,
-                            'subject': subject,
-                            'original_email_id': original_email_id
-                        }
-                    )
-                except Exception as log_error:
-                    logger.error(f"Failed to log activity: {log_error}")
-                    # Don't fail the request if logging fails
+                    from app.email.core.gmail_client_subprocess import GmailClientSubprocess
+                    gmail_client = GmailClientSubprocess()
+                    # Connect to Gmail API
+                    await gmail_client.connect(user_email)
+                    logger.info(f"Will send email via Gmail API as {user_email}")
+                except Exception as e:
+                    logger.error(f"Failed to initialize Gmail client: {e}")
+                    send_via_gmail = False
+        
+        success = False
+        
+        if send_via_gmail and gmail_client:
+            try:
+                # Send email via Gmail API
+                result = await gmail_client.send_email(
+                    to=to,
+                    subject=subject,
+                    content=content,
+                    cc=cc_list,
+                    html_content=content,  # Use the same content for HTML (it's from CKEditor)
+                    user_email=user_email
+                )
+                
+                success = result.get('success', False)
+                if success:
+                    logger.info(f"Email sent successfully via Gmail API to {to}")
+                else:
+                    raise Exception(result.get('error', 'Unknown error'))
+                    
+            except Exception as e:
+                logger.error(f"Failed to send email via Gmail API: {e}")
+                # Fall back to SMTP if Gmail API fails
+                send_via_gmail = False
+        
+        # Fall back to SMTP if not using Gmail or if Gmail API failed
+        if not send_via_gmail:
+            # Initialize email sender with SMTP configuration
+            email_config = {
+                'server': current_app.config.get('SMTP_SERVER'),
+                'email': current_app.config.get('SMTP_EMAIL'),
+                'password': current_app.config.get('SMTP_PASSWORD'),
+                'port': current_app.config.get('SMTP_PORT'),
+                'use_tls': current_app.config.get('SMTP_USE_TLS')
+            }
             
-            # Return success response
-            return jsonify({
-                'success': True,
-                'message': 'Email sent successfully'
-            })
+            # Check if email configuration is complete
+            if not all([email_config['server'], email_config['email'], email_config['password']]):
+                logger.error("Missing SMTP configuration")
+                return jsonify({
+                    'success': False,
+                    'message': 'Email service not configured'
+                }), 500
             
-        except EmailSendingError as e:
-            logger.error(f"Failed to send email: {str(e)}")
-            return jsonify({
-                'success': False,
-                'message': f'Failed to send email: {str(e)}'
-            }), 500
-            
+            try:
+                # Create email sender and send the email
+                from app.email.core.email_sender import EmailSender, EmailSendingError
+                sender = EmailSender(**email_config)
+                
+                # Set reply-to as the user's email if available
+                reply_to = user_email if user_email else None
+                
+                success = await sender.send_email(
+                    to=to,
+                    subject=subject,
+                    content=content,
+                    cc=cc_list,
+                    html_content=content,  # Use the same content for HTML (it's from CKEditor)
+                    reply_to=reply_to
+                )
+                
+                if not success:
+                    raise EmailSendingError("Failed to send email")
+                    
+            except EmailSendingError as e:
+                logger.error(f"Failed to send email via SMTP: {str(e)}")
+                return jsonify({
+                    'success': False,
+                    'message': f'Failed to send email: {str(e)}'
+                }), 500
+        
+        # If this is a response to an existing email, update its status
+        if original_email_id:
+            # In a real app, you would update the database
+            logger.info(f"Marking email {original_email_id} as responded")
+        
+        # Log user activity
+        if 'user' in session and 'id' in session['user']:
+            user_id = session['user']['id']
+            try:
+                # Direct call to log_activity (we're already in an async function with a loop)
+                from ..models import log_activity
+                log_activity(
+                    user_id=user_id,
+                    activity_type='email_sent',
+                    description="Email sent",
+                    metadata={
+                        'to': to,
+                        'subject': subject,
+                        'original_email_id': original_email_id,
+                        'sent_via': 'gmail_api' if send_via_gmail else 'smtp'
+                    }
+                )
+            except Exception as log_error:
+                logger.error(f"Failed to log activity: {log_error}")
+                # Don't fail the request if logging fails
+        
+        # Return success response
+        return jsonify({
+            'success': True,
+            'message': 'Email sent successfully',
+            'sent_via': 'gmail_api' if send_via_gmail else 'smtp'
+        })
+        
     except Exception as e:
         logger.error(f"Error in send_email route: {e}")
         return jsonify({
             'success': False,
-            'message': 'An unexpected error occurred'
+            'message': f'An unexpected error occurred: {str(e)}'
         }), 500
