@@ -59,7 +59,7 @@ class GmailClientSubprocess:
         self._credentials = None
         self._script_path = SUBPROCESS_PATH
         
-        self.logger.info(f"GmailClientSubprocess initialized with script: {self._script_path}")
+        self.logger.debug(f"GmailClientSubprocess initialized with script: {self._script_path}")
         
         # Verify the script exists
         if not os.path.exists(self._script_path):
@@ -165,7 +165,7 @@ class GmailClientSubprocess:
                 try:
                     # Create timezone object from string
                     user_tz = ZoneInfo(user_timezone)
-                    self.logger.info(f"Using user timezone: {user_timezone}")
+                    self.logger.debug(f"Using user timezone: {user_timezone}")
                 except (ImportError, Exception) as e:
                     self.logger.warning(f"Could not use user timezone ({user_timezone}), falling back to US/Pacific: {e}")
                     try:
@@ -184,17 +184,22 @@ class GmailClientSubprocess:
                 date_cutoff = utc_date.strftime('%Y/%m/%d')
                 query = f"after:{date_cutoff}"
                 
-                self.logger.info(f"Fetching emails with days_back={days_back}, adjusted_days={adjusted_days}\n    User timezone: {user_timezone}\n    User now: {user_now}\n    User midnight cutoff: {user_midnight}\n    UTC query cutoff: {utc_date}\n    Gmail query: {query}")
+                self.logger.debug(f"Fetching emails with days_back={days_back}, adjusted_days={adjusted_days}")
+                self.logger.debug(f"    User timezone: {user_timezone}")
+                self.logger.debug(f"    User now: {user_now}")
+                self.logger.debug(f"    User midnight cutoff: {user_midnight}")
+                self.logger.debug(f"    UTC query cutoff: {utc_date}")
+                self.logger.debug(f"    Gmail query: {query}")
             
             # Modify the query to exclude emails from the SENT folder
             query = f"{query} -in:sent"
-            self.logger.info(f"Modified query to exclude sent emails: {query}")
+            self.logger.debug(f"Modified query to exclude sent emails: {query}")
             
             # Use subprocess script path from the module
             subprocess_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gmail_subprocess.py")
             
             # Execute the subprocess command
-            self.logger.info(f"Fetching emails with query: {query}")
+            self.logger.debug(f"Fetching emails with query: {query}")
             
             # Convert include_spam_trash to a command-line argument
             include_spam_trash_arg = "--include_spam_trash" if include_spam_trash else ""
@@ -406,7 +411,7 @@ class GmailClientSubprocess:
             
             # Get emails
             emails = email_data.get('emails', [])
-            self.logger.info(f"Deserialized {len(emails)} emails from subprocess")
+            self.logger.debug(f"Deserialized {len(emails)} emails from subprocess")
             log_memory_usage(self.logger, "After JSON Deserialization")
             
             # Since we've already done parsing and filtering in the subprocess,
@@ -419,7 +424,7 @@ class GmailClientSubprocess:
             
             # Now we can include the filtering info from the subprocess
             included_days = f" since {days_back} days ago" if days_back > 1 else " from today"
-            self.logger.info(f"Fetched {fetched_count} emails from Gmail API{included_days}")
+            self.logger.debug(f"Fetched {fetched_count} emails from Gmail API{included_days}")
             
             log_memory_usage(self.logger, "After Email Processing - Main Process")
             
@@ -578,7 +583,7 @@ class GmailClientSubprocess:
             
             # Check for success
             if result.get('success', False):
-                self.logger.info(f"Email sent successfully via Gmail API: {result.get('message_id')}")
+                self.logger.debug(f"Email sent successfully via Gmail API: {result.get('message_id')}")
                 return result
             else:
                 error = result.get('error', 'Unknown error')

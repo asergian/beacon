@@ -831,7 +831,7 @@ OUTPUT FORMAT
                 responses = await asyncio.gather(*[process_message(msg) for msg in messages])
                 
                 processing_time = time.time() - start_time
-                self.logger.info(f"Batch processing completed in {processing_time:.2f} seconds")
+                self.logger.debug(f"Batch processing completed in {processing_time:.2f} seconds")
 
             except Exception as e:
                 self.logger.error(f"OpenAI batch API call failed: {e}")
@@ -877,7 +877,8 @@ OUTPUT FORMAT
                 
                 results.append(analysis)
 
-            self.logger.info(
+            self.logger.info(f"Batch processing stats: emails processed: {len(batch)}, total_tokens: {total_tokens}, avg_tokens: {total_tokens/len(batch):.1f}, total_cost: ${total_cost:.4f}")
+            self.logger.debug(
                 f"Batch processing stats:\n"
                 f"    Emails processed: {len(batch)}\n"
                 f"    Total tokens: {total_tokens}\n"

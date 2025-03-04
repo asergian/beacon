@@ -338,7 +338,7 @@ class EmailProcessor:
                 log_memory_usage(self.logger, "After NLP Analysis")
                 
                 nlp_end = time.time()
-                self.logger.info(f"Batch NLP processing completed in {nlp_end - nlp_start:.2f} seconds\n    Average time per email: {(nlp_end - nlp_start)/len(email_batch):.2f} seconds")
+                self.logger.info(f"Batch NLP processing completed in {nlp_end - nlp_start:.2f} seconds (avg / email: {(nlp_end - nlp_start)/len(email_batch):.2f} seconds)")
             
             except Exception as e:
                 self.logger.error(f"Batch NLP processing failed: {e}")
@@ -363,7 +363,7 @@ class EmailProcessor:
                     log_memory_usage(self.logger, "After LLM Analysis")
                     
                     llm_end = time.time()
-                    self.logger.info(f"Batch LLM processing completed in {llm_end - llm_start:.2f} seconds\n    Average time per email: {(llm_end - llm_start)/len(email_batch):.2f} seconds")
+                    self.logger.info(f"Batch LLM processing completed in {llm_end - llm_start:.2f} seconds (avg / email: {(llm_end - llm_start)/len(email_batch):.2f} seconds)")
                     
                     # Now combine all results into final processed emails
                     for i, email in enumerate(email_batch):

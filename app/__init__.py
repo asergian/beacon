@@ -16,7 +16,7 @@ Functions:
     create_app: Factory function that creates and configures the Flask application.
 """
 
-from flask import Flask, g, current_app, session
+from flask import Flask, g, current_app, session, jsonify
 import logging
 from openai import AsyncOpenAI
 from typing import Optional
@@ -347,6 +347,12 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
         """Health check endpoint for Render."""
         return {'status': 'healthy'}, 200
 
+    @flask_app.errorhandler(Exception)
+    def handle_exception(e):
+        # Log the error
+        flask_app.logger.error(f"Unhandled exception: {e}")
+        return jsonify({'success': False, 'message': 'An internal error occurred.'}), 500
+
     # Create and store the ASGI application globally
     global application
     application = WsgiToAsgi(flask_app)
@@ -354,7 +360,7 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
     # Add memory profiling middleware
     if os.environ.get('PROFILE_MEMORY'):
         flask_app.wsgi_app = MemoryProfilingMiddleware(flask_app.wsgi_app)
-        logger.info("Memory profiling enabled")
+        logger.info("Memory profiling enabled\n")
     
     return flask_app
 

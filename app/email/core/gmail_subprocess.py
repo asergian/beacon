@@ -559,6 +559,58 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
         return []
 
 
+async def send_email_with_retry(service, to: str, subject: str, content: str, cc: List[str] = None, 
+                                 bcc: List[str] = None, html_content: str = None, max_retries: int = 3) -> Dict:
+    """
+    Send an email with retry logic in case of temporary failures.
+    
+    Args:
+        service: The Gmail API service object
+        to: Recipient email address(es)
+        subject: Email subject
+        content: Plain text content
+        cc: Optional CC recipients
+        bcc: Optional BCC recipients
+        html_content: Optional HTML content
+        max_retries: Maximum number of retry attempts
+        
+    Returns:
+        Dict: Response containing message ID and other details
+    """
+    retries = 0
+    last_error = None
+    
+    while retries < max_retries:
+        try:
+            # Try sending the email
+            result = await send_email_with_gmail_api(service, to, subject, content, cc, bcc, html_content)
+            # If successful, return the result
+            return result
+        except Exception as e:
+            last_error = e
+            retries += 1
+            
+            # Check for rate limit errors specifically
+            error_str = str(e).lower()
+            if "quota" in error_str or "rate limit" in error_str or "too many requests" in error_str:
+                wait_time = 2 ** retries  # Exponential backoff
+                logger.warning(f"Hit rate limit, retry {retries}/{max_retries} after {wait_time}s delay")
+                await asyncio.sleep(wait_time)
+            elif "invalid credentials" in error_str:
+                # No point retrying credential issues
+                logger.error("Invalid credentials error, not retrying")
+                break
+            else:
+                # For other errors, retry with a small delay
+                logger.warning(f"Email send failed, retry {retries}/{max_retries}: {e}")
+                await asyncio.sleep(1)
+    
+    # If we get here, all retries failed
+    error_msg = f"Failed to send email after {max_retries} attempts: {last_error}"
+    logger.error(error_msg)
+    raise GmailAPIError(error_msg)
+
+
 async def send_email_with_gmail_api(service, to: str, subject: str, content: str, cc: List[str] = None, 
                                     bcc: List[str] = None, html_content: str = None) -> Dict:
     """
@@ -580,10 +632,16 @@ async def send_email_with_gmail_api(service, to: str, subject: str, content: str
         GmailAPIError: If the email sending fails
     """
     try:
+        # Get user's email address
+        user_profile = service.users().getProfile(userId='me').execute()
+        sender_email = user_profile.get('emailAddress')
+        logger.info(f"Sending email as user: {sender_email}")
+        
         # Create message
         message = MIMEMultipart('alternative')
         message['to'] = to
         message['subject'] = subject
+        message['from'] = sender_email  # Add explicit From header
         
         # Add CC if provided
         if cc:
@@ -608,6 +666,9 @@ async def send_email_with_gmail_api(service, to: str, subject: str, content: str
             html_part = MIMEText(html_content, 'html')
             message.attach(html_part)
         
+        # Log full MIME message headers for debugging
+        logger.debug(f"MIME message headers: {dict(message.items())}")
+        
         # Encode the message for the Gmail API
         encoded_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
         
@@ -617,15 +678,38 @@ async def send_email_with_gmail_api(service, to: str, subject: str, content: str
         }
         
         # Send the message
-        logger.info(f"Sending email to {to} with subject: {subject}")
-        message = service.users().messages().send(userId='me', body=message_body).execute()
-        logger.info(f"Email sent successfully. Message ID: {message.get('id')}")
+        logger.info(f"Sending email from {sender_email} to {to} with subject: {subject}")
+        response = service.users().messages().send(userId='me', body=message_body).execute()
+        
+        # Log the full API response for debugging
+        logger.info(f"Gmail API response: {response}")
+        logger.info(f"Email sent successfully. Message ID: {response.get('id')}")
+        logger.info(f"Thread ID: {response.get('threadId')}")
+        logger.info(f"Label IDs: {response.get('labelIds', [])}")
+        
+        # Check if SENT label is in the response
+        label_ids = response.get('labelIds', [])
+        if 'SENT' not in label_ids:
+            logger.warning(f"SENT label not found in response labels: {label_ids}")
+            
+            # Try to manually add message to SENT label
+            try:
+                logger.info(f"Attempting to manually add message to SENT label")
+                modify_response = service.users().messages().modify(
+                    userId='me',
+                    id=response.get('id'),
+                    body={'addLabelIds': ['SENT']}
+                ).execute()
+                logger.info(f"Modified message labels: {modify_response}")
+            except Exception as label_error:
+                logger.error(f"Failed to add SENT label: {label_error}")
         
         return {
             'success': True,
-            'message_id': message.get('id'),
-            'thread_id': message.get('threadId'),
-            'label_ids': message.get('labelIds', [])
+            'message_id': response.get('id'),
+            'thread_id': response.get('threadId'),
+            'label_ids': response.get('labelIds', []),
+            'sender': sender_email
         }
         
     except Exception as e:
@@ -824,8 +908,10 @@ if __name__ == "__main__":
             try:
                 # Use asyncio.run for send_email action
                 async def send_email_task():
+                    logger.info(f"Creating Gmail service for sending email")
                     service = await create_gmail_service(json.loads(credentials_json))
-                    return await send_email_with_gmail_api(
+                    logger.info(f"Gmail service created, sending email with retry logic")
+                    return await send_email_with_retry(
                         service,
                         to=args.to,
                         subject=args.subject or "",
@@ -836,9 +922,13 @@ if __name__ == "__main__":
                     )
                 
                 result = asyncio.run(send_email_task())
+                logger.info(f"Email sending completed with result: {result}")
                 print(json.dumps(result))
                 sys.exit(0)
             except Exception as e:
+                logger.error(f"Exception during email sending: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
                 print(json.dumps({
                     "success": False,
                     "error": str(e)

@@ -16,7 +16,7 @@ class SubprocessNLPAnalyzer:
         """Initialize the analyzer."""
         self.logger = logging.getLogger(__name__)
         self.script_path = os.path.join(os.path.dirname(__file__), 'process_nlp.py')
-        self.logger.info(f"NLP subprocess script: {self.script_path}")
+        self.logger.debug(f"NLP subprocess script: {self.script_path}")
     
     async def analyze_batch(self, texts: List[str]) -> List[Dict[str, Any]]:
         """Analyze a batch of texts in a separate process."""
@@ -24,7 +24,7 @@ class SubprocessNLPAnalyzer:
             return []
             
         start_time = time.time()
-        self.logger.info(f"Starting NLP analysis of {len(texts)} texts in subprocess")
+        self.logger.debug(f"Starting NLP analysis of {len(texts)} texts in subprocess")
         
         try:
             # Prepare input data
@@ -150,7 +150,7 @@ class SubprocessNLPAnalyzer:
                     results = results[:len(texts)]
                     
             processing_time = time.time() - start_time
-            self.logger.info(
+            self.logger.debug(
                 f"Subprocess NLP analysis completed in {processing_time:.2f}s "
                 f"(avg {processing_time/len(texts):.3f}s/text)"
             )

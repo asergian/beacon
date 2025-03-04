@@ -1045,7 +1045,7 @@ async function sendEmailResponse() {
     }
 
     try {
-        const response = await fetch('/email/api/send_email', {
+        const response = await fetch('/email/api/emails/send_email', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1058,10 +1058,21 @@ async function sendEmailResponse() {
                 original_email_id: originalEmailId
             })
         });
-
-        // Check if response is ok and has content
+        console.log("Response status:", response.status);
+        console.log("Response headers:", response.headers);
+        
+        // Check if response is ok
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Server error occurred' }));
+            console.error("Response not OK:", response.status, response.statusText);
+            const errorText = await response.text();
+            console.error("Error response body:", errorText);
+            
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch (e) {
+                errorData = { message: 'Server error occurred' };
+            }
             throw new Error(errorData.message || `Server error: ${response.status}`);
         }
 
@@ -1071,7 +1082,9 @@ async function sendEmailResponse() {
         } catch (error) {
             throw new Error('Invalid response from server');
         }
-        
+
+        console.log(data);
+
         if (data.success) {
             // Show success message with information about which method was used
             let successMessage = 'Email sent successfully';

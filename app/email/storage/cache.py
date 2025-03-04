@@ -83,7 +83,7 @@ class RedisEmailCache(EmailCache):
             try:
                 # Create timezone object from string
                 user_tz = ZoneInfo(user_timezone)
-                self.logger.info(f"Using user timezone for cache: {user_timezone}")
+                self.logger.debug(f"Using user timezone for cache: {user_timezone}")
             except (ImportError, Exception) as e:
                 self.logger.warning(f"Could not use user timezone ({user_timezone}) for cache, falling back to US/Pacific: {e}")
                 try:
@@ -260,7 +260,7 @@ class RedisEmailCache(EmailCache):
                     self.logger.error(f"Failed to store email {email.id}: {e}")
                     failed_count += 1
             
-            self.logger.info(f"Cache storage complete - Stored: {stored_count}, Failed: {failed_count}")
+            self.logger.info(f"Cache storage complete - Stored: {stored_count}, Failed: {failed_count}\n")
                     
         except Exception as e:
             self.logger.error(f"Error in store_many: {e}")
@@ -294,7 +294,7 @@ class RedisEmailCache(EmailCache):
                 self.logger.error(f"Failed to scan Redis keys during clear: {e}")
                 raise
                 
-            self.logger.info(f"Cache cleared - Deleted: {deleted_count}, Failed: {failed_count}")
+            self.logger.info(f"Cache cleared - Deleted: {deleted_count}, Failed: {failed_count}\n")
         except Exception as e:
             self.logger.error(f"Error clearing cache: {e}")
             raise
@@ -339,7 +339,7 @@ class RedisEmailCache(EmailCache):
                 self.logger.error(f"Failed to scan Redis keys during clear: {e}")
                 raise
                 
-            self.logger.info(f"All caches cleared by admin {user_email} - Deleted: {deleted_count}, Failed: {failed_count}")
+            self.logger.info(f"All caches cleared by admin {user_email} - Deleted: {deleted_count}, Failed: {failed_count}\n")
         except Exception as e:
             self.logger.error(f"Failed to clear all caches: {e}")
             raise
@@ -353,7 +353,7 @@ class RedisEmailCache(EmailCache):
             try:
                 # Create timezone object from string
                 user_tz = ZoneInfo(user_timezone)
-                self.logger.info(f"Using user timezone for cache cleanup: {user_timezone}")
+                self.logger.debug(f"Using user timezone for cache cleanup: {user_timezone}")
             except (ImportError, Exception) as e:
                 self.logger.warning(f"Could not use user timezone ({user_timezone}) for cache cleanup, falling back to US/Pacific: {e}")
                 try:
@@ -416,7 +416,7 @@ class RedisEmailCache(EmailCache):
                     
             self.logger.info(
                 f"Cache cleanup complete - Expired: {deleted_count}, "
-                f"Invalid: {invalid_count}, Failed: {failed_count}"
+                f"Invalid: {invalid_count}, Failed: {failed_count}\n"
             )
             
         except Exception as e:

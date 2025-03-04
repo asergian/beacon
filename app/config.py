@@ -114,6 +114,11 @@ def configure_logging():
                 'level': log_level,  # Use environment-specified level
                 'propagate': False
             },
+            'httpx': {
+                'handlers': ['console'],
+                'level': 'WARNING',  # Changed from DEBUG to WARNING to reduce log verbosity
+                'propagate': False
+            },
             'app.email.pipeline': {
                 'handlers': ['operation'],
                 'level': log_level,  # Use environment-specified level

@@ -1628,23 +1628,30 @@ def stream_email_analysis():
     )
     return response
 
-@email_bp.route('/api/send_email', methods=['POST'])
+# Helper function to run async code from a synchronous function
+def run_async(coroutine):
+    """Run an async function from a synchronous function."""
+    try:
+        # Create a new event loop for this thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(coroutine)
+        loop.close()
+        return result
+    except Exception as e:
+        logger.error(f"Error running async code: {e}")
+        raise
+
+@email_bp.route('/api/emails/send_email', methods=['POST'])
 @login_required
-async def send_email():
+def send_email():
     """API endpoint to send an email response."""
     try:
-        # Debug environment information
-        import os
-        import sys
-        import platform
-        logger.info(f"Environment: Python {sys.version}, Platform: {platform.platform()}")
-        logger.info(f"Running on: {os.environ.get('RENDER', 'Local')}")
-        logger.info(f"App config keys: {[k for k in current_app.config.keys() if not k.startswith('_')]}")
+        # Log the request details
+        logger.debug(f"Request to send_email: {request.path}, method: {request.method}")
+        logger.debug(f"Request headers: {dict(request.headers)}")
         
-        # Log the request details for debugging
-        logger.info(f"Request to send_email: {request.path}, method: {request.method}")
-        logger.info(f"Request headers: {dict(request.headers)}")
-        
+        # Get data from request
         data = request.json
         to = data.get('to')
         subject = data.get('subject')
@@ -1683,9 +1690,9 @@ async def send_email():
                 try:
                     from app.email.core.gmail_client_subprocess import GmailClientSubprocess
                     gmail_client = GmailClientSubprocess()
-                    # Connect to Gmail API
-                    await gmail_client.connect(user_email)
-                    logger.info(f"Will send email via Gmail API as {user_email}")
+                    # Connect to Gmail API using our async runner
+                    run_async(gmail_client.connect(user_email))
+                    logger.debug(f"Will send email via Gmail API as {user_email}")
                 except Exception as e:
                     import traceback
                     logger.error(f"Failed to initialize Gmail client: {e}")
@@ -1696,23 +1703,34 @@ async def send_email():
         
         if send_via_gmail and gmail_client:
             try:
-                # Send email via Gmail API
-                result = await gmail_client.send_email(
+                # Send email via Gmail API using our async runner
+                result = run_async(gmail_client.send_email(
                     to=to,
                     subject=subject,
                     content=content,
                     cc=cc_list,
                     html_content=content,  # Use the same content for HTML (it's from CKEditor)
                     user_email=user_email
-                )
+                ))
                 
-                success = result.get('success', False)
-                if success:
-                    logger.info(f"Email sent successfully via Gmail API to {to}")
+                # Log detailed information about the result
+                logger.debug(f"Gmail API send result: {result}")
+                
+                # If we get here, email was sent successfully - but double check the result
+                if isinstance(result, dict) and result.get('success', False):
+                    success = True
+                    logger.info(f"Email sent successfully via Gmail API to {to}\n")
+                    if 'message_id' in result:
+                        logger.debug(f"Message ID: {result['message_id']}")
+                        logger.debug(f"Thread ID: {result.get('thread_id')}")
+                        logger.debug(f"Label IDs: {result.get('label_ids', [])}")
+                        
+                        # Check if the message was properly labeled as SENT
+                        if 'label_ids' in result and 'SENT' not in result['label_ids']:
+                            logger.warning(f"Warning: Message was not automatically labeled as SENT")
                 else:
-                    error_msg = result.get('error', 'Unknown error')
-                    logger.error(f"Gmail API sending error: {error_msg}")
-                    raise Exception(error_msg)
+                    logger.error(f"Invalid response from Gmail API: {result}")
+                    success = False
                     
             except Exception as e:
                 import traceback
@@ -1720,6 +1738,7 @@ async def send_email():
                 logger.error(f"Gmail API traceback: {traceback.format_exc()}")
                 # Fall back to SMTP if Gmail API fails
                 send_via_gmail = False
+                success = False
         
         # Fall back to SMTP if not using Gmail or if Gmail API failed
         if not send_via_gmail:
@@ -1764,14 +1783,15 @@ async def send_email():
                 # Set reply-to as the user's email if available
                 reply_to = user_email if user_email else None
                 
-                success = await sender.send_email(
+                # Run the async send_email method using our async runner
+                success = run_async(sender.send_email(
                     to=to,
                     subject=subject,
                     content=content,
                     cc=cc_list,
                     html_content=content,  # Use the same content for HTML (it's from CKEditor)
                     reply_to=reply_to
-                )
+                ))
                 
                 if not success:
                     raise EmailSendingError("Failed to send email")
@@ -1785,16 +1805,16 @@ async def send_email():
                     'message': f'Failed to send email: {str(e)}'
                 }), 500
         
-        # If this is a response to an existing email, update its status
-        if original_email_id:
-            # In a real app, you would update the database
-            logger.info(f"Marking email {original_email_id} as responded")
+        # # If this is a response to an existing email, update its status.
+        # if original_email_id:
+        #     # In a real app, you would update the database
+        #     logger.debug(f"Marking email {original_email_id} as responded")
         
         # Log user activity
         if 'user' in session and 'id' in session['user']:
             user_id = session['user']['id']
             try:
-                # Direct call to log_activity (we're already in an async function with a loop)
+                # Direct call to log_activity
                 from ..models import log_activity
                 log_activity(
                     user_id=user_id,

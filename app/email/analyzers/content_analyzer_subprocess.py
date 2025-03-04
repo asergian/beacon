@@ -41,11 +41,8 @@ class ContentAnalyzerSubprocess:
         # Configure batch processing
         self.batch_size = 5
         
-        self.logger.info(
-            f"ContentAnalyzerSubprocess initialized\n"
-            f"    Using isolated subprocess for memory management\n"
-            f"    Batch size: {self.batch_size}"
-        )
+        self.logger.info(f"ContentAnalyzerSubprocess initialized with batch size {self.batch_size}")
+
 
     async def analyze_batch(self, texts: List[str]) -> List[Dict]:
         """Analyze a batch of texts efficiently using subprocess isolation."""
@@ -55,9 +52,8 @@ class ContentAnalyzerSubprocess:
         
         try:
             start_time = time.time()
-            self.logger.info(
+            self.logger.debug(
                 f"Starting batch NLP analysis of {len(texts)} texts\n"
-                f"    Using subprocess isolation\n"
                 f"    Batch size: {self.batch_size}"
             )
             
@@ -140,7 +136,7 @@ class ContentAnalyzerSubprocess:
                     results.append(self._create_error_response())
             
             processing_time = time.time() - start_time
-            self.logger.info(
+            self.logger.debug(
                 f"NLP Analysis completed - Subprocess: {processing_time:.2f}s "
                 f"(avg {processing_time/len(texts):.3f}s/text)"
             )

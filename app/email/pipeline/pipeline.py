@@ -84,9 +84,9 @@ class EmailPipeline:
             user_email = session['user'].get('email')
             if not user_email:
                 raise ValueError("No user email found in session")
-                
-            self.logger.info(
-                "Starting Email Pipeline\n"
+
+            self.logger.info(f"Starting Email Pipeline: User: {user_email} (ID: {user_id}), Days Back: {command.days_back}, Cache Duration: {command.cache_duration_days} days")    
+            self.logger.debug(f"Starting Email Pipeline\n"
                 f"    User: {user_email} (ID: {user_id})\n"
                 f"    Days Back: {command.days_back}\n"
                 f"    Cache Duration: {command.cache_duration_days} days"
@@ -107,7 +107,7 @@ class EmailPipeline:
             try:
                 # Try to parse the timezone from string (e.g., 'America/New_York')
                 timezone_obj = ZoneInfo(user_timezone)
-                self.logger.info(f"Using user timezone: {user_timezone}")
+                self.logger.debug(f"Using user timezone: {user_timezone}")
             except (ImportError, Exception) as e:
                 self.logger.warning(f"Could not use user timezone ({user_timezone}), falling back to US/Pacific: {e}")
                 try:
@@ -169,7 +169,8 @@ class EmailPipeline:
                 new_raw_emails = [email for email in raw_emails if email.get('id') not in [email.id for email in cached_emails]]
                 stats["new_emails"] = len(new_raw_emails)
                 
-                self.logger.info(
+                self.logger.info(f"Email Retrieval Complete: {len(cached_emails)} cached, {len(raw_emails)} total, {len(new_raw_emails)} new")
+                self.logger.debug(
                     "Email Retrieval Complete\n"
                     f"    From Cache: {len(cached_emails)} emails\n"
                     f"    From Gmail: {len(raw_emails)} emails\n"
@@ -228,8 +229,7 @@ class EmailPipeline:
                             # Log memory before starting batch processing
                             log_memory_usage(self.logger, "Before Starting Batch Processing")
                             
-                            self.logger.info(
-                                f"\nStarting Batch Processing\n"
+                            self.logger.info(f"Starting Batch Processing\n"
                                 f"    Total Emails to Process: {len(parsed_emails)}\n"
                                 f"    Batch Size: {command.batch_size}\n"
                                 f"    Total Batches: {batch_count}"
@@ -429,8 +429,8 @@ class EmailPipeline:
             if not user_email:
                 raise ValueError("No user email found in session")
                 
-            self.logger.info(
-                "Starting Email Pipeline (Streaming)\n"
+            self.logger.info(f"Starting Email Pipeline (Streaming) User: {user_email} (ID: {user_id}), Days Back: {command.days_back}, Cache Duration: {command.cache_duration_days} days")
+            self.logger.debug(f"Starting Email Pipeline (Streaming)\n"
                 f"    User: {user_email} (ID: {user_id})\n"
                 f"    Days Back: {command.days_back}\n"
                 f"    Cache Duration: {command.cache_duration_days} days"
@@ -451,7 +451,7 @@ class EmailPipeline:
             try:
                 # Try to parse the timezone from string (e.g., 'America/New_York')
                 timezone_obj = ZoneInfo(user_timezone)
-                self.logger.info(f"Using user timezone: {user_timezone}")
+                self.logger.debug(f"Using user timezone: {user_timezone}")
             except (ImportError, Exception) as e:
                 self.logger.warning(f"Could not use user timezone ({user_timezone}), falling back to US/Pacific: {e}")
                 try:
@@ -528,8 +528,8 @@ class EmailPipeline:
                 new_raw_emails = [email for email in raw_emails if email.get('id') not in cached_ids]
                 stats["new_emails"] = len(new_raw_emails)
                 
-                self.logger.info(
-                    "Email Retrieval Complete\n"
+                self.logger.info(f"Email Retrieval Complete: {len(raw_emails)} total, {len(cached_emails)} cached)\n")
+                self.logger.debug(f"Email Retrieval Complete\n"
                     f"    From Gmail: {len(raw_emails)} emails\n"
                     f"    Already Cached: {len(cached_ids)} emails\n"
                     f"    New Emails: {len(new_raw_emails)} emails"
@@ -629,8 +629,8 @@ class EmailPipeline:
                             # Keep only this critical memory log point
                             log_memory_usage(self.logger, "Before Starting Streaming Batch Processing")
                             
-                            self.logger.info(
-                                f"\nStarting Batch Processing\n"
+                            self.logger.info(f"Starting Batch Processing: {len(parsed_emails)} emails, batch size {command.batch_size}, total batches {batch_count}")
+                            self.logger.debug(f"Starting Batch Processing\n"
                                 f"    Total Emails to Process: {len(parsed_emails)}\n"
                                 f"    Batch Size: {command.batch_size}\n"
                                 f"    Total Batches: {batch_count}"
@@ -752,9 +752,10 @@ class EmailPipeline:
                 success_rate_parse = f"{stats['successfully_parsed']}/{stats['new_emails']}" if stats['new_emails'] > 0 else "N/A"
                 success_rate_analyze = f"{stats['successfully_analyzed']}/{stats['successfully_parsed']}" if stats['successfully_parsed'] > 0 else "N/A"
                 
-                self.logger.info(
-                    "Pipeline Complete\n"
-                    "Email Processing Summary:\n"
+                self.logger.info(f"Pipeline Complete: {stats['emails_fetched']} total emails, {stats['new_emails']} new")
+                self.logger.info(f"Pipeline Success Stats: {stats['successfully_parsed']}/{stats['new_emails']} parsed, {stats['successfully_analyzed']}/{stats['new_emails']} analyzed\n")
+                self.logger.debug(f"Pipeline Complete\n"
+                    f"Email Processing Summary:\n"
                     f"    Total Processed: {stats['emails_fetched']} emails\n"
                     f"    New Emails: {stats['new_emails']} emails\n"
                     f"    Success Rates:\n"
