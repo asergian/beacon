@@ -7,8 +7,6 @@ from .email_routes import email_bp
 from .test_routes import test_bp
 from .user_routes import user_bp
 from .static_pages import static_pages_bp
-import multiprocessing
-import os
 logger = logging.getLogger(__name__)
 
 def init_routes(app: Flask):

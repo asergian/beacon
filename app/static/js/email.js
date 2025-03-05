@@ -19,7 +19,7 @@ config.batch_size = 50;  // Batch size for UI updates
 // Function to fetch user settings
 async function fetchUserSettings() {
     try {
-        const response = await fetch('/email/api/user/settings');
+        const response = await fetch('/user/api/settings');
         if (response.ok) {
             const data = await response.json();
             if (data.status === 'success' && data.settings) {

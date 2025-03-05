@@ -391,4 +391,28 @@ def debug_activities():
         
     except Exception as e:
         logger.error(f"Failed to get debug activities: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500 
+        return jsonify({"error": str(e)}), 500
+
+@user_bp.route('/api/settings')
+@login_required
+def get_user_settings():
+    """Get user settings API endpoint."""
+    try:
+        user = User.query.get(session['user']['id'])
+        if not user:
+            return jsonify({
+                'status': 'error',
+                'message': 'User not found'
+            }), 404
+            
+        settings = user.get_all_settings()
+        return jsonify({
+            'status': 'success',
+            'settings': settings
+        })
+    except Exception as e:
+        logger.error(f"Failed to get user settings: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500 

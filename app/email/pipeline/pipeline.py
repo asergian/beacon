@@ -43,15 +43,11 @@ class EmailPipeline:
         parser: EmailParser,
         processor: EmailProcessor,
         cache: Optional[EmailCache] = None,
-        #rate_limiter: Optional[RateLimiter] = None,
-        #metrics: Optional[MetricsCollector] = None
     ):
         self.connection = connection
         self.parser = parser
         self.processor = processor
         self.cache = cache
-        #self.rate_limiter = rate_limiter
-        #self.metrics = metrics
         self.logger = logging.getLogger(__name__)
 
     async def get_analyzed_emails(self, command: AnalysisCommand) -> AnalysisResult:
