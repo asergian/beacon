@@ -1,4 +1,12 @@
-"""Email processing and viewing routes."""
+"""Email processing and viewing routes.
+
+This module provides routes for processing, analyzing, viewing, and 
+sending emails. It includes functionality for fetching and analyzing emails,
+streaming analysis results, and sending email responses.
+
+Typical usage example:
+    app.register_blueprint(email_bp, url_prefix='/email')
+"""
 
 from flask import Blueprint, current_app, render_template, jsonify, request, session, Response, stream_with_context, redirect, url_for
 import logging
@@ -20,7 +28,13 @@ email_bp = Blueprint('email', __name__)
 @email_bp.route('/')
 @login_required
 def home():
-    """Email home page."""
+    """Email home page route.
+    
+    Renders the email summary page. For demo users, redirects to the demo home.
+    
+    Returns:
+        Flask response: Rendered email summary template or redirect response.
+    """
     # Check if user is in demo mode and redirect to demo home
     if session.get('user', {}).get('is_demo', False):
         logger.info("Redirecting demo user from email.home to demo.demo_home")
@@ -31,7 +45,17 @@ def home():
 @email_bp.route('/api/emails/analysis')
 @login_required
 async def get_email_analysis():
-    """Get analyzed emails in batches."""
+    """API endpoint for getting analyzed emails.
+    
+    Fetches and analyzes emails based on user settings. For demo users,
+    redirects to the demo analysis endpoint.
+    
+    Returns:
+        JSON response: Analysis results including emails and statistics.
+        
+    Raises:
+        Exception: If email analysis fails, returns a 500 error with details.
+    """
     # Check if user is in demo mode and redirect to demo endpoint
     if session.get('user', {}).get('is_demo', False):
         logger.info("Redirecting demo user from email analysis to demo analysis")
@@ -86,7 +110,14 @@ async def get_email_analysis():
 @email_bp.route('/api/emails/stream')
 @login_required
 def stream_email_analysis():
-    """Stream analyzed emails as Server-Sent Events."""
+    """Stream analyzed emails as Server-Sent Events.
+    
+    Creates a streaming response that sends email analysis results as they
+    become available. Handles cleanup of resources when the stream ends.
+    
+    Returns:
+        Flask response: Streaming response with email analysis events.
+    """
     
     # Check if user is in demo mode and redirect to demo stream
     if session.get('user', {}).get('is_demo', False):
@@ -94,6 +125,11 @@ def stream_email_analysis():
         return redirect(url_for('demo.stream_email_analysis'))
     
     def generate():
+        """Generator function for streaming email analysis results.
+        
+        Yields:
+            str: Server-Sent Event formatted string containing analysis data.
+        """
         loop = None
         try:
             # Send initial connection message
@@ -246,7 +282,19 @@ def stream_email_analysis():
 
 # Helper function to run async code from a synchronous function
 def run_async(coroutine):
-    """Run an async function from a synchronous function."""
+    """Run an async function from a synchronous function.
+    
+    Creates a new event loop to run the coroutine and returns the result.
+    
+    Args:
+        coroutine: The async coroutine to run.
+        
+    Returns:
+        The result of the coroutine.
+        
+    Raises:
+        Exception: If there's an error running the coroutine, the error is logged and re-raised.
+    """
     try:
         # Create a new event loop for this thread
         loop = asyncio.new_event_loop()
@@ -261,7 +309,17 @@ def run_async(coroutine):
 @email_bp.route('/api/emails/send_email', methods=['POST'])
 @login_required
 def send_email():
-    """API endpoint to send an email response."""
+    """API endpoint to send an email response.
+    
+    Processes the email data from the request and sends it using either
+    the Gmail API (if connected) or SMTP. Logs the activity upon success.
+    
+    Returns:
+        JSON response: Success status and message.
+        
+    Raises:
+        Exception: If there's an error sending the email, returns a 500 error with details.
+    """
     try:
         # Log the request details
         logger.debug(f"Request to send_email: {request.path}, method: {request.method}")

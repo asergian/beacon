@@ -1,4 +1,12 @@
-"""User settings and analytics routes."""
+"""User settings and analytics routes.
+
+This module provides routes for user settings management and analytics
+data collection and display. It includes endpoints for updating user preferences,
+viewing analytics dashboards, and retrieving analytics data.
+
+Typical usage example:
+    app.register_blueprint(user_bp, url_prefix='/user')
+"""
 
 from flask import Blueprint, jsonify, request, session, render_template
 from ..models import User, UserActivity, log_activity
@@ -44,13 +52,30 @@ COMMON_TIMEZONES = [
 @user_bp.route('/analytics')
 @admin_required
 def analytics_dashboard():
-    """Display the analytics dashboard."""
+    """Display the analytics dashboard.
+    
+    Admin-only route for viewing application usage analytics.
+    
+    Returns:
+        Flask response: Rendered analytics dashboard template.
+    """
     return render_template('analytics.html')
 
 @user_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    """Handle settings page and updates."""
+    """Handle settings page and updates.
+    
+    GET requests render the settings page with current user settings.
+    POST requests update a single setting and return the updated value.
+    
+    Returns:
+        Flask response: For GET: rendered settings page with user preferences.
+                       For POST: JSON response with update status and values.
+        
+    Raises:
+        Exception: If there's an error processing the settings, returns a 500 error.
+    """
     try:
         user = User.query.get(session['user']['id'])
         if not user:
@@ -132,7 +157,18 @@ def settings():
 @user_bp.route('/api/analytics')
 @admin_required
 def get_analytics():
-    """Get user activity analytics."""
+    """Get user activity analytics data.
+    
+    Admin-only endpoint that retrieves and processes all user activities
+    to generate analytics about application usage, including LLM, email,
+    and NLP statistics.
+    
+    Returns:
+        JSON response: Processed analytics data for all system users.
+        
+    Raises:
+        Exception: If analytics processing fails, returns a 404 or 500 error.
+    """
     try:
         admin_user = User.query.get(session['user']['id'])
         if not admin_user:
@@ -363,7 +399,17 @@ def get_analytics():
 @user_bp.route('/api/debug/activities')
 @admin_required
 def debug_activities():
-    """Debug endpoint to inspect raw activities."""
+    """Debug endpoint to inspect raw activities.
+    
+    Admin-only endpoint for retrieving detailed information about the most
+    recent user activities for debugging purposes.
+    
+    Returns:
+        JSON response: The last 50 user activities with detailed metadata.
+        
+    Raises:
+        Exception: If there's an error fetching the activities, returns a 500 error.
+    """
     try:
         logger.info("Fetching debug activities")
         # Get last 50 activities
@@ -397,7 +443,21 @@ def debug_activities():
 @user_bp.route('/api/settings', methods=['GET', 'POST'])
 @login_required
 def get_user_settings():
-    """Get or update user settings API endpoint."""
+    """Get or update user settings API endpoint.
+    
+    GET requests return all user settings.
+    POST requests update a single setting specified in the request body.
+    
+    Args:
+        For POST requests, requires JSON with 'setting' and 'value' keys.
+    
+    Returns:
+        JSON response: For GET: All user settings
+                      For POST: Updated setting value or group
+                      
+    Raises:
+        Exception: If there's an error processing the request, returns a 400, 404, or 500 error.
+    """
     try:
         user = User.query.get(session['user']['id'])
         if not user:

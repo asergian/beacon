@@ -1,4 +1,13 @@
-"""Test and development routes"""
+"""Test and development routes for the Beacon application.
+
+This module provides routes for testing and debugging email functionality,
+cache management, and other development features. These routes are only
+available when the application is in debug mode.
+
+Typical usage example:
+    if app.debug:
+        app.register_blueprint(test_bp, url_prefix='/test')
+"""
 from flask import Blueprint, current_app, jsonify, render_template, session
 from ..auth.decorators import login_required
 import logging
@@ -9,6 +18,17 @@ test_bp = Blueprint('test', __name__)
 logger = logging.getLogger(__name__)
 
 def async_route(f):
+    """Decorator to handle asynchronous Flask routes.
+    
+    Wraps an async function so it can be used as a Flask route handler by
+    running it with asyncio.run().
+    
+    Args:
+        f: The async function to wrap.
+        
+    Returns:
+        function: A wrapper function that runs the async function.
+    """
     @wraps(f)
     def wrapper(*args, **kwargs):
         return asyncio.run(f(*args, **kwargs))
@@ -18,6 +38,17 @@ def async_route(f):
 @login_required
 @async_route
 async def test_emails():
+    """Test route for analyzing recent emails.
+    
+    Fetches and analyzes emails from the past day and displays them in a 
+    template.
+    
+    Returns:
+        Flask response: Rendered template with email analysis results or error message.
+        
+    Raises:
+        Exception: If email processing fails, returns a 500 error with the error message.
+    """
     try:
         analyzer = current_app.config['EMAIL_ANALYZER']
         emails = await analyzer.analyze_recent_emails(days_back=1)
@@ -30,6 +61,17 @@ async def test_emails():
 @login_required
 @async_route
 async def test_connection():
+    """Test route for verifying email server connection.
+    
+    Attempts to connect to the configured IMAP server and fetch recent emails
+    to verify that the connection is working correctly.
+    
+    Returns:
+        JSON response: Connection status, email count, and fetched emails.
+        
+    Raises:
+        Exception: If connection test fails, returns a 500 error with details.
+    """
     try:
         from app.email.core.email_connection import IMAPEmailClient
         
@@ -69,6 +111,17 @@ async def test_connection():
 @test_bp.route('/parsing')
 @login_required
 def test_parsing():
+    """Test route for email parsing functionality.
+    
+    Fetches recent emails and attempts to parse them using the EmailParser,
+    returning the parsing results and statistics.
+    
+    Returns:
+        JSON response: Parsing status, email counts, and parsed email data.
+        
+    Raises:
+        Exception: If parsing test fails, returns a 500 error with details.
+    """
     try:
         from app.email.core.email_connection import IMAPEmailClient
         from app.email.core.email_parsing import EmailParser
@@ -127,6 +180,17 @@ def test_parsing():
 @login_required
 @async_route
 async def test_fetch_parse_analyze():
+    """Test route for the complete email analysis pipeline.
+    
+    Tests the full email processing pipeline including fetching, parsing, 
+    and analyzing emails using both NLP and LLM analyzers.
+    
+    Returns:
+        JSON response: Analysis status, email count, and analysis results.
+        
+    Raises:
+        Exception: If analysis fails, returns a 500 error with details.
+    """
     try:
         email_analyzer = current_app.config['EMAIL_ANALYZER']
         text_analyzer = email_analyzer.text_analyzer
@@ -175,6 +239,16 @@ async def test_fetch_parse_analyze():
 @test_bp.route('/cache/flush')
 @async_route
 async def flush_cache():
+    """Test route for flushing the current user's cache.
+    
+    Clears the cache for the current session.
+    
+    Returns:
+        JSON response: Cache flush status and message.
+        
+    Raises:
+        Exception: If cache flush fails, returns a 500 error with details.
+    """
     try:
         await current_app.pipeline.cache.clear_cache()
         return jsonify({
@@ -192,6 +266,17 @@ async def flush_cache():
 @test_bp.route('/cache/flush-all')
 @async_route
 async def flush_all_cache():
+    """Test route for flushing all caches for the current user.
+    
+    Clears all caches associated with the current user's email address.
+    Requires a valid user session with an email address.
+    
+    Returns:
+        JSON response: Cache flush status and message.
+        
+    Raises:
+        Exception: If cache flush fails, returns a 500 error with details.
+    """
     try:
         # Clear cache
         if current_app.pipeline.cache:

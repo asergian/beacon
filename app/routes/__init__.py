@@ -1,4 +1,13 @@
-"""Route initialization for the application."""
+"""Routes initialization module for the Flask application.
+
+This module handles the registration of all route blueprints used in the application.
+It provides centralized route initialization to keep the application structure organized.
+
+Typical usage example:
+    from app import create_app
+    app = create_app()
+    init_routes(app)
+"""
 
 from flask import Flask, redirect, url_for
 import logging
@@ -11,7 +20,18 @@ from .demo_routes import demo_bp
 logger = logging.getLogger(__name__)
 
 def init_routes(app: Flask):
-    """Initialize all routes for the application."""
+    """Initialize all route blueprints for the Flask application.
+    
+    Registers all blueprint modules with their respective URL prefixes and
+    sets up the root route to redirect to the login page. Test routes are
+    only registered when the application is in debug mode.
+    
+    Args:
+        app: Flask application instance to register routes with.
+        
+    Raises:
+        Exception: If route registration fails, the error is logged and re-raised.
+    """
     try:
         app.register_blueprint(auth_bp, url_prefix='/auth')
         app.register_blueprint(email_bp, url_prefix='/email')
@@ -29,4 +49,9 @@ def init_routes(app: Flask):
     # Add root route
     @app.route('/')
     def root():
+        """Root route handler that redirects to the login page.
+        
+        Returns:
+            A redirect response to the login page.
+        """
         return redirect(url_for('auth.show_login'))

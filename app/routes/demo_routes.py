@@ -2,7 +2,11 @@
 
 This module contains routes specifically for demo mode functionality,
 allowing users to interact with sample email data without requiring
-actual email credentials.
+actual email credentials. It provides simulated email data with AI analysis
+to demonstrate the application's capabilities.
+
+Typical usage example:
+    app.register_blueprint(demo_bp, url_prefix='/demo')
 """
 
 from flask import Blueprint, current_app, render_template, jsonify, redirect, url_for, session, Response, stream_with_context
@@ -22,12 +26,28 @@ logger = logging.getLogger(__name__)
 demo_bp = Blueprint('demo', __name__)
 
 def get_demo_emails():
-    """Generate demo email data."""
+    """Generate demo email data.
+    
+    Creates a set of sample emails with content and metadata for demonstration
+    purposes. Includes AI analysis data for each email if analysis cache is available.
+    
+    Returns:
+        list: A list of dictionaries containing demo email data with analysis.
+    """
     logger.info("Generating demo emails...")
     now = datetime.utcnow()
     
     # Helper function to generate random past date within a range
     def random_past_date(min_days, max_days):
+        """Generate a random past datetime.
+        
+        Args:
+            min_days (float): Minimum number of days in the past.
+            max_days (float): Maximum number of days in the past.
+            
+        Returns:
+            datetime: A random datetime between min_days and max_days in the past.
+        """
         days = random.uniform(min_days, max_days)
         return now - timedelta(days=days)
     
@@ -861,7 +881,14 @@ def get_demo_emails():
 @demo_bp.route('/')
 @login_required
 def demo_home():
-    """Demo mode home page."""
+    """Demo mode home page.
+    
+    Sets the demo mode flag in the user's session and renders the
+    email summary template with demo mode enabled.
+    
+    Returns:
+        Flask response: Rendered email summary template with demo mode flag.
+    """
     # Set the demo flag in the session
     logger.info("Demo home route accessed")
     if 'user' in session:
@@ -874,7 +901,17 @@ def demo_home():
 @demo_bp.route('/api/emails/analysis')
 @login_required
 async def get_email_analysis():
-    """Get analyzed demo emails."""
+    """Get analyzed demo emails.
+    
+    Fetches and processes demo emails with analysis metadata
+    and computes statistics for the demo dataset.
+    
+    Returns:
+        JSON response: Demo emails with analysis and statistics.
+        
+    Raises:
+        Exception: If there's an error processing demo emails, returns a 500 error.
+    """
     try:
         demo_emails = get_demo_emails()
         # Calculate actual stats from demo emails
@@ -912,9 +949,22 @@ async def get_email_analysis():
 @demo_bp.route('/api/emails/stream')
 @login_required
 def stream_email_analysis():
-    """Stream analyzed demo emails as Server-Sent Events."""
+    """Stream analyzed demo emails as Server-Sent Events.
+    
+    Creates a streaming response that simulates the real-time analysis
+    process using pre-generated demo data. Customizes the data based on
+    user settings like AI model and context length preferences.
+    
+    Returns:
+        Flask response: Streaming response with demo email analysis events.
+    """
     
     def generate():
+        """Generator function for streaming demo email analysis results.
+        
+        Yields:
+            str: Server-Sent Event formatted string containing demo analysis data.
+        """
         try:
             # Send initial connection message
             yield 'event: connected\ndata: {"status": "connected"}\n\n'
@@ -1021,7 +1071,14 @@ def stream_email_analysis():
 @demo_bp.route('/exit')
 @login_required
 def exit_demo():
-    """Exit demo mode."""
+    """Exit demo mode.
+    
+    Disables the demo mode flag in the user's session and redirects
+    to the main email home page.
+    
+    Returns:
+        Flask response: Redirect to the email home page.
+    """
     if 'user' in session and isinstance(session['user'], dict):
         session['user']['is_demo'] = False
     return redirect(url_for('email.home')) 
