@@ -68,23 +68,23 @@
                         </div>
                         <div class="button-group">
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze == 1 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '1' %}selected{% endif %}"
                                     data-value="1" 
                                     data-setting="email_preferences.days_to_analyze">1d</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze == 3 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '3' %}selected{% endif %}"
                                     data-value="3" 
                                     data-setting="email_preferences.days_to_analyze">3d</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze == 5 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '5' %}selected{% endif %}"
                                     data-value="5" 
                                     data-setting="email_preferences.days_to_analyze">5d</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze == 7 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '7' %}selected{% endif %}"
                                     data-value="7" 
                                     data-setting="email_preferences.days_to_analyze">7d</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze == 14 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '14' %}selected{% endif %}"
                                     data-value="14" 
                                     data-setting="email_preferences.days_to_analyze">14d</button>
                         </div>
@@ -99,27 +99,27 @@
                         </div>
                         <div class="button-group">
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days == 0 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '0' %}selected{% endif %}"
                                     data-value="0" 
                                     data-setting="email_preferences.cache_duration_days">0d</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days == 1 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '1' %}selected{% endif %}"
                                     data-value="1" 
                                     data-setting="email_preferences.cache_duration_days">1d</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days == 3 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '3' %}selected{% endif %}"
                                     data-value="3" 
                                     data-setting="email_preferences.cache_duration_days">3d</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days == 7 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '7' %}selected{% endif %}"
                                     data-value="7" 
                                     data-setting="email_preferences.cache_duration_days">7d</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days == 14 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '14' %}selected{% endif %}"
                                     data-value="14" 
                                     data-setting="email_preferences.cache_duration_days">14d</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days == 30 %}selected{% endif %}"
+                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '30' %}selected{% endif %}"
                                     data-value="30" 
                                     data-setting="email_preferences.cache_duration_days">30d</button>
                         </div>
@@ -200,15 +200,15 @@
                             </div>
                             <div class="button-group">
                                 <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold') == 30 %}selected{% endif %}"
+                                        class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold')|string == '30' %}selected{% endif %}"
                                         data-value="30" 
                                         data-setting="ai_features.priority_threshold">Low</button>
                                 <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold') == 50 %}selected{% endif %}"
+                                        class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold')|string == '50' %}selected{% endif %}"
                                         data-value="50" 
                                         data-setting="ai_features.priority_threshold">Medium</button>
                                 <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold') == 70 %}selected{% endif %}"
+                                        class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold')|string == '70' %}selected{% endif %}"
                                         data-value="70" 
                                         data-setting="ai_features.priority_threshold">High</button>
                             </div>
@@ -295,5 +295,5 @@
 
 {% block scripts %}
 {{ super() }}
-<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/settings.js') }}"></script>
 {% endblock %} 

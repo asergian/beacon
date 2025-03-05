@@ -1,16 +1,37 @@
-/* 
- * CSS Reset & Base Styles
- * Normalize browser defaults and establish base styling
+/**
+ * @fileoverview CSS Reset and foundational element styles.
+ * 
+ * This file establishes a consistent baseline across browsers by:
+ * 1. Normalizing default browser styles and removing inconsistencies
+ * 2. Setting up a predictable box model for easier layout calculations
+ * 3. Establishing sensible defaults for typography and spacing
+ * 4. Adding base accessibility features for interactive elements
+ * 5. Standardizing form elements for consistent styling
+ * 
+ * This reset is designed to be minimal while still providing enough
+ * consistency to serve as a solid foundation for the design system.
+ * It follows modern CSS reset best practices without being overly aggressive.
+ * 
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
  */
 
-/* Box sizing for all elements */
+/*
+ * Box Sizing
+ * Apply a consistent box model across all elements to make sizing predictable.
+ * The border-box model includes padding and border in the element's total width and height.
+ */
 *,
 *::before,
 *::after {
     box-sizing: border-box;
 }
 
-/* Reset margins and paddings */
+/*
+ * Margin and Padding Reset
+ * Remove default margins and padding from elements to avoid inconsistent spacing.
+ * This creates a clean slate for applying our own spacing system.
+ */
 html,
 body,
 h1, h2, h3, h4, h5, h6,
@@ -21,73 +42,114 @@ hr, pre, button, input, textarea, select {
     padding: 0;
 }
 
-/* Base HTML elements */
+/*
+ * HTML Root
+ * Set base font size for rem units and ensure proper text size adjustments.
+ * Prevents iOS text size adjustment after orientation changes without disabling user zoom.
+ */
 html {
     font-size: 16px;
     line-height: 1.5;
-    -webkit-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;  /* Prevent automatic font size adjustment */
 }
 
+/*
+ * Body Defaults
+ * Establish basic typography, ensure the body fills the viewport,
+ * and apply default text rendering optimizations for better readability.
+ */
 body {
-    min-height: 100vh;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    min-height: 100vh;  /* Ensure body fills viewport height */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;  /* System font stack */
     font-size: 1rem;
     line-height: 1.5;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;  /* Optimize text for legibility over speed */
+    -webkit-font-smoothing: antialiased;  /* Smooth text on Webkit */
+    -moz-osx-font-smoothing: grayscale;   /* Smooth text on Firefox/macOS */
     background-color: var(--bg-color);
     color: var(--text-color);
     display: flex;
-    flex-direction: column;
+    flex-direction: column;  /* Enable full-height layouts with flexbox */
 }
 
-/* Remove list styles */
+/*
+ * List Reset
+ * Remove default list styling (bullets, numbers) for more control over list presentation.
+ * Lists can be styled explicitly as needed with custom markers.
+ */
 ul, ol {
     list-style: none;
 }
 
-/* Images and media */
+/*
+ * Media Elements
+ * Ensure images and media elements are responsive by default.
+ * Prevent overflow issues with large media files.
+ */
 img,
 picture,
 video {
-    max-width: 100%;
-    display: block;
+    max-width: 100%;  /* Make all media responsive */
+    display: block;    /* Remove inline display gaps */
 }
 
-/* Inherit fonts for inputs and buttons */
+/*
+ * Form Element Typography
+ * Inherit typography settings for form elements to maintain consistency.
+ * Browsers by default use their own font settings for these elements.
+ */
 input,
 button,
 textarea,
 select {
-    font: inherit;
+    font: inherit;  /* Inherit typography from parent elements */
 }
 
-/* Remove default button styling */
+/*
+ * Button Reset
+ * Remove default button styling to allow for custom design.
+ * This provides a clean slate for our button components.
+ */
 button {
     background: none;
     border: none;
-    cursor: pointer;
+    cursor: pointer;  /* Show pointer cursor for all buttons */
 }
 
-/* Link styling */
+/*
+ * Link Styling
+ * Reset link styling to remove default underlines and colors.
+ * Links will be styled in component stylesheets as needed.
+ */
 a {
-    color: inherit;
-    text-decoration: none;
+    color: inherit;  /* Inherit text color from parent */
+    text-decoration: none;  /* Remove underline */
 }
 
-/* Basic transitions for interactive elements */
+/*
+ * Interactive Element Transitions
+ * Add smooth transitions to interactive elements for better UX.
+ * This creates a subtle but noticeable effect for state changes.
+ */
 a, button, input, select, textarea {
-    transition: all 0.2s ease;
+    transition: all 0.2s ease;  /* Smooth transition for all property changes */
 }
 
-/* Focus styles for accessibility */
+/*
+ * Focus Styles for Accessibility
+ * Provide visible focus indicators for keyboard navigation.
+ * This is essential for accessibility and should not be removed.
+ */
 :focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+    outline: 2px solid var(--primary-color);  /* Visible outline using primary brand color */
+    outline-offset: 2px;  /* Create space between element and outline */
 }
 
-/* Screen reader only class */
+/*
+ * Screen Reader Only Utility
+ * Hide content visually while keeping it accessible to screen readers.
+ * Used for labels and descriptions that shouldn't be visible but need to be accessible.
+ */
 .sr-only {
     position: absolute;
     width: 1px;

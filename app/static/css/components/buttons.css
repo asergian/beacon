@@ -1,9 +1,21 @@
-/* 
- * Button Styles
- * Common button components and variations
+/**
+ * @fileoverview Button component styles for the Beacon application.
+ * 
+ * This file contains all button-related styles, including:
+ * - Base button styling
+ * - Button variants (primary, secondary, danger, ghost, link)
+ * - Size variations (small, large)
+ * - Icon buttons and button groups
+ * - Specialized buttons like value toggles
+ * - Disabled states
+ * 
+ * All buttons use CSS variables from variables.css for consistent theming.
+ * 
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
  */
 
-/* Base Button */
+/* Base Button - Core styling applied to all button variants */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -16,7 +28,9 @@
     transition: all 0.2s ease;
 }
 
-/* Button Variants */
+/* Button Variants - Different visual styles for various semantic purposes */
+
+/* Primary Button - Used for primary actions and CTAs */
 .btn-primary {
     background-color: var(--primary-color);
     color: white;
@@ -28,6 +42,7 @@
     border-color: var(--primary-hover);
 }
 
+/* Secondary Button - Used for secondary actions */
 .btn-secondary {
     background-color: transparent;
     color: var(--text-color);
@@ -39,6 +54,7 @@
     border-color: var(--border-color);
 }
 
+/* Danger Button - Used for destructive actions */
 .btn-danger {
     background-color: var(--danger-color);
     color: white;
@@ -50,6 +66,7 @@
     border-color: #dc2626;
 }
 
+/* Ghost Button - Minimal visual styling, for subtle actions */
 .btn-ghost {
     background-color: transparent;
     color: var(--text-color);
@@ -60,6 +77,7 @@
     background-color: var(--hover-bg);
 }
 
+/* Link Button - Appears as a text link */
 .btn-link {
     background-color: transparent;
     color: var(--primary-color);
@@ -72,35 +90,40 @@
     color: var(--primary-hover);
 }
 
-/* Button Sizes */
+/* Button Sizes - Size variations for different contexts */
+
+/* Small Button - Compact size for dense UIs */
 .btn-sm {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
 }
 
+/* Large Button - More prominent size for important actions */
 .btn-lg {
     padding: 0.75rem 1.5rem;
     font-size: 1.125rem;
 }
 
-/* Button with Icon */
+/* Button with Icon - Button that includes an icon alongside text */
 .btn-icon {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
 }
 
+/* Icon-only Button - Button with just an icon (usually circular) */
 .btn-icon-only {
     padding: 0.5rem;
     border-radius: 50%;
 }
 
-/* Button Groups */
+/* Button Groups - Container for groups of related buttons */
 .button-group {
     display: flex;
     gap: 0.5rem;
 }
 
+/* Value Button - Used in settings to select from predefined values */
 .value-button {
     padding: 0.5rem 1rem;
     border: 1px solid var(--input-border);
@@ -122,14 +145,14 @@
     border-color: var(--toggle-active);
 }
 
-/* Disabled State */
+/* Disabled State - Visual styling for buttons that can't be interacted with */
 .btn:disabled, .btn.disabled {
     opacity: 0.5;
     cursor: not-allowed;
     pointer-events: none;
 }
 
-/* Full Width Button */
+/* Full Width Button - Button that expands to fill its container */
 .btn-block {
     display: flex;
     width: 100%;

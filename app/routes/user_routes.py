@@ -100,6 +100,7 @@ def settings():
                 # Return the updated settings group if it exists, otherwise just the updated value
                 response_data = {
                     "status": "success",
+                    "message": "Setting updated successfully",
                     "value": updated_value
                 }
                 
@@ -393,10 +394,10 @@ def debug_activities():
         logger.error(f"Failed to get debug activities: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
-@user_bp.route('/api/settings')
+@user_bp.route('/api/settings', methods=['GET', 'POST'])
 @login_required
 def get_user_settings():
-    """Get user settings API endpoint."""
+    """Get or update user settings API endpoint."""
     try:
         user = User.query.get(session['user']['id'])
         if not user:
@@ -404,14 +405,67 @@ def get_user_settings():
                 'status': 'error',
                 'message': 'User not found'
             }), 404
+        
+        # Handle POST request to update settings
+        if request.method == 'POST':
+            data = request.get_json()
+            if not data or 'setting' not in data or 'value' not in data:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Missing required parameters'
+                }), 400
             
+            setting = data['setting']
+            value = data['value']
+            
+            # Get current value for logging
+            current_value = user.get_setting(setting)
+            logger.info(f"API: Updating setting {setting} from {current_value} to: {value}")
+            
+            # Update the setting
+            user.set_setting(setting, value)
+            
+            # Get the updated value for verification
+            updated_value = user.get_setting(setting)
+            
+            # Get the group name for the setting (if any)
+            group = setting.split('.')[0] if '.' in setting else None
+            
+            # Log the activity
+            log_activity(
+                user_id=user.id,
+                activity_type='settings_update',
+                description=f"Updated setting: {setting}",
+                metadata={
+                    'key': setting,
+                    'old_value': current_value,
+                    'new_value': updated_value,
+                    'group': group,
+                    'source': 'api'
+                }
+            )
+            
+            # Prepare response
+            response_data = {
+                "status": "success",
+                "message": "Setting updated successfully",
+                "value": updated_value
+            }
+            
+            # Include the entire group if applicable
+            if group:
+                response_data["group"] = user.get_settings_group(group)
+            
+            return jsonify(response_data)
+        
+        # Handle GET request to retrieve settings
         settings = user.get_all_settings()
         return jsonify({
             'status': 'success',
             'settings': settings
         })
     except Exception as e:
-        logger.error(f"Failed to get user settings: {e}")
+        logger.error(f"Failed to handle user settings: {e}", exc_info=True)
         return jsonify({
             'status': 'error',
             'message': str(e)

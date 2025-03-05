@@ -1,9 +1,28 @@
-/* 
- * Card Elements
- * Common styles for cards, panels, and containers
+/**
+ * @fileoverview Card and container component styles.
+ *
+ * This file contains styles for various container and card components, including:
+ * - Standard cards with header, body, and footer sections
+ * - Settings panels and section containers
+ * - Dashboard and statistic cards
+ * - Panels for grouping related content
+ * - Group and section title styling
+ *
+ * These components provide consistent containment and visual structure for
+ * content throughout the application.
+ *
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
  */
 
-/* Base Card */
+/* =========================================================================
+   Basic Card Components
+   ========================================================================= */
+
+/**
+ * Base card component.
+ * Provides standard background, shadow, and rounded corners for content containers.
+ */
 .card {
     background-color: var(--card-bg);
     border-radius: 0.5rem;
@@ -11,20 +30,36 @@
     overflow: hidden;
 }
 
+/**
+ * Card header section.
+ * Contains title, subtitle, or action elements at the top of a card.
+ */
 .card-header {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
 }
 
+/**
+ * Card body section.
+ * Contains the primary content of a card.
+ */
 .card-body {
     padding: 1.5rem;
 }
 
+/**
+ * Card footer section.
+ * Contains actions, summary, or supplementary information at the bottom of a card.
+ */
 .card-footer {
     padding: 1rem 1.5rem;
     border-top: 1px solid var(--border-color);
 }
 
+/**
+ * Card title element.
+ * Primary heading for card content.
+ */
 .card-title {
     font-size: 1.25rem;
     font-weight: 600;
@@ -32,13 +67,24 @@
     margin-bottom: 0.5rem;
 }
 
+/**
+ * Card subtitle element.
+ * Secondary descriptive text below the card title.
+ */
 .card-subtitle {
     font-size: 0.875rem;
     color: var(--text-muted);
     margin-bottom: 1rem;
 }
 
-/* Settings Section */
+/* =========================================================================
+   Settings Components
+   ========================================================================= */
+
+/**
+ * Settings section container.
+ * Used for containing groups of related settings or preferences.
+ */
 .settings-section {
     background: var(--card-bg);
     border-radius: 12px;
@@ -47,6 +93,10 @@
     box-shadow: var(--card-shadow);
 }
 
+/**
+ * Primary section title.
+ * Used for heading major sections of the settings interface.
+ */
 .section-title {
     font-size: 1.5rem;
     font-weight: 600;
@@ -54,6 +104,10 @@
     margin-bottom: 1.5rem;
 }
 
+/**
+ * Group title within settings.
+ * Used for heading subsections or related setting groups.
+ */
 .group-title {
     font-size: 1.2rem;
     font-weight: 500;
@@ -61,10 +115,18 @@
     margin: 1.5rem 0 1rem;
 }
 
+/**
+ * Container for a group of related settings.
+ * Provides spacing between different setting groups.
+ */
 .setting-group {
     margin-bottom: 2rem;
 }
 
+/**
+ * Individual setting item container.
+ * Contains the setting title, description, and control.
+ */
 .setting-item {
     padding: 1rem;
     border-radius: 8px;
@@ -73,10 +135,17 @@
     transition: background-color 0.2s ease;
 }
 
+/**
+ * Hover state for setting items.
+ */
 .setting-item:hover {
     background: var(--setting-item-hover);
 }
 
+/**
+ * Layout container for setting content.
+ * Creates a two-column layout with info on left and control on right.
+ */
 .setting-content {
     display: flex;
     justify-content: space-between;
@@ -84,10 +153,16 @@
     gap: 2rem;
 }
 
+/**
+ * Container for setting information text.
+ */
 .setting-info {
     flex: 1;
 }
 
+/**
+ * Setting title text.
+ */
 .setting-title {
     display: block;
     font-weight: 500;
@@ -95,13 +170,24 @@
     margin-bottom: 0.25rem;
 }
 
+/**
+ * Setting description text.
+ * Provides additional explanation for the setting.
+ */
 .setting-description {
     display: block;
     font-size: 0.875rem;
     color: var(--description-color);
 }
 
-/* Panel Element */
+/* =========================================================================
+   Panel Components
+   ========================================================================= */
+
+/**
+ * Lightweight panel component.
+ * Similar to card but with less visual weight and spacing.
+ */
 .panel {
     background-color: var(--card-bg);
     border-radius: 0.375rem;
@@ -109,6 +195,10 @@
     margin-bottom: 1.5rem;
 }
 
+/**
+ * Panel header section.
+ * Contains title and optional actions.
+ */
 .panel-header {
     display: flex;
     justify-content: space-between;
@@ -116,16 +206,27 @@
     margin-bottom: 1rem;
 }
 
+/**
+ * Panel title element.
+ */
 .panel-title {
     font-size: 1.125rem;
     font-weight: 600;
     color: var(--heading-color);
 }
 
+/**
+ * Panel body section.
+ * Contains the main panel content.
+ */
 .panel-body {
     margin-bottom: 1rem;
 }
 
+/**
+ * Panel footer section.
+ * Contains actions or supplementary information.
+ */
 .panel-footer {
     display: flex;
     justify-content: flex-end;
@@ -134,7 +235,14 @@
     border-top: 1px solid var(--border-color);
 }
 
-/* Dashboard Cards */
+/* =========================================================================
+   Dashboard Card Components
+   ========================================================================= */
+
+/**
+ * Dashboard-specific card variant.
+ * Optimized for displaying metrics and statistics.
+ */
 .dashboard-card {
     background-color: var(--card-bg);
     border-radius: 0.5rem;
@@ -145,6 +253,10 @@
     height: 100%;
 }
 
+/**
+ * Dashboard card header.
+ * Contains the card title and optional actions.
+ */
 .dashboard-card-header {
     display: flex;
     justify-content: space-between;
@@ -152,12 +264,19 @@
     margin-bottom: 1rem;
 }
 
+/**
+ * Dashboard card title.
+ */
 .dashboard-card-title {
     font-size: 1rem;
     font-weight: 600;
     color: var(--heading-color);
 }
 
+/**
+ * Dashboard card primary value.
+ * Large, prominent numeric or text value.
+ */
 .dashboard-card-value {
     font-size: 2rem;
     font-weight: 700;
@@ -165,12 +284,23 @@
     margin-bottom: 0.5rem;
 }
 
+/**
+ * Dashboard card description text.
+ * Provides context for the card value.
+ */
 .dashboard-card-description {
     font-size: 0.875rem;
     color: var(--text-muted);
 }
 
-/* Responsive Adjustments */
+/* =========================================================================
+   Responsive Adjustments
+   ========================================================================= */
+
+/**
+ * Small screen adjustments.
+ * Reduces padding and adjusts layout for mobile devices.
+ */
 @media (max-width: 640px) {
     .card-body,
     .card-header,

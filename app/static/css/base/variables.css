@@ -1,114 +1,130 @@
-/* 
- * Global CSS Variables
- * This file contains all CSS variables used throughout the application.
- * It helps maintain consistent theming and reduces redundancy.
+/**
+ * @fileoverview Global CSS variables for the Beacon application.
+ * 
+ * This file defines all CSS custom properties (variables) used throughout the application.
+ * It establishes a consistent design system with color schemes, spacing, typography,
+ * and component-specific styles for both light and dark themes.
+ * 
+ * Variables are organized into logical groups:
+ * - Theme colors (backgrounds, text, borders)
+ * - Layout dimensions (headers, footers, spacing)
+ * - Component-specific variables (headers, forms, cards)
+ * - Typography (font sizes, colors, weights)
+ * - Interactive states (hover, active, focus)
+ * - Feedback and notifications (success, error, warning)
+ * 
+ * The dark theme is implemented via a [data-theme="dark"] attribute selector
+ * that overrides the default light theme variables when applied to the root element.
+ * 
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
  */
 
 :root {
-    /* Color Palette - Light Theme */
-    --bg-color: #f5f7fa;
-    --text-color: #2c3e50;
-    --card-bg: #ffffff;
-    --card-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    --input-bg: #ffffff;
-    --input-border: #e2e8f0;
-    --input-text: #2c3e50;
+    /* ========== Color Palette - Light Theme ========== */
+    --bg-color: #f5f7fa;        /* Main application background */
+    --text-color: #2c3e50;      /* Primary text color for content */
+    --card-bg: #ffffff;         /* Background for card components */
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.05);  /* Subtle elevation for cards */
+    --input-bg: #ffffff;        /* Background for form controls */
+    --input-border: #e2e8f0;    /* Border color for form inputs */
+    --input-text: #2c3e50;      /* Text color inside form inputs */
     
-    /* Layout */
-    --header-height: 64px;
-    --footer-height: 54px;
-    --footer-padding: 1rem;
-    --filters-height: 69px;
+    /* ========== Layout Dimensions ========== */
+    --header-height: 64px;      /* Fixed application header height */
+    --footer-height: 54px;      /* Fixed application footer height */
+    --footer-padding: 1rem;     /* Consistent padding within footer */
+    --filters-height: 69px;     /* Height for filter sections/bars */
     
-    /* Header & Navigation */
-    --header-bg: #006F6A;
-    --header-text: #ffffff;
-    --nav-link-color: rgba(255, 255, 255, 0.9);
-    --nav-link-hover: #ffffff;
+    /* ========== Header & Navigation ========== */
+    --header-bg: #006F6A;       /* Header background - Beacon brand teal */
+    --header-text: #ffffff;     /* Text color for header elements */
+    --nav-link-color: rgba(255, 255, 255, 0.9);  /* Navigation links with slight transparency */
+    --nav-link-hover: #ffffff;  /* Navigation links on hover - full opacity */
     
-    /* Footer */
-    --footer-bg: #333333;
-    --footer-text: #ffffff;
+    /* ========== Footer ========== */
+    --footer-bg: #333333;       /* Dark background for footer section */
+    --footer-text: #ffffff;     /* Light text for footer content */
     
-    /* Email Component */
-    --email-item-bg: #ffffff;
-    --email-item-hover: #f8f9fa;
-    --email-item-active: #E0F7F6;
-    --email-item-border: #ddd;
+    /* ========== Email Component ========== */
+    --email-item-bg: #ffffff;         /* Background for email list items */
+    --email-item-hover: #f8f9fa;      /* Background for email items on hover */
+    --email-item-active: #E0F7F6;     /* Background for selected email item */
+    --email-item-border: #ddd;        /* Border between email list items */
     
-    /* Form Elements */
-    --setting-item-bg: #f8f9fa;
-    --setting-item-hover: #f0f2f5;
-    --toggle-bg: #e2e8f0;
-    --toggle-active: #3b82f6;
+    /* ========== Form Elements ========== */
+    --setting-item-bg: #f8f9fa;       /* Background for settings items */
+    --setting-item-hover: #f0f2f5;    /* Background for settings items on hover */
+    --toggle-bg: #e2e8f0;             /* Background for toggle switches (off state) */
+    --toggle-active: #3b82f6;         /* Background for toggle switches (on state) */
     
-    /* Typography */
-    --description-color: #6c757d;
-    --heading-color: #2c3e50;
-    --text-muted: #6c757d;
-    --tag-text: #ffffff;
+    /* ========== Typography ========== */
+    --description-color: #6c757d;     /* Secondary text for descriptions */
+    --heading-color: #2c3e50;         /* Color for headings and titles */
+    --text-muted: #6c757d;            /* Muted/less emphasized text */
+    --tag-text: #ffffff;              /* Text color for tags and badges */
     
-    /* Interactive Elements */
-    --hover-bg: #f0f2f5;
-    --border-color: #e2e8f0;
+    /* ========== Interactive Elements ========== */
+    --hover-bg: #f0f2f5;              /* Background color for hover states */
+    --border-color: #e2e8f0;          /* Standard border color */
     
-    /* Buttons & Actions */
-    --primary-color: #3b82f6;
-    --primary-hover: #2563eb;
-    --accent-color: #4FD1C5;
-    --danger-color: #ef4444;
-    --danger-color-rgb: 239, 68, 68;
+    /* ========== Buttons & Actions ========== */
+    --primary-color: #3b82f6;         /* Primary action color - blue */
+    --primary-hover: #2563eb;         /* Darker blue for hover states */
+    --accent-color: #4FD1C5;          /* Secondary accent color - teal */
+    --danger-color: #ef4444;          /* Destructive action color - red */
+    --danger-color-rgb: 239, 68, 68;  /* RGB values for danger color (for opacity) */
     
-    /* Notifications */
-    --success-bg: #10b981;
-    --success-text: white;
-    --error-bg: #ef4444;
-    --warning-bg: #f59e0b;
-    --info-bg: #3b82f6;
+    /* ========== Notifications & Feedback ========== */
+    --success-bg: #10b981;            /* Background for success messages - green */
+    --success-text: white;            /* Text color for success messages */
+    --error-bg: #ef4444;              /* Background for error messages - red */
+    --warning-bg: #f59e0b;            /* Background for warning messages - amber */
+    --info-bg: #3b82f6;               /* Background for info messages - blue */
 }
 
-/* Dark Theme Variables */
+/* ========== Dark Theme Variables ========== */
 [data-theme="dark"] {
-    /* Base colors */
-    --bg-color: #121212;
-    --text-color: #E4E6EB;
-    --card-bg: #1E1E1E;
-    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    /* Base colors - darker backgrounds, lighter text */
+    --bg-color: #121212;              /* Dark background for main app areas */
+    --text-color: #E4E6EB;            /* Light text color for readability */
+    --card-bg: #1E1E1E;               /* Slightly lighter background for cards */
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);  /* Stronger shadow for depth */
     
-    /* Input and interactive elements */
-    --input-bg: #2C2C2C;
-    --input-border: #383838;
-    --input-text: #E4E6EB;
+    /* Input and interactive elements - darker but still distinguishable */
+    --input-bg: #2C2C2C;              /* Dark input fields */
+    --input-border: #383838;          /* Subtle borders for inputs */
+    --input-text: #E4E6EB;            /* Light text in input fields */
     
-    /* Navigation and containers */
-    --header-bg: #1A1A1A;
-    --nav-link-color: rgba(228, 230, 235, 0.9);
-    --nav-link-hover: #E4E6EB;
-    --footer-bg: #1A1A1A;
-    --footer-text: #E4E6EB;
+    /* Navigation and containers - consistent dark theme look */
+    --header-bg: #1A1A1A;             /* Darker header background */
+    --nav-link-color: rgba(228, 230, 235, 0.9);  /* Semi-transparent nav links */
+    --nav-link-hover: #E4E6EB;        /* Full opacity on hover */
+    --footer-bg: #1A1A1A;             /* Darker footer background */
+    --footer-text: #E4E6EB;           /* Light text in footer */
     
-    /* Email items */
-    --email-item-bg: #1E1E1E;
-    --email-item-hover: #2D2D2D;
-    --email-item-active: #004D48;
-    --email-item-border: #383838;
+    /* Email items - dark theme variations */
+    --email-item-bg: #1E1E1E;         /* Dark background for email items */
+    --email-item-hover: #2D2D2D;      /* Slightly lighter on hover */
+    --email-item-active: #004D48;     /* Dark teal for selected items */
+    --email-item-border: #383838;     /* Subtle borders between items */
     
-    /* Settings items */
-    --setting-item-bg: #2C2C2C;
-    --setting-item-hover: #383838;
-    --toggle-bg: #383838;
+    /* Settings items - consistent with dark theme */
+    --setting-item-bg: #2C2C2C;       /* Dark background for settings */
+    --setting-item-hover: #383838;    /* Lighter background on hover */
+    --toggle-bg: #383838;             /* Darker background for toggles */
     
-    /* Typography */
-    --description-color: #A0AEC0;
-    --heading-color: #E4E6EB;
-    --text-muted: #A0AEC0;
-    --border-color: #383838;
-    --hover-bg: #2D2D2D;
+    /* Typography - adjusted for dark theme readability */
+    --description-color: #A0AEC0;     /* Muted but readable description text */
+    --heading-color: #E4E6EB;         /* Light headings for contrast */
+    --text-muted: #A0AEC0;            /* Muted text that's still readable */
+    --border-color: #383838;          /* Darker borders for separation */
+    --hover-bg: #2D2D2D;              /* Subtle hover background */
     
-    /* Button states */
-    --primary-hover: #3B82F6;
-    --accent-color: #4FD1C5;
+    /* Button states - adjusted for dark theme */
+    --primary-hover: #3B82F6;         /* Brighter hover for visibility */
+    --accent-color: #4FD1C5;          /* Consistent accent color */
     
-    /* Notifications */
-    --success-bg: #059669;
+    /* Notifications - slightly darker for dark theme */
+    --success-bg: #059669;            /* Darker green for success messages */
 } 

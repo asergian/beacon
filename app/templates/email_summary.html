@@ -135,7 +135,7 @@
 
 {% block scripts %}
 {{ super() }}
-<script src="{{ url_for('static', filename='js/email.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='js/modules/emailController.js') }}"></script>
 <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
-<script src="{{ url_for('static', filename='js/editor-init.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/editor.js') }}"></script>
 {% endblock %}

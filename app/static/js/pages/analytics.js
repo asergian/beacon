@@ -1,7 +1,24 @@
+/**
+ * @fileoverview Analytics dashboard functionality for monitoring system performance.
+ * Handles fetching, displaying, and updating analytical data across multiple sections.
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
+ */
+
+/**
+ * @type {Object|null} Stores the most recent analytics data from the server
+ */
 let currentStats = null;
+
+/**
+ * @type {boolean} Flag to track if an analytics request is in progress
+ */
 let isLoading = false;
 
-// Add section visibility state
+/**
+ * Section visibility state object to track which dashboard sections are visible
+ * @type {Object<string, boolean>}
+ */
 const sectionVisibility = {
     overview: true,
     llm: true,
@@ -10,6 +27,12 @@ const sectionVisibility = {
     activity: true
 };
 
+/**
+ * Fetches analytics data from the server and updates the dashboard.
+ * Shows loading indicators during fetch and handles errors.
+ * 
+ * @return {Promise<void>} A promise that resolves when analytics are fetched and displayed
+ */
 async function fetchAnalytics() {
     if (isLoading) return;
     
@@ -38,6 +61,14 @@ async function fetchAnalytics() {
     }
 }
 
+/**
+ * Updates the loading state of a refresh button.
+ * Adds loading spinner and disables the button during loading.
+ * 
+ * @param {boolean} loading - Whether the button should show loading state
+ * @param {Element} button - The button element to update (defaults to the main refresh button)
+ * @return {void}
+ */
 function updateLoadingState(loading, button = document.querySelector('.refresh-button')) {
     if (!button) return;
     
@@ -48,10 +79,23 @@ function updateLoadingState(loading, button = document.querySelector('.refresh-b
     } else {
         button.classList.remove('loading');
         button.disabled = false;
-        button.innerHTML = '';  // Empty string since we're using ::before for the icon
+        button.innerHTML = '';
     }
 }
 
+/**
+ * Updates the dashboard with the latest analytics data.
+ * Populates statistics in various dashboard sections including system overview,
+ * LLM usage, email processing, NLP analytics, and user activity.
+ * 
+ * @param {Object} data - The analytics data from the server
+ * @param {Object} data.user_stats - User-related statistics
+ * @param {Object} data.email_stats - Email processing statistics
+ * @param {Object} data.nlp_stats - Natural language processing statistics
+ * @param {Object} data.llm_stats - Language model usage statistics
+ * @param {Array} data.recent_activities - Recent system activities
+ * @return {void}
+ */
 function updateDashboard(data) {
     console.log('Received analytics data:', data);
     
@@ -193,6 +237,18 @@ function updateDashboard(data) {
     createNLPChart(data.nlp_stats);
 }
 
+/**
+ * Creates a chart displaying LLM performance metrics.
+ * Visualizes total tokens, requests, average tokens per request,
+ * and average processing time in a bar chart.
+ * 
+ * @param {Object} stats - LLM statistics from the analytics data
+ * @param {number} stats.total_tokens - Total tokens processed by LLMs
+ * @param {number} stats.total_requests - Total number of LLM API requests
+ * @param {number} stats.avg_tokens_per_request - Average tokens per request
+ * @param {number} stats.avg_processing_time_ms - Average processing time in milliseconds
+ * @return {void}
+ */
 function createLLMChart(stats) {
     const trace = {
         x: ['Total Tokens', 'Total Requests', 'Avg. Tokens/Req', 'Avg. Time (ms)'],
@@ -249,6 +305,16 @@ function createLLMChart(stats) {
     Plotly.newPlot('llm-usage-chart', [trace], layout, config);
 }
 
+/**
+ * Creates a chart displaying the distribution of usage across different LLM models.
+ * Shows both total tokens and request counts for each model in a combination
+ * bar and line chart.
+ * 
+ * @param {Object} stats - LLM statistics from the analytics data
+ * @param {Object} stats.requests_by_model - Map of model names to request counts
+ * @param {Object} stats.tokens_by_model - Map of model names to token usage data
+ * @return {void}
+ */
 function createModelDistributionChart(stats) {
     const models = Object.keys(stats.requests_by_model || {});
     const tokensByModel = models.map(model => (stats.tokens_by_model || {})[model]?.total_tokens || 0);
@@ -317,6 +383,15 @@ function createModelDistributionChart(stats) {
     Plotly.newPlot('llm-model-distribution', [tokenTrace, requestTrace], layout, config);
 }
 
+/**
+ * Creates charts displaying email categorization and priority statistics.
+ * Generates two pie charts: one for email categories and one for priority levels.
+ * 
+ * @param {Object} stats - Email processing statistics
+ * @param {Object} stats.categories - Map of category names to email counts
+ * @param {Object} stats.priority_levels - Map of priority levels to email counts
+ * @return {void}
+ */
 function createEmailChart(stats) {
     // Create category distribution chart
     const categoryTrace = {
@@ -395,6 +470,16 @@ function createEmailChart(stats) {
     }, config);
 }
 
+/**
+ * Creates charts displaying NLP analysis results.
+ * Generates an entity distribution bar chart and an urgency distribution pie chart.
+ * 
+ * @param {Object} stats - NLP statistics from the analytics data
+ * @param {Object} stats.entity_types - Counts of different entity types extracted
+ * @param {number} stats.total_emails - Total number of emails analyzed
+ * @param {number} stats.urgent_emails - Number of emails classified as urgent
+ * @return {void}
+ */
 function createNLPChart(stats) {
     // Entity Types Bar Chart
     const entityTrace = {
@@ -492,6 +577,13 @@ function createNLPChart(stats) {
     Plotly.newPlot('nlp-urgency-chart', [urgencyTrace], urgencyLayout, config);
 }
 
+/**
+ * Refreshes a specific dashboard section with the latest analytics data.
+ * Fetches fresh data from the server and updates only the specified section.
+ * 
+ * @param {string} section - The name of the section to refresh (e.g., 'System Overview')
+ * @return {Promise<void>} A promise that resolves when the section is refreshed
+ */
 async function refreshSection(section) {
     if (isLoading) return;
     
@@ -545,6 +637,14 @@ async function refreshSection(section) {
     }
 }
 
+/**
+ * Updates the System Overview section with the latest analytics data.
+ * Refreshes user counts, email processing stats, system success rate,
+ * processing time, and total cost.
+ * 
+ * @param {Object} data - The analytics data from the server
+ * @return {void}
+ */
 function updateOverviewStats(data) {
     const userStats = data.user_stats || {};
     const emailStats = data.email_stats || {};
@@ -575,6 +675,13 @@ function updateOverviewStats(data) {
         `$${((llmStats.total_cost_cents || 0) / 100).toFixed(2)}`;
 }
 
+/**
+ * Updates the LLM Usage Statistics section with the latest analytics data.
+ * Refreshes token counts, request counts, costs, success rate, and performance metrics.
+ * 
+ * @param {Object} data - The analytics data from the server
+ * @return {void}
+ */
 function updateLLMStats(data) {
     const llmStats = data.llm_stats || {};
     
@@ -595,6 +702,13 @@ function updateLLMStats(data) {
         Math.round(llmStats.avg_processing_time_ms || 0).toLocaleString();
 }
 
+/**
+ * Updates the Email Processing Statistics section with the latest analytics data.
+ * Refreshes email counts, cache hit rate, failure rate, and action requirements.
+ * 
+ * @param {Object} data - The analytics data from the server
+ * @return {void}
+ */
 function updateEmailStats(data) {
     const emailStats = data.email_stats || {};
     const totalFetched = emailStats.total_fetched || 0;
@@ -622,6 +736,14 @@ function updateEmailStats(data) {
         Math.max(emailStats.needs_action || 0, emailStats.has_deadline || 0).toLocaleString();
 }
 
+/**
+ * Updates the NLP Analytics section with the latest analytics data.
+ * Refreshes entity extraction counts, urgency metrics, complexity metrics,
+ * and processing time.
+ * 
+ * @param {Object} data - The analytics data from the server
+ * @return {void}
+ */
 function updateNLPStats(data) {
     const nlpStats = data.nlp_stats || {};
     const totalEmails = nlpStats.total_emails || 0;
@@ -641,6 +763,13 @@ function updateNLPStats(data) {
         Math.round((nlpStats.avg_processing_time || 0) * 1000).toLocaleString();
 }
 
+/**
+ * Updates the User Activity & Analytics section with the latest analytics data.
+ * Refreshes total user count, active user count, and users active today.
+ * 
+ * @param {Object} data - The analytics data from the server
+ * @return {void}
+ */
 function updateActivityStats(data) {
     const userStats = data.user_stats || {};
     
@@ -652,6 +781,15 @@ function updateActivityStats(data) {
         (userStats.active_today || 0).toLocaleString();
 }
 
+/**
+ * Gets the display style information for an activity type.
+ * Maps activity types to their corresponding CSS classes and display labels.
+ * 
+ * @param {string} type - The activity type from the server
+ * @return {Object} Object containing class and label properties
+ * @return {string} return.class - CSS class to apply to the activity
+ * @return {string} return.label - Display label for the activity type
+ */
 function getActivityType(type) {
     switch (type.toLowerCase()) {
         case 'email_processing':
@@ -668,6 +806,14 @@ function getActivityType(type) {
     }
 }
 
+/**
+ * Formats activity metadata into a readable string for display.
+ * Handles different types of metadata including email stats, entity analysis,
+ * LLM processing, and user information.
+ * 
+ * @param {Object} metadata - The metadata object from an activity
+ * @return {string} Formatted metadata string for display
+ */
 function formatMetadata(metadata) {
     if (!metadata || typeof metadata !== 'object') return '';
     
@@ -735,6 +881,13 @@ function formatMetadata(metadata) {
 }
 
 // Initialize section toggles
+/**
+ * Initializes toggle switches for showing/hiding dashboard sections.
+ * Sets up event listeners on toggle elements and manages section visibility state.
+ * Each toggle controls the display of a corresponding dashboard section.
+ * 
+ * @return {void}
+ */
 function initializeSectionToggles() {
     const sections = {
         overview: document.querySelector('.stats-card:nth-child(1)'),
@@ -778,6 +931,12 @@ window.addEventListener('resize', () => {
 // Refresh every 5 minutes
 setInterval(fetchAnalytics, 5 * 60 * 1000);
 
+/**
+ * Refreshes all dashboard sections with the latest analytics data.
+ * Fetches fresh data from the server and updates all statistics and charts.
+ * 
+ * @return {Promise<void>} A promise that resolves when all sections are refreshed
+ */
 async function refreshAll() {
     if (isLoading) return;
     

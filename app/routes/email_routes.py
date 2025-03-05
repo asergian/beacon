@@ -50,6 +50,20 @@ async def get_email_analysis():
         days_back = user.get_setting('email_preferences.days_to_analyze', 1)
         cache_duration = user.get_setting('email_preferences.cache_duration_days', 7)
         
+        # Ensure values are the correct type to prevent conversion errors
+        try:
+            # Force convert to integers
+            days_back = int(days_back)
+            cache_duration = int(cache_duration)
+            logger.debug(f"Email API using days_back={days_back}, cache_duration={cache_duration}")
+        except (ValueError, TypeError) as e:
+            error_msg = f"Invalid settings format: {e}"
+            logger.error(error_msg)
+            return jsonify({
+                'status': 'error',
+                'message': error_msg
+            }), 400
+        
         command = AnalysisCommand(
             days_back=days_back,
             cache_duration_days=cache_duration,
@@ -105,6 +119,18 @@ def stream_email_analysis():
             # Get user settings for email analysis
             cache_duration = user.get_setting('email_preferences.cache_duration_days', 7)
             days_back = user.get_setting('email_preferences.days_to_analyze', 1)
+            
+            # Ensure values are the correct type to prevent conversion errors
+            try:
+                # Force convert to integers
+                days_back = int(days_back)
+                cache_duration = int(cache_duration)
+                logger.debug(f"Email stream using days_back={days_back}, cache_duration={cache_duration}")
+            except (ValueError, TypeError) as e:
+                error_msg = f"Invalid settings format: {e}"
+                logger.error(error_msg)
+                yield f'event: error\ndata: {{"message": "{error_msg}"}}\n\n'
+                return
             
             command = AnalysisCommand(
                 days_back=days_back,

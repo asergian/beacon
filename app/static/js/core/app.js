@@ -1,7 +1,25 @@
-// Global state for theme handling and common functionality
+/**
+ * @fileoverview Core application functionality and global utilities.
+ * This file provides global utility functions and state management that
+ * can be used across all pages of the application.
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
+ */
+
+/**
+ * Global configuration object for application-wide settings.
+ * @type {Object}
+ */
 const config = {};
 
-// Function to show/hide loading bar
+/**
+ * Shows the loading bar with optional custom text.
+ * Adds the 'visible' class to make the loading bar and text appear.
+ * Forces a reflow to restart any animations.
+ * 
+ * @param {string=} text - Optional text to display in the loading bar
+ * @return {void}
+ */
 function showLoadingBar(text) {
     const loadingBar = document.getElementById('loading-bar');
     const loadingText = document.getElementById('loading-text');
@@ -17,6 +35,12 @@ function showLoadingBar(text) {
     loadingText.classList.add('visible');
 }
 
+/**
+ * Hides the loading bar and associated text.
+ * Removes the 'visible' class from the loading elements.
+ * 
+ * @return {void}
+ */
 function hideLoadingBar() {
     const loadingBar = document.getElementById('loading-bar');
     const loadingText = document.getElementById('loading-text');
@@ -27,6 +51,14 @@ function hideLoadingBar() {
     loadingText.classList.remove('visible');
 }
 
+/**
+ * Shows an error message in the UI.
+ * Displays the error message in a designated container and auto-hides after 5 seconds.
+ * Also hides any active loading indicators.
+ * 
+ * @param {string} message - The error message to display
+ * @return {void}
+ */
 function showError(message) {
     hideLoadingBar();
     const errorDiv = document.getElementById('error-message');
@@ -42,6 +74,11 @@ function showError(message) {
     }, 5000);
 }
 
+/**
+ * Hides the error message container.
+ * 
+ * @return {void}
+ */
 function hideError() {
     const errorDiv = document.getElementById('error-message');
     if (errorDiv) {
@@ -49,18 +86,34 @@ function hideError() {
     }
 }
 
-// Export common functions for use in other scripts
+/**
+ * Export common functions for use in other scripts by attaching them to the window object.
+ */
 window.showLoadingBar = showLoadingBar;
 window.hideLoadingBar = hideLoadingBar;
 window.showError = showError;
 window.hideError = hideError;
 
-// Memory monitoring
+/**
+ * Memory monitoring utility that tracks JavaScript heap usage.
+ * Logs memory statistics periodically and provides warnings for high memory usage.
+ * @namespace
+ */
 const memoryMonitor = {
+    /** @type {number} Time of the last memory log */
     lastLog: Date.now(),
+    /** @const {number} Interval between memory logs in milliseconds */
     LOG_INTERVAL: 10000, // Log every 10 seconds
+    /** @type {number} The last recorded memory usage value */
     lastUsage: 0,
     
+    /**
+     * Logs memory usage statistics to the console.
+     * Includes information about total heap size, used heap, and memory deltas.
+     * Also logs page-specific information when available.
+     * 
+     * @return {void}
+     */
     logMemoryUsage: function() {
         if (!window.performance || !window.performance.memory) {
             console.log('Memory API not available');
@@ -117,7 +170,10 @@ const memoryMonitor = {
     }
 };
 
-// Start memory monitoring if the API is available
+/**
+ * Start memory monitoring if the Performance API is available.
+ * Sets up an interval to periodically log memory statistics.
+ */
 if (window.performance && window.performance.memory) {
     setInterval(() => memoryMonitor.logMemoryUsage(), 10000);
 }

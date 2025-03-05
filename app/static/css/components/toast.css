@@ -1,9 +1,28 @@
-/* 
- * Toast Notifications
- * Styles for toast/notification messages
+/**
+ * @fileoverview Toast notification component styles.
+ *
+ * This file contains styles for the toast notification system, including:
+ * - Toast container positioning and layout
+ * - Toast message appearance and states
+ * - Toast animations and transitions
+ * - Toast variants (success, error, info, warning)
+ * - Responsive behavior for different screen sizes
+ *
+ * Toasts are non-modal, temporary notifications that appear at the bottom
+ * right of the screen by default and automatically dismiss after a timeout.
+ *
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
  */
 
-/* Toast Container */
+/* =========================================================================
+   Toast Container
+   ========================================================================= */
+
+/**
+ * Fixed container for toast messages.
+ * Positions toasts at the bottom right of the viewport and stacks them vertically.
+ */
 .toast-container {
     position: fixed;
     bottom: 75px;
@@ -14,7 +33,15 @@
     gap: 10px;
 }
 
-/* Base Toast */
+/* =========================================================================
+   Toast Message Components
+   ========================================================================= */
+
+/**
+ * Base toast notification.
+ * Defines core styles and initial state (hidden) for all toast messages.
+ * Uses transform and opacity for smooth entrance/exit animations.
+ */
 .toast {
     min-width: 250px;
     max-width: 350px;
@@ -27,29 +54,47 @@
     transition: opacity 0.3s, transform 0.3s;
 }
 
-/* Toast Display States */
+/**
+ * Visible state for toast notifications.
+ * Applied when a toast should be visible to the user.
+ */
 .toast.show {
     opacity: 1;
     transform: translateY(0);
 }
 
+/**
+ * Hiding state for toast notifications.
+ * Applied when a toast is being dismissed but before removal from DOM.
+ */
 .toast.hiding {
     opacity: 0;
     transform: translateY(-20px);
 }
 
-/* Toast Content Structure */
+/**
+ * Layout container for toast message content.
+ * Arranges the message body and close button in a row.
+ */
 .toast-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
+/**
+ * Message body container.
+ * Contains the actual notification text.
+ */
 .toast-body {
     flex: 1;
     padding-right: 10px;
 }
 
+/**
+ * Close button for manually dismissing toast notifications.
+ * Positioned at the right side of the toast with hover effect.
+ */
 .toast-close {
     background: none;
     border: none;
@@ -60,39 +105,79 @@
     transition: opacity 0.2s;
 }
 
+/**
+ * Hover state for close button.
+ */
 .toast-close:hover {
     opacity: 1;
 }
 
-/* Toast Types */
+/* =========================================================================
+   Toast Variants
+   ========================================================================= */
+
+/**
+ * Success toast variant.
+ * Used for positive confirmations and successful operations.
+ */
 .toast.success {
     background-color: var(--success-bg);
 }
 
+/**
+ * Error toast variant.
+ * Used for errors and failed operations.
+ */
 .toast.error {
     background-color: var(--error-bg);
 }
 
+/**
+ * Info toast variant.
+ * Used for neutral information messages.
+ */
 .toast.info {
     background-color: var(--info-bg);
 }
 
+/**
+ * Warning toast variant.
+ * Used for warnings and potential issues.
+ */
 .toast.warning {
     background-color: var(--warning-bg);
 }
 
-/* Toast Animations */
+/* =========================================================================
+   Toast Animations
+   ========================================================================= */
+
+/**
+ * Fade in animation for toasts.
+ * Slides up while fading in.
+ */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
+/**
+ * Fade out animation for toasts.
+ * Slides up while fading out.
+ */
 @keyframes fadeOut {
     from { opacity: 1; transform: translateY(0); }
     to { opacity: 0; transform: translateY(-20px); }
 }
 
-/* Responsive Adjustments */
+/* =========================================================================
+   Responsive Adjustments
+   ========================================================================= */
+
+/**
+ * Mobile layout adjustments.
+ * Centers toasts and makes them full width on small screens.
+ */
 @media (max-width: 480px) {
     .toast-container {
         right: 10px;
@@ -107,7 +192,10 @@
     }
 }
 
-/* Dark Theme Overrides */
+/**
+ * Dark theme adjustments.
+ * Enhances shadow for better visibility in dark mode.
+ */
 [data-theme="dark"] .toast {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 } 

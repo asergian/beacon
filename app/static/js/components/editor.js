@@ -1,7 +1,17 @@
+/**
+ * @fileoverview Initializes and configures the CKEditor instance for email responses.
+ * Sets up event listeners to handle theme changes and applies custom styling.
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
+ */
+
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, initializing CKEditor...');
     
-    // Create CKEditor instance (completely different API)
+    /**
+     * Create CKEditor instance with custom toolbar configuration.
+     * The editor is attached to the #response-editor element.
+     */
     ClassicEditor
         .create(document.querySelector('#response-editor'), {
             toolbar: [
@@ -49,7 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Editor initialization failed:', error);
         });
 
-    // Different approach for theme handling in CKEditor 5
+    /**
+     * Updates the CKEditor theme based on the current application theme.
+     * Adjusts colors and styling for both dark and light modes.
+     * 
+     * @param {boolean} isDark - Whether dark mode is active
+     * @return {void}
+     */
     function updateEditorTheme(isDark) {
         const editorElement = document.querySelector('.ck-editor__editable');
         if (editorElement) {

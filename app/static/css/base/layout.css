@@ -1,9 +1,30 @@
-/* 
- * Layout Styles
- * Common layout components like header, footer, and main content
+/**
+ * @fileoverview Core layout and structural component styles.
+ *
+ * This file defines the foundational layout structure for the application, including:
+ * - Header and navigation components
+ * - Footer design and structure
+ * - Main content area sizing and behavior
+ * - User menu dropdowns and interactions
+ * - Container and section spacing
+ * - Responsive layout adjustments
+ *
+ * These layout components create the consistent application structure and
+ * framework into which all other UI components are placed.
+ *
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
  */
 
-/* Main Container Layout */
+/* =========================================================================
+   Main Content Area
+   ========================================================================= */
+
+/**
+ * Primary content container.
+ * Takes up remaining vertical space between header and footer.
+ * Implements scrolling behavior for content overflow.
+ */
 .main-content {
     flex: 1;
     overflow-y: auto;
@@ -11,7 +32,15 @@
     height: calc(100vh - var(--header-height) - var(--footer-height));
 }
 
-/* Header */
+/* =========================================================================
+   Header Components
+   ========================================================================= */
+
+/**
+ * Main application header.
+ * Fixed at top of viewport with highest z-index for overlapping content.
+ * Contains logo, navigation, and user controls.
+ */
 header {
     background-color: var(--header-bg);
     color: var(--header-text);
@@ -23,6 +52,10 @@ header {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+/**
+ * Inner container for header content.
+ * Maintains content width constraints and positioning.
+ */
 .header-container {
     display: flex;
     justify-content: space-between;
@@ -33,7 +66,14 @@ header {
     margin: 0 auto;
 }
 
-/* Navigation */
+/* =========================================================================
+   Navigation Components
+   ========================================================================= */
+
+/**
+ * Main navigation list container.
+ * Arranges navigation links horizontally with consistent spacing.
+ */
 .header-nav ul {
     display: flex;
     list-style: none;
@@ -43,6 +83,10 @@ header {
     align-items: center;
 }
 
+/**
+ * Navigation link styling.
+ * Base appearance for all top-level navigation items.
+ */
 .nav-link {
     color: var(--nav-link-color);
     text-decoration: none;
@@ -53,10 +97,17 @@ header {
     transition: color 0.2s;
 }
 
+/**
+ * Hover state for navigation links.
+ */
 .nav-link:hover {
     color: var(--nav-link-hover);
 }
 
+/**
+ * Active state for navigation links.
+ * Adds an underline indicator for the current section.
+ */
 .nav-link.active::after {
     content: '';
     position: absolute;
@@ -68,7 +119,14 @@ header {
     border-radius: 2px;
 }
 
-/* User Menu */
+/* =========================================================================
+   User Menu Components
+   ========================================================================= */
+
+/**
+ * User menu container.
+ * Holds the user avatar and dropdown menu.
+ */
 .user-menu {
     position: relative;
     cursor: pointer;
@@ -76,6 +134,10 @@ header {
     align-items: center;
 }
 
+/**
+ * User avatar display.
+ * Circular container for user avatar or initials.
+ */
 .user-avatar {
     width: 36px;
     height: 36px;
@@ -86,6 +148,11 @@ header {
     justify-content: center;
 }
 
+/**
+ * User dropdown menu.
+ * Contains user info and action links.
+ * Hidden by default, shown on hover/click.
+ */
 .user-dropdown {
     position: absolute;
     top: 100%;
@@ -99,10 +166,17 @@ header {
     overflow: hidden;
 }
 
+/**
+ * Show dropdown on user menu hover.
+ */
 .user-menu:hover .user-dropdown {
     display: block;
 }
 
+/**
+ * User information section.
+ * Displays user name and email at top of dropdown.
+ */
 .user-info {
     padding: 12px 16px;
     border-bottom: 1px solid var(--border-color);
@@ -110,17 +184,27 @@ header {
     color: var(--text-color);
 }
 
+/**
+ * User name display in dropdown.
+ */
 .user-info .user-name {
     font-weight: bold;
     margin-bottom: 2px;
     color: var(--heading-color);
 }
 
+/**
+ * User email display in dropdown.
+ */
 .user-info .user-email {
     font-size: 0.8rem;
     color: var(--text-muted);
 }
 
+/**
+ * Dropdown menu item.
+ * Individual action link in the user dropdown.
+ */
 .dropdown-item {
     padding: 10px 16px;
     text-decoration: none;
@@ -129,12 +213,22 @@ header {
     transition: background-color 0.2s;
 }
 
+/**
+ * Hover state for dropdown menu items.
+ */
 .dropdown-item:hover {
     background-color: var(--hover-bg);
     color: var(--text-color);
 }
 
-/* Footer */
+/* =========================================================================
+   Footer Components
+   ========================================================================= */
+
+/**
+ * Application footer.
+ * Contains copyright, links, and secondary navigation.
+ */
 footer {
     background-color: var(--footer-bg);
     color: var(--footer-text);
@@ -144,6 +238,10 @@ footer {
     margin-top: auto;
 }
 
+/**
+ * Footer content container.
+ * Controls layout and spacing of footer elements.
+ */
 .footer-container {
     display: flex;
     justify-content: space-between;
@@ -155,11 +253,18 @@ footer {
     gap: 1rem;
 }
 
+/**
+ * Footer copyright text container.
+ */
 .footer-left p {
     margin: 0;
     color: var(--footer-text);
 }
 
+/**
+ * Footer links list.
+ * Secondary navigation and utility links.
+ */
 .footer-right ul {
     display: flex;
     gap: 1.5rem;
@@ -168,17 +273,30 @@ footer {
     margin: 0;
 }
 
+/**
+ * Footer link styling.
+ */
 .footer-right a {
     color: var(--footer-text);
     text-decoration: none;
     transition: opacity 0.2s ease;
 }
 
+/**
+ * Hover state for footer links.
+ */
 .footer-right a:hover {
     opacity: 0.8;
 }
 
-/* Container layouts */
+/* =========================================================================
+   Container Components
+   ========================================================================= */
+
+/**
+ * Standard content container.
+ * Sets maximum width and horizontal padding for content areas.
+ */
 .container {
     max-width: 1400px;
     padding: 0 1.5rem;
@@ -186,11 +304,22 @@ footer {
     width: 100%;
 }
 
+/**
+ * Vertical section spacing.
+ * Provides consistent vertical padding between content sections.
+ */
 .section {
     padding: 2rem 0;
 }
 
-/* Responsive layouts */
+/* =========================================================================
+   Responsive Breakpoints
+   ========================================================================= */
+
+/**
+ * Medium-sized screen adjustments.
+ * Adjusts spacing and layout for tablets and smaller devices.
+ */
 @media (max-width: 768px) {
     .header-container,
     .footer-container {
@@ -207,6 +336,10 @@ footer {
     }
 }
 
+/**
+ * Small screen adjustments.
+ * Optimizes layout for mobile devices.
+ */
 @media (max-width: 480px) {
     .main-content {
         padding: 5px 0;

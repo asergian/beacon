@@ -1,10 +1,17 @@
 /**
- * Support Page JavaScript
- * Handles form submission and toast notifications
+ * @fileoverview Support page functionality for handling user support requests.
+ * Manages form submission, validation, and toast notifications for the support
+ * contact form.
+ * 
+ * @author Beacon Team
+ * @license MIT
  */
 
 document.addEventListener('DOMContentLoaded', function() {
+    /** @type {HTMLFormElement} Form element for support requests */
     const supportForm = document.getElementById('supportForm');
+    
+    /** @type {HTMLElement} Container for toast notifications */
     const toastContainer = document.querySelector('.toast-container') || createToastContainer();
     
     if (supportForm) {
@@ -12,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             
             // Get form data
+            /** @type {Object} Form data collected from input fields */
             const formData = {
                 name: document.getElementById('name').value.trim(),
                 email: document.getElementById('email').value.trim(),
@@ -20,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             // Client-side validation
+            /** @type {Array<string>} List of validation error messages */
             const errors = validateForm(formData);
             if (errors.length > 0) {
                 showToast('error', errors[0]);
@@ -27,7 +36,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Disable submit button and show loading state
+            /** @type {HTMLButtonElement} Submit button element */
             const submitBtn = supportForm.querySelector('button[type="submit"]');
+            /** @type {string} Original button text before loading state */
             const originalBtnText = submitBtn.innerHTML;
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner"></span> Sending...';
@@ -62,9 +73,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * Validate form data
+     * Validates the support form data for required fields and format.
+     * 
      * @param {Object} formData - The form data to validate
-     * @returns {Array} - Array of error messages
+     * @param {string} formData.name - User's name
+     * @param {string} formData.email - User's email address
+     * @param {string} formData.subject - Message subject
+     * @param {string} formData.message - Support message content
+     * @return {Array<string>} Array of error messages, empty if validation passes
      */
     function validateForm(formData) {
         const errors = [];
@@ -89,9 +105,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * Validate email format
-     * @param {string} email - The email to validate
-     * @returns {boolean} - Whether the email is valid
+     * Validates an email address format using regex.
+     * 
+     * @param {string} email - The email address to validate
+     * @return {boolean} True if email format is valid, false otherwise
      */
     function isValidEmail(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -99,8 +116,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * Create toast container if it doesn't exist
-     * @returns {HTMLElement} - The toast container
+     * Creates a toast container element if it doesn't exist in the DOM.
+     * 
+     * @return {HTMLElement} The toast container element
      */
     function createToastContainer() {
         const container = document.createElement('div');
@@ -110,12 +128,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     /**
-     * Show a toast notification
-     * @param {string} type - The type of toast (success, error, info, warning)
-     * @param {string} message - The message to display
+     * Displays a toast notification with the specified type and message.
+     * Toast will automatically disappear after 5 seconds.
+     * 
+     * @param {string} type - The type of toast ('success', 'error', 'info', 'warning')
+     * @param {string} message - The message to display in the toast
      */
     function showToast(type, message) {
+        /** @type {string} Unique ID for the toast element */
         const toastId = 'toast-' + Date.now();
+        
+        /** @type {HTMLElement} The toast element */
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.id = toastId;
