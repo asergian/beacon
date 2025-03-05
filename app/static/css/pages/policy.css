@@ -1,0 +1,434 @@
+/* 
+ * Policy Pages Styles
+ * Specific styles for privacy policy, terms of service, and support pages
+ */
+
+.policy-container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 40px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+}
+
+/* Fix for h1 in policy pages */
+.policy-container h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 10px;
+}
+
+/* Fix for effective date paragraph */
+.effective-date {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+/* Fix for section styling */
+.policy-container section {
+    margin-bottom: 40px;
+}
+
+.policy-container h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.policy-container h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 20px 0 10px;
+}
+
+.policy-container p {
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.policy-container ul, 
+.policy-container ol {
+    margin-bottom: 20px;
+    padding-left: 30px;
+    list-style-position: outside;
+}
+
+.policy-container ul {
+    list-style-type: disc;
+}
+
+.policy-container ol {
+    list-style-type: decimal;
+}
+
+.policy-container li {
+    margin-bottom: 10px;
+    line-height: 1.6;
+    display: list-item;
+}
+
+.policy-container a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.policy-container a:hover {
+    text-decoration: underline;
+}
+
+.policy-nav {
+    margin-bottom: 30px;
+}
+
+.policy-nav-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.policy-nav-item a {
+    display: inline-block;
+    padding: 8px 16px;
+    background-color: var(--card-bg);
+    border-radius: 20px;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.policy-nav-item a:hover {
+    background-color: var(--hover-color);
+}
+
+.policy-nav-item.active a {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.policy-footer {
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: var(--secondary-text);
+}
+
+/* Support Page Styles */
+.faq-item {
+    margin-bottom: 25px;
+}
+
+.policy-container h2 {
+    margin-top: 20px;
+    width: 100%;
+}
+
+.support-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.support-container section {
+    margin-bottom: 0px;
+    width: 100%;
+}
+
+.contact-options {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    width: 100%;
+}
+
+.contact-option {
+    flex: 1 1 300px;
+    padding: 25px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background-color: rgba(79, 209, 197, 0.1);
+    border-radius: 50%;
+    color: var(--accent-color);
+}
+
+.contact-details {
+    flex: 1;
+}
+
+.contact-details h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.contact-details p {
+    margin-bottom: 8px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.contact-details a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.contact-details a:hover {
+    text-decoration: underline;
+}
+
+.support-form {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 30px 0;
+    padding: 30px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.support-form h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.contact-form {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Form Styles for Support Page */
+.form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+    display: block;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    min-width: 250px;
+    max-width: 350px;
+    padding: 12px 15px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: white;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.hiding {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.toast-content {
+    display: flex;
+    align-items: flex-start;
+    flex: 1;
+}
+
+.toast-body {
+    margin-left: 10px;
+    flex: 1;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 10px;
+}
+
+.toast-close:hover {
+    color: white;
+}
+
+.toast.success {
+    background-color: var(--success-bg);
+}
+
+.toast.error {
+    background-color: var(--error-bg);
+}
+
+.toast.info {
+    background-color: var(--info-bg);
+}
+
+.toast.warning {
+    background-color: var(--warning-bg);
+}
+
+/* Loading Spinner */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Dark Theme Adjustments */
+[data-theme="dark"] .policy-container a {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .toast {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .toast.success {
+    background-color: var(--success-bg);
+}
+
+[data-theme="dark"] .toast.error {
+    background-color: var(--error-bg);
+}
+
+[data-theme="dark"] .toast.info {
+    background-color: var(--info-bg);
+}
+
+[data-theme="dark"] .toast.warning {
+    background-color: var(--warning-bg);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .policy-container {
+        padding: 30px 15px;
+    }
+    
+    .policy-container h1 {
+        font-size: 1.8rem;
+    }
+    
+    .policy-container h2 {
+        font-size: 1.4rem;
+    }
+    
+    .contact-option {
+        flex: 1 1 100%;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 8px 12px;
+    }
+    
+    .toast-container {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+    }
+    
+    .toast {
+        max-width: none;
+        width: 100%;
+    }
+} 

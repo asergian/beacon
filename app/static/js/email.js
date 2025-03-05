@@ -623,14 +623,17 @@ function updateEmailList() {
     
             li.innerHTML = `
                 <div class="email-header">
-                    <span class="email-subject">${email.subject || 'No Subject'}</span>
+                    <div class="subject-date">
+                        <span class="email-subject">${email.subject || 'No Subject'}</span>
+                        <span class="date">${formatDate(email.date)}</span>
+                    </div>
+                    <span class="sender-name">${(email.sender || '').split('<')[0].trim() || 'Unknown Sender'}</span>
                     <div class="tags-container">
                         ${email.needs_action ? '<span class="tag action-required">Action Required</span>' : ''}
                         <span class="tag priority-${(email.priority_level || 'pending').toLowerCase()}">${formatTagText(email.priority_level) || 'Pending'}</span>
                         <span class="tag category" data-category="${email.category || 'Informational'}">${formatTagText(email.category) || 'Pending'}</span>
                         ${customCategoriesHtml}
                     </div>
-                    <span class="sender-name">${(email.sender || '').split('<')[0].trim() || 'Unknown Sender'}</span>
                     <p class="email-summary-preview">${email.summary || 'Analysis in progress...'}</p>
                 </div>
             `;
@@ -765,20 +768,81 @@ function loadEmailDetails(emailId) {
         
         detailsElements.summary.textContent = email.summary || 'No summary available';
         
-        if (email.action_items && Array.isArray(email.action_items)) {
-            const fragment = document.createDocumentFragment();
+        if (email.action_items && Array.isArray(email.action_items) && email.action_items.length > 0) {
+            // Get the summary section
+            const summarySection = document.querySelector('.summary-section');
+            
+            // Create action items list if it doesn't exist
+            let actionItemsList = summarySection.querySelector('.action-items-list');
+            if (!actionItemsList) {
+                actionItemsList = document.createElement('ul');
+                actionItemsList.className = 'action-items-list';
+                summarySection.appendChild(actionItemsList);
+            } else {
+                actionItemsList.innerHTML = ''; // Clear existing items
+            }
+            
             email.action_items.forEach(item => {
-                if (item && item.description) {
+                if (item && (item.title || item.description)) {
                     const li = document.createElement('li');
-                    if (item.due_date && item.due_date.toLowerCase() !== 'null') {
-                        li.innerHTML = `${item.description}<span class="due-date">Due: ${item.due_date}</span>`;
-                    } else {
-                        li.textContent = item.description;
+                    li.className = 'action-item';
+                    
+                    const headerDiv = document.createElement('div');
+                    headerDiv.className = 'action-item-header';
+                    
+                    // Use description if title is empty or just repeats "Action Required"
+                    let displayText = item.title || '';
+                    displayText = displayText.replace(/^action required:?\s*/i, '').replace(/^task:?\s*/i, '');
+                    
+                    // If title is empty after cleaning, use description
+                    if (!displayText.trim() && item.description) {
+                        displayText = item.description.replace(/^action required:?\s*/i, '').replace(/^task:?\s*/i, '');
                     }
+                    
+                    // Default text if both title and description are empty
+                    if (!displayText.trim()) {
+                        displayText = 'Action required';
+                    }
+                    
+                    const titleElem = document.createElement('span');
+                    titleElem.className = 'action-item-title';
+                    titleElem.textContent = displayText;
+                    headerDiv.appendChild(titleElem);
+                    
+                    // Add due date if present
+                    if (item.due_date && item.due_date.toLowerCase() !== 'null') {
+                        const dueElem = document.createElement('span');
+                        dueElem.className = 'action-item-due';
+                        dueElem.textContent = item.due_date;
+                        headerDiv.appendChild(dueElem);
+                    }
+                    
+                    li.appendChild(headerDiv);
+                    actionItemsList.appendChild(li);
+                }
+            });
+        }
+        
+        // Handle key dates
+        if (email.key_dates && Array.isArray(email.key_dates) && email.key_dates.length > 0) {
+            detailsElements.keyDates.innerHTML = '';
+            const fragment = document.createDocumentFragment();
+            
+            email.key_dates.forEach(date => {
+                if (date && date.description) {
+                    const li = document.createElement('li');
+                    li.className = 'key-date-item';
+                    li.textContent = date.description;
+                    
+                    // Highlight important dates
+                    if (date.is_important) {
+                        li.classList.add('important');
+                    }
+                    
                     fragment.appendChild(li);
                 }
             });
-            detailsElements.keyDates.innerHTML = '';
+            
             detailsElements.keyDates.appendChild(fragment);
             detailsElements.keyDates.style.display = 'block';
         } else {
@@ -1213,6 +1277,25 @@ function clearEmailResponse() {
         }
         
         showToast('Email response cleared', 'info');
+    }
+}
+
+// Add this helper function near the top of the file
+function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Format as "Today" or "Yesterday" for recent dates
+    if (date.toDateString() === today.toDateString()) {
+        return `Today, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+    } else if (date.toDateString() === yesterday.toDateString()) {
+        return `Yesterday, ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+    } else {
+        // Show date for older messages
+        return date.toLocaleDateString([], {month: 'short', day: 'numeric'});
     }
 }
 

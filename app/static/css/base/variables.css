@@ -1,0 +1,114 @@
+/* 
+ * Global CSS Variables
+ * This file contains all CSS variables used throughout the application.
+ * It helps maintain consistent theming and reduces redundancy.
+ */
+
+:root {
+    /* Color Palette - Light Theme */
+    --bg-color: #f5f7fa;
+    --text-color: #2c3e50;
+    --card-bg: #ffffff;
+    --card-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    --input-bg: #ffffff;
+    --input-border: #e2e8f0;
+    --input-text: #2c3e50;
+    
+    /* Layout */
+    --header-height: 64px;
+    --footer-height: 54px;
+    --footer-padding: 1rem;
+    --filters-height: 69px;
+    
+    /* Header & Navigation */
+    --header-bg: #006F6A;
+    --header-text: #ffffff;
+    --nav-link-color: rgba(255, 255, 255, 0.9);
+    --nav-link-hover: #ffffff;
+    
+    /* Footer */
+    --footer-bg: #333333;
+    --footer-text: #ffffff;
+    
+    /* Email Component */
+    --email-item-bg: #ffffff;
+    --email-item-hover: #f8f9fa;
+    --email-item-active: #E0F7F6;
+    --email-item-border: #ddd;
+    
+    /* Form Elements */
+    --setting-item-bg: #f8f9fa;
+    --setting-item-hover: #f0f2f5;
+    --toggle-bg: #e2e8f0;
+    --toggle-active: #3b82f6;
+    
+    /* Typography */
+    --description-color: #6c757d;
+    --heading-color: #2c3e50;
+    --text-muted: #6c757d;
+    --tag-text: #ffffff;
+    
+    /* Interactive Elements */
+    --hover-bg: #f0f2f5;
+    --border-color: #e2e8f0;
+    
+    /* Buttons & Actions */
+    --primary-color: #3b82f6;
+    --primary-hover: #2563eb;
+    --accent-color: #4FD1C5;
+    --danger-color: #ef4444;
+    --danger-color-rgb: 239, 68, 68;
+    
+    /* Notifications */
+    --success-bg: #10b981;
+    --success-text: white;
+    --error-bg: #ef4444;
+    --warning-bg: #f59e0b;
+    --info-bg: #3b82f6;
+}
+
+/* Dark Theme Variables */
+[data-theme="dark"] {
+    /* Base colors */
+    --bg-color: #121212;
+    --text-color: #E4E6EB;
+    --card-bg: #1E1E1E;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    
+    /* Input and interactive elements */
+    --input-bg: #2C2C2C;
+    --input-border: #383838;
+    --input-text: #E4E6EB;
+    
+    /* Navigation and containers */
+    --header-bg: #1A1A1A;
+    --nav-link-color: rgba(228, 230, 235, 0.9);
+    --nav-link-hover: #E4E6EB;
+    --footer-bg: #1A1A1A;
+    --footer-text: #E4E6EB;
+    
+    /* Email items */
+    --email-item-bg: #1E1E1E;
+    --email-item-hover: #2D2D2D;
+    --email-item-active: #004D48;
+    --email-item-border: #383838;
+    
+    /* Settings items */
+    --setting-item-bg: #2C2C2C;
+    --setting-item-hover: #383838;
+    --toggle-bg: #383838;
+    
+    /* Typography */
+    --description-color: #A0AEC0;
+    --heading-color: #E4E6EB;
+    --text-muted: #A0AEC0;
+    --border-color: #383838;
+    --hover-bg: #2D2D2D;
+    
+    /* Button states */
+    --primary-hover: #3B82F6;
+    --accent-color: #4FD1C5;
+    
+    /* Notifications */
+    --success-bg: #059669;
+} 

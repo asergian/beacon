@@ -1,6 +1,11 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block title %}Privacy Policy | Beacon{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/policy.css') }}">
+{% endblock %}
 
 {% block content %}
 <div class="policy-container">
@@ -135,9 +140,4 @@
         <p>Email: <a href="mailto:beacon@shronas.com">beacon@shronas.com</a></p>
     </section>
 </div>
-{% endblock %}
-
-{% block styles %}
-{{ super() }}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/policy.css') }}">
 {% endblock %} 

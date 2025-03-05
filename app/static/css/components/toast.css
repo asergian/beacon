@@ -1,0 +1,113 @@
+/* 
+ * Toast Notifications
+ * Styles for toast/notification messages
+ */
+
+/* Toast Container */
+.toast-container {
+    position: fixed;
+    bottom: 75px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Base Toast */
+.toast {
+    min-width: 250px;
+    max-width: 350px;
+    padding: 12px 15px;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    color: white;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+/* Toast Display States */
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.hiding {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+/* Toast Content Structure */
+.toast-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toast-body {
+    flex: 1;
+    padding-right: 10px;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+/* Toast Types */
+.toast.success {
+    background-color: var(--success-bg);
+}
+
+.toast.error {
+    background-color: var(--error-bg);
+}
+
+.toast.info {
+    background-color: var(--info-bg);
+}
+
+.toast.warning {
+    background-color: var(--warning-bg);
+}
+
+/* Toast Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-20px); }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+    .toast-container {
+        right: 10px;
+        left: 10px;
+        align-items: center;
+    }
+    
+    .toast {
+        min-width: unset;
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+/* Dark Theme Overrides */
+[data-theme="dark"] .toast {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+} 
