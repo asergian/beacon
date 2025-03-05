@@ -291,39 +291,47 @@ export const EmailUI = {
                 
                 // Write content to iframe
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // Check if this is likely a plain text email (doesn't contain HTML formatting tags)
+                const isPlainText = !email.body.includes('<div') && 
+                                    !email.body.includes('<p>') && 
+                                    !email.body.includes('<span') &&
+                                    !email.body.includes('<br');
+                
+                // Create styles for the iframe content
+                const style = `
+                body {
+                    font-family: 'Inter', sans-serif;
+                    line-height: 1.6;
+                    padding: 5px 10px 20px 10px;
+                    margin: 0;
+                    box-sizing: border-box;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    ${isPlainText ? 'white-space: pre-wrap; color: var(--text-color, #333333);' : ''}
+                }
+                `;
+                
+                // Create the HTML to be loaded into the iframe
+                const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>${style}</style>
+                </head>
+                <body>${isPlainText ? email.body : email.body || '<div class="no-content">No email content available.</div>'}</body>
+                </html>
+                `;
+                
                 iframeDoc.open();
-                iframeDoc.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <style>
-                            /* Minimal reset - only essential styles */
-                            html, body {
-                                margin: 0;
-                                padding: 0;
-                                width: 100%;
-                            }
-                            
-                            body {
-                                font-family: inherit;
-                                line-height: inherit;
-                                color: inherit;
-                            }
-                            
-                            /* Only set max-width for images to prevent overflow */
-                            img {
-                                max-width: 100%;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${email.body}
-                    </body>
-                    </html>
-                `);
+                iframeDoc.write(html);
                 iframeDoc.close();
+                
+                // Set the theme attribute on the iframe HTML element to match the current theme
+                const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                iframeDoc.documentElement.setAttribute('data-theme', currentTheme);
                 
                 // Adjust iframe height based on content
                 iframe.onload = () => {
@@ -335,16 +343,8 @@ export const EmailUI = {
                     
                     // Function to recalculate height
                     const adjustHeight = () => {
-                        try {
-                            // Get just the scrollHeight - simplest approach
-                            const body = iframe.contentWindow.document.body;
-                            const docHeight = body.scrollHeight;
-                            
-                            // Set iframe height with minimal buffer
-                            iframe.style.height = `${docHeight + 5}px`;
-                        } catch (e) {
-                            console.error('Error adjusting iframe height:', e);
-                        }
+                        const docHeight = iframeDoc.body.scrollHeight;
+                        iframe.style.height = (docHeight + 20) + 'px'; // Increased buffer space
                     };
                     
                     // Initial adjustment

@@ -131,6 +131,18 @@
         </div>
     </div>
 </div>
+
+<!-- Navigation FAB buttons -->
+<button id="to-response-fab" class="nav-fab visible" aria-label="Go to response section" title="Go to response">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+</button>
+<button id="to-top-fab" class="nav-fab top-fab visible" aria-label="Back to top" title="Back to top">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="18 15 12 9 6 15"></polyline>
+    </svg>
+</button>
 {% endblock %}
 
 {% block scripts %}
@@ -138,4 +150,5 @@
 <script type="module" src="{{ url_for('static', filename='js/modules/emailController.js') }}"></script>
 <script src="https://cdn.ckeditor.com/ckeditor5/40.0.0/classic/ckeditor.js"></script>
 <script src="{{ url_for('static', filename='js/components/editor.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pages/email_summary.js') }}"></script>
 {% endblock %}

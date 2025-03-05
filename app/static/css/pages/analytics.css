@@ -102,6 +102,57 @@
     cursor: pointer;
 }
 
+/* Add dark theme text styling for analytics components */
+[data-theme="dark"] .toggle-group label,
+[data-theme="dark"] .stat-label,
+[data-theme="dark"] .activity-stat-label,
+[data-theme="dark"] .activity-title,
+[data-theme="dark"] .chart-container h3,
+[data-theme="dark"] text,
+[data-theme="dark"] .charts-grid h3 {
+    color: var(--analytics-text);
+}
+
+[data-theme="dark"] .stat-value,
+[data-theme="dark"] .activity-stat-value,
+[data-theme="dark"] .activity-description {
+    color: var(--analytics-text);
+}
+
+[data-theme="dark"] .activity-time,
+[data-theme="dark"] .activity-description {
+    color: var(--analytics-muted);
+}
+
+/* Chart specific dark mode styling */
+[data-theme="dark"] .chart-container canvas {
+    filter: invert(0.85) hue-rotate(180deg);
+}
+
+[data-theme="dark"] .chart-container .chart-legend text,
+[data-theme="dark"] .chart-container .chart-axis text,
+[data-theme="dark"] .chart-container .chart-label,
+[data-theme="dark"] .chart-container .chart-title {
+    fill: var(--analytics-text) !important;
+    color: var(--analytics-text) !important;
+}
+
+/* Generic fixes for chart libraries in dark mode */
+[data-theme="dark"] .apexcharts-menu,
+[data-theme="dark"] .apexcharts-tooltip,
+[data-theme="dark"] .apexcharts-canvas text {
+    color: var(--analytics-text) !important;
+    fill: var(--analytics-text) !important;
+}
+
+[data-theme="dark"] .apexcharts-legend-text {
+    color: var(--analytics-text) !important;
+}
+
+[data-theme="dark"] .apexcharts-gridline {
+    stroke: rgba(255, 255, 255, 0.1) !important;
+}
+
 /* =========================================================================
    Statistics Components
    ========================================================================= */

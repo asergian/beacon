@@ -62,6 +62,7 @@
     --description-color: #6c757d;     /* Secondary text for descriptions */
     --heading-color: #2c3e50;         /* Color for headings and titles */
     --text-muted: #6c757d;            /* Muted/less emphasized text */
+    --text-muted-rgb: 108, 117, 125;  /* RGB values for muted text */
     --tag-text: #ffffff;              /* Text color for tags and badges */
     
     /* ========== Interactive Elements ========== */
@@ -74,6 +75,9 @@
     --accent-color: #4FD1C5;          /* Secondary accent color - teal */
     --danger-color: #ef4444;          /* Destructive action color - red */
     --danger-color-rgb: 239, 68, 68;  /* RGB values for danger color (for opacity) */
+    --button-secondary-bg: #f3f4f6;   /* Background for secondary buttons - light gray */
+    --button-secondary-text: #4b5563; /* Text color for secondary buttons - medium gray */
+    --button-secondary-hover: #e5e7eb; /* Hover state for secondary buttons - slightly darker gray */
     
     /* ========== Notifications & Feedback ========== */
     --success-bg: #10b981;            /* Background for success messages - green */
@@ -81,6 +85,12 @@
     --error-bg: #ef4444;              /* Background for error messages - red */
     --warning-bg: #f59e0b;            /* Background for warning messages - amber */
     --info-bg: #3b82f6;               /* Background for info messages - blue */
+    
+    /* ========== Scrollbar Styling ========== */
+    --scrollbar-width: 8px;               /* Width of scrollbars */
+    --scrollbar-track: transparent;       /* Scrollbar track color */
+    --scrollbar-thumb: rgba(108, 117, 125, 0.3); /* Thumb color, using muted text with opacity */
+    --scrollbar-thumb-hover: rgba(108, 117, 125, 0.5); /* Thumb hover color */
 }
 
 /* ========== Dark Theme Variables ========== */
@@ -124,7 +134,19 @@
     /* Button states - adjusted for dark theme */
     --primary-hover: #3B82F6;         /* Brighter hover for visibility */
     --accent-color: #4FD1C5;          /* Consistent accent color */
+    --button-secondary-bg: #2C2C2C;   /* Darker secondary button background */
+    --button-secondary-text: #E4E6EB; /* Light text for secondary buttons */
+    --button-secondary-hover: #383838; /* Darker hover for secondary buttons */
     
     /* Notifications - slightly darker for dark theme */
     --success-bg: #059669;            /* Darker green for success messages */
+    
+    /* Analytics text - ensure better contrast in dark mode */
+    --analytics-text: #E4E6EB;        /* Light text for analytics */
+    --analytics-muted: #A0AEC0;       /* Muted but readable secondary analytics text */
+    
+    /* Scrollbar styling for dark theme */
+    --scrollbar-track: #1E1E1E;       /* Dark scrollbar track */
+    --scrollbar-thumb: #4A4A4A;       /* Darker scrollbar thumb for visibility */
+    --scrollbar-thumb-hover: #555555; /* Slightly lighter on hover */
 } 
