@@ -383,20 +383,6 @@ class EmailPipeline:
             filtered = [e for e in filtered if e.category in command.categories]
         return filtered
 
-    async def refresh_cache(self, days: int = 1, batch_size: Optional[int] = None) -> None:
-        """Force refresh of cache with recent emails"""
-        if not self.cache:
-            return
-            
-        # Set the user email from session
-        if 'user' in session and 'email' in session['user']:
-            await self.cache.set_user(session['user']['email'])
-        else:
-            raise ValueError("No user email found in session")
-            
-        command = AnalysisCommand(days_back=days, batch_size=batch_size)
-        await self.get_analyzed_emails(command)
-
     async def get_analyzed_emails_stream(self, command: AnalysisCommand) -> AsyncGenerator[dict, None]:
         """Streaming version of get_analyzed_emails that yields results as they are processed"""
         errors = []
