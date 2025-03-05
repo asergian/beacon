@@ -1,9 +1,25 @@
-/* 
- * Login Page Specific Styles
- * Combines styles for login, login-hero, and landing-hero
+/**
+ * @fileoverview Login Page Styles
+ * Comprehensive styles for the application login page, landing page, and marketing materials.
+ *
+ * This stylesheet includes styles for:
+ * 1. Login page layout and structure
+ * 2. Navigation components
+ * 3. Hero section with call-to-action elements
+ * 4. Feature showcase section
+ * 5. Screenshots and visual demonstration components
+ * 6. About section
+ * 7. Footer elements
+ * 8. Responsive behavior for different screen sizes
+ *
+ * @author Beacon Team
  */
 
-/* General Login Page Styles */
+/* ----------------------------------------------------------------------------
+ * BASE PAGE STRUCTURE
+ * Core layout for the login/landing page
+ * ----------------------------------------------------------------------------
+ */
 body.login-page {
     min-height: 100vh;
     display: flex;
@@ -14,7 +30,11 @@ body.login-page {
     padding: 0;
 }
 
-/* Navigation Bar */
+/* ----------------------------------------------------------------------------
+ * NAVIGATION BAR
+ * Top navigation with logo and links
+ * ----------------------------------------------------------------------------
+ */
 .landing-nav {
     position: absolute;
     top: 0;
@@ -63,7 +83,11 @@ body.login-page {
     text-decoration: none;
 }
 
-/* Google Sign In Button (match hero version) */
+/* ----------------------------------------------------------------------------
+ * AUTHENTICATION COMPONENTS
+ * Google sign-in button and related elements
+ * ----------------------------------------------------------------------------
+ */
 .login-button {
     display: inline-flex;
     align-items: center;
@@ -93,7 +117,11 @@ body.login-page {
     margin-right: 0.5rem;
 }
 
-/* Hero Section */
+/* ----------------------------------------------------------------------------
+ * HERO SECTION
+ * Main landing page hero with background and primary messaging
+ * ----------------------------------------------------------------------------
+ */
 .hero {
     text-align: center;
     padding: 140px 20px 80px;
@@ -138,6 +166,11 @@ body.login-page {
     max-width: 600px;
 }
 
+/* ----------------------------------------------------------------------------
+ * CALL-TO-ACTION COMPONENTS
+ * Buttons and interactive elements for user conversion
+ * ----------------------------------------------------------------------------
+ */
 .cta-buttons {
     display: flex;
     gap: 16px;
@@ -187,7 +220,11 @@ body.login-page {
     height: 24px;
 }
 
-/* Error message */
+/* ----------------------------------------------------------------------------
+ * MESSAGING COMPONENTS
+ * Error and notification display
+ * ----------------------------------------------------------------------------
+ */
 .error-message {
     background-color: rgba(239, 68, 68, 0.1);
     color: rgb(239, 68, 68);
@@ -198,7 +235,11 @@ body.login-page {
     text-align: center;
 }
 
-/* Features Section */
+/* ----------------------------------------------------------------------------
+ * FEATURES SHOWCASE
+ * Product feature presentation with cards
+ * ----------------------------------------------------------------------------
+ */
 .features {
     padding: 4rem 2rem;
     background-color: #f8f9fa;
@@ -263,6 +304,11 @@ body.login-page {
 }
 
 /* Screenshots Section */
+/* ----------------------------------------------------------------------------
+ * SCREENSHOT SHOWCASE
+ * Product screenshots and visual demonstrations
+ * ----------------------------------------------------------------------------
+ */
 .screenshots {
     padding: 4rem 2rem;
     background-color: white;
@@ -320,6 +366,11 @@ body.login-page {
 }
 
 /* About Section */
+/* ----------------------------------------------------------------------------
+ * ABOUT SECTION
+ * Company information and statistics
+ * ----------------------------------------------------------------------------
+ */
 .about {
     padding: 4rem 2rem;
     background-color: #006F6A;
@@ -367,6 +418,11 @@ body.login-page {
 }
 
 /* Footer */
+/* ----------------------------------------------------------------------------
+ * FOOTER COMPONENTS
+ * Page footer with links and copyright information
+ * ----------------------------------------------------------------------------
+ */
 footer {
     background-color: #00423E;
     color: white;

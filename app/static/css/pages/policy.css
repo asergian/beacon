@@ -1,8 +1,26 @@
-/* 
- * Policy Pages Styles
- * Specific styles for privacy policy, terms of service, and support pages
+/**
+ * @fileoverview Policy Pages Styles
+ * Styling for legal, privacy, terms of service, and support pages.
+ *
+ * This stylesheet includes styling for:
+ * 1. Policy document containers and typography
+ * 2. Policy navigation components
+ * 3. Legal document structure
+ * 4. Support and FAQ sections
+ * 5. Contact options and form elements
+ * 6. Notification elements
+ * 7. Loading indicators
+ * 8. Dark mode adjustments
+ * 9. Responsive behavior
+ *
+ * @author Beacon Team
  */
 
+/* ----------------------------------------------------------------------------
+ * POLICY CONTAINER
+ * Main container for policy documents with consistent styling
+ * ----------------------------------------------------------------------------
+ */
 .policy-container {
     max-width: 900px;
     margin: 20px auto;
@@ -12,7 +30,11 @@
     box-shadow: var(--card-shadow);
 }
 
-/* Fix for h1 in policy pages */
+/* ----------------------------------------------------------------------------
+ * POLICY TYPOGRAPHY
+ * Text styling for policy documents
+ * ----------------------------------------------------------------------------
+ */
 .policy-container h1 {
     font-size: 2rem;
     font-weight: 700;
@@ -20,14 +42,17 @@
     margin-bottom: 10px;
 }
 
-/* Fix for effective date paragraph */
 .effective-date {
     color: var(--text-muted);
     font-size: 0.9rem;
     margin-bottom: 20px;
 }
 
-/* Fix for section styling */
+/* ----------------------------------------------------------------------------
+ * POLICY DOCUMENT STRUCTURE
+ * Section containers and hierarchy
+ * ----------------------------------------------------------------------------
+ */
 .policy-container section {
     margin-bottom: 40px;
 }
@@ -83,6 +108,11 @@
     text-decoration: underline;
 }
 
+/* ----------------------------------------------------------------------------
+ * POLICY NAVIGATION
+ * Navigation components for policy documents
+ * ----------------------------------------------------------------------------
+ */
 .policy-nav {
     margin-bottom: 30px;
 }
@@ -115,6 +145,11 @@
     color: white;
 }
 
+/* ----------------------------------------------------------------------------
+ * POLICY FOOTER
+ * Footer elements for policy pages
+ * ----------------------------------------------------------------------------
+ */
 .policy-footer {
     margin-top: 50px;
     padding-top: 20px;
@@ -123,7 +158,11 @@
     color: var(--secondary-text);
 }
 
-/* Support Page Styles */
+/* ----------------------------------------------------------------------------
+ * FAQ AND SUPPORT COMPONENTS
+ * Frequently asked questions and support page elements
+ * ----------------------------------------------------------------------------
+ */
 .faq-item {
     margin-bottom: 25px;
 }
@@ -144,6 +183,11 @@
     width: 100%;
 }
 
+/* ----------------------------------------------------------------------------
+ * CONTACT OPTIONS
+ * Contact method display components
+ * ----------------------------------------------------------------------------
+ */
 .contact-options {
     display: flex;
     flex-direction: row;
@@ -200,6 +244,11 @@
     text-decoration: underline;
 }
 
+/* ----------------------------------------------------------------------------
+ * SUPPORT FORM COMPONENTS
+ * Form elements for the support contact form
+ * ----------------------------------------------------------------------------
+ */
 .support-form {
     box-sizing: border-box;
     width: 100%;
@@ -223,7 +272,6 @@
     margin: 0 auto;
 }
 
-/* Form Styles for Support Page */
 .form-group {
     margin-bottom: 20px;
     display: flex;
@@ -280,7 +328,11 @@
     background-color: var(--primary-hover);
 }
 
-/* Toast Notifications */
+/* ----------------------------------------------------------------------------
+ * NOTIFICATION COMPONENTS
+ * Toast notifications for user feedback
+ * ----------------------------------------------------------------------------
+ */
 .toast-container {
     position: fixed;
     bottom: 20px;
@@ -357,7 +409,11 @@
     background-color: var(--warning-bg);
 }
 
-/* Loading Spinner */
+/* ----------------------------------------------------------------------------
+ * LOADING INDICATORS
+ * Spinner for loading states
+ * ----------------------------------------------------------------------------
+ */
 .spinner {
     display: inline-block;
     width: 20px;
@@ -372,7 +428,11 @@
     to { transform: rotate(360deg); }
 }
 
-/* Dark Theme Adjustments */
+/* ----------------------------------------------------------------------------
+ * DARK MODE THEMING
+ * Dark mode specific overrides
+ * ----------------------------------------------------------------------------
+ */
 [data-theme="dark"] .policy-container a {
     color: var(--primary-color);
 }
@@ -397,7 +457,11 @@
     background-color: var(--warning-bg);
 }
 
-/* Responsive Adjustments */
+/* ----------------------------------------------------------------------------
+ * RESPONSIVE BEHAVIOR
+ * Adjustments for different screen sizes
+ * ----------------------------------------------------------------------------
+ */
 @media (max-width: 768px) {
     .policy-container {
         padding: 30px 15px;

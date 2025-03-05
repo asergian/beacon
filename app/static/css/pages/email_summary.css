@@ -1,9 +1,25 @@
-/* 
- * Email Summary Styles
- * Specific styles for the email summary/inbox page
+/**
+ * @fileoverview Email Summary Page Styles
+ * Provides styling for the email summary/inbox interface with email list and detail views.
+ *
+ * This stylesheet follows a modular organization:
+ * 1. Base layout and structure
+ * 2. Email list column components
+ * 3. Email details column components 
+ * 4. Tag styling
+ * 5. Action items and summary components
+ * 6. Empty states
+ * 7. Responsive behavior
+ * 8. Dark mode adjustments
+ *
+ * @author Beacon Team
  */
 
-/* Base HTML and Body styles to ensure proper height and disable conflicting scrolling */
+/* ----------------------------------------------------------------------------
+ * BASE STRUCTURE
+ * Base HTML and Body styles to ensure proper page layout and scrolling
+ * ----------------------------------------------------------------------------
+ */
 html, body {
   height: 100vh;
   overflow: hidden;
@@ -15,7 +31,11 @@ body {
   overflow: hidden; /* Prevent body scrollbar */
 }
 
-/* Loading Bar */
+/* ----------------------------------------------------------------------------
+ * LOADING INDICATORS
+ * Progress indicators for loading states
+ * ----------------------------------------------------------------------------
+ */
 .loading-bar {
   position: fixed;
   top: 0;
@@ -45,8 +65,11 @@ body {
   box-shadow: var(--card-shadow);
 }
 
-/* Main content scrollbar fix */
-/* Email Summary Layout */
+/* ----------------------------------------------------------------------------
+ * MAIN LAYOUT STRUCTURE
+ * Core page layout components and containers
+ * ----------------------------------------------------------------------------
+ */
 .main-content {
   overflow: hidden !important; /* Prevent page-level scrollbar */
   padding: 0;
@@ -56,7 +79,11 @@ body {
   flex-direction: column;
 }
 
-/* Content columns container */
+/* ----------------------------------------------------------------------------
+ * CONTENT COLUMNS
+ * Two-column layout for email list and detail views
+ * ----------------------------------------------------------------------------
+ */
 .content-columns {
   display: flex;
   height: calc(100vh - var(--header-height) - var(--filters-height) - var(--footer-height));
@@ -66,7 +93,11 @@ body {
   margin: 0; /* Remove any margin */
 }
 
-/* Filter Row */
+/* ----------------------------------------------------------------------------
+ * FILTER COMPONENTS
+ * Email filtering interface elements
+ * ----------------------------------------------------------------------------
+ */
 .filters-row {
   display: flex;
   align-items: center;
@@ -100,7 +131,11 @@ body {
   font-size: 0.9rem;
 }
 
-/* Email list column */
+/* ----------------------------------------------------------------------------
+ * EMAIL LIST COLUMN
+ * Left sidebar with email list and previews
+ * ----------------------------------------------------------------------------
+ */
 .email-list-column {
   width: 30%;
   border-right: 1px solid var(--border-color);
@@ -122,6 +157,11 @@ body {
   flex: 1; /* Take up available space */
 }
 
+/* ----------------------------------------------------------------------------
+ * EMAIL LIST ITEMS
+ * Individual email preview items in the list
+ * ----------------------------------------------------------------------------
+ */
 .email-item {
   padding: 15px;
   border-bottom: 1px solid var(--border-color);
@@ -204,7 +244,11 @@ body {
   line-height: 1.5;
 }
 
-/* Tags container */
+/* ----------------------------------------------------------------------------
+ * EMAIL LIST TAGS
+ * Tag display in the email list with truncation
+ * ----------------------------------------------------------------------------
+ */
 .email-list-column .tags-container {
   display: flex;
   flex-wrap: wrap;
@@ -212,7 +256,6 @@ body {
   margin: 6px 0;
 }
 
-/* Change the tag truncation indicator - with higher specificity */
 .email-list-column .tags-container:has(> .tag:nth-child(5))::after {
   content: "" !important; /* Empty content */
   display: inline-flex !important;
@@ -228,7 +271,6 @@ body {
   background-position: center !important;
 }
 
-/* Hide tags beyond the 4th one */
 .email-list-column .tags-container .tag:nth-child(n+5) {
   display: none;
 }
@@ -292,6 +334,11 @@ body {
   margin-bottom: 15px;
 }
 
+/* ----------------------------------------------------------------------------
+ * EMAIL BODY COMPONENTS
+ * Content display for the selected email
+ * ----------------------------------------------------------------------------
+ */
 .email-body {
   font-size: 0.95rem;
   line-height: 1.6;
@@ -300,14 +347,12 @@ body {
   min-height: 20px; /* Smaller min-height */
 }
 
-/* Style for iframe within email body - minimal styling */
 .email-body iframe {
   display: block;
   width: 100%;
   border: none;
 }
 
-/* Email loading indicator */
 .email-loading {
   padding: 20px;
   text-align: center;
@@ -386,6 +431,11 @@ body {
 }
 
 /* No Emails State */
+/* ----------------------------------------------------------------------------
+ * EMPTY STATE
+ * Visual display when no emails are available
+ * ----------------------------------------------------------------------------
+ */
 .no-emails {
   display: flex;
   flex-direction: column;
@@ -417,6 +467,11 @@ body {
 }
 
 /* Responsive */
+/* ----------------------------------------------------------------------------
+ * RESPONSIVE LAYOUT
+ * Mobile-friendly adjustments for different screen sizes
+ * ----------------------------------------------------------------------------
+ */
 @media (max-width: 768px) {
   .content-columns {
     flex-direction: column;
@@ -439,11 +494,21 @@ body {
 }
 
 /* Dark mode styling for email content */
+/* ----------------------------------------------------------------------------
+ * DARK MODE THEMING
+ * Dark mode specific overrides
+ * ----------------------------------------------------------------------------
+ */
 [data-theme="dark"] .email-details-column h2 {
-    color: #e2e8f0;
+    color: var(--text-color);
 }
 
 /* Streamlined summary and actions styling */
+/* ----------------------------------------------------------------------------
+ * SUMMARY COMPONENTS
+ * Email summary and key information display
+ * ----------------------------------------------------------------------------
+ */
 .summary-actions-box {
   padding: 10px 0;
   margin-bottom: 10px;
@@ -475,6 +540,11 @@ body {
 }
 
 /* Action items now part of summary section */
+/* ----------------------------------------------------------------------------
+ * ACTION ITEMS
+ * Actionable items extracted from emails
+ * ----------------------------------------------------------------------------
+ */
 .action-items-list {
   list-style-type: disc;
   padding-left: 20px;
@@ -517,6 +587,11 @@ body {
 }
 
 /* Email body container - still needs its own box */
+/* ----------------------------------------------------------------------------
+ * EMAIL BODY CONTAINER
+ * Styling for the email body and response sections
+ * ----------------------------------------------------------------------------
+ */
 .email-body-container,
 .email-response-section {
     background-color: #ffffff;
@@ -547,6 +622,11 @@ body {
   color: var(--text-muted);
 }
 
+/* ----------------------------------------------------------------------------
+ * EMAIL COMPOSITION COMPONENTS
+ * Form elements for composing email responses
+ * ----------------------------------------------------------------------------
+ */
 .email-compose-header {
   margin-bottom: 15px;
 }
@@ -589,6 +669,11 @@ body {
 }
 
 /* Email Details Section */
+/* ----------------------------------------------------------------------------
+ * EMAIL DETAILS SECTION
+ * Components for the detailed email view
+ * ----------------------------------------------------------------------------
+ */
 #email-details {
   height: 100%;
   overflow-y: auto;
@@ -668,6 +753,11 @@ body {
   }
 }
 
+/* ----------------------------------------------------------------------------
+ * COMPOSITION ACTIONS
+ * Buttons for email composition actions
+ * ----------------------------------------------------------------------------
+ */
 .email-compose-actions {
   display: flex;
   gap: 10px;
@@ -675,6 +765,11 @@ body {
   justify-content: flex-start;
 }
 
+/* ----------------------------------------------------------------------------
+ * BUTTON COMPONENTS
+ * Action buttons for various interactions
+ * ----------------------------------------------------------------------------
+ */
 .primary-button, .clear-button {
   display: inline-flex;
   align-items: center;
@@ -714,6 +809,11 @@ body {
   align-items: center;
 }
 
+/* ----------------------------------------------------------------------------
+ * EMAIL EDITOR
+ * Rich text editor for email composition
+ * ----------------------------------------------------------------------------
+ */
 .email-compose-body {
   margin-top: 15px;
 }
@@ -737,6 +837,11 @@ body {
 }
 
 /* Navigation FAB buttons */
+/* ----------------------------------------------------------------------------
+ * NAVIGATION COMPONENTS
+ * Floating action buttons for page navigation
+ * ----------------------------------------------------------------------------
+ */
 .nav-fab {
   position: fixed;
   bottom: 80px; /* Position higher above footer */
@@ -780,6 +885,11 @@ body {
 }
 
 /* For mobile devices, adjust position */
+/* ----------------------------------------------------------------------------
+ * MOBILE NAVIGATION
+ * Adjustments for navigation elements on mobile devices
+ * ----------------------------------------------------------------------------
+ */
 @media (max-width: 768px) {
   .nav-fab {
     right: 20px;
@@ -791,20 +901,20 @@ body {
   }
 }
 
-/* Dark Theme Adjustments */
+/* Additional style for plain text emails in dark mode - only for email body, not response box */
+/* ----------------------------------------------------------------------------
+ * DARK MODE EMAIL COMPONENTS
+ * Dark mode adjustments for email content display
+ * ----------------------------------------------------------------------------
+ */
 [data-theme="dark"] .email-item .email-summary-preview {
   color: var(--secondary-text);
-}
-
-[data-theme="dark"] .email-details-column h2 {
-  color: var(--text-color);
 }
 
 [data-theme="dark"] .email-item.active .email-summary-preview {
   color: var(--secondary-text);
 }
 
-/* Additional style for plain text emails in dark mode - only for email body, not response box */
 [data-theme="dark"] .email-body iframe {
   color-scheme: dark;
 }

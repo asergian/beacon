@@ -1,8 +1,23 @@
-/* 
- * Settings Page Specific Styles
- * Styles specific to the settings page that aren't covered by component styles
+/**
+ * @fileoverview Settings Page Styles
+ * Styles specific to the user settings and configuration interface.
+ *
+ * This stylesheet includes:
+ * 1. Settings page layout and structure
+ * 2. Custom category management components
+ * 3. Form elements for user configuration
+ * 4. Color picker and input elements
+ * 5. Action buttons for settings management
+ * 6. AI-dependent settings visibility controls
+ *
+ * @author Beacon Team
  */
 
+/* ----------------------------------------------------------------------------
+ * BASE STRUCTURE
+ * Basic layout for the settings page
+ * ----------------------------------------------------------------------------
+ */
 body {
     overflow-y: auto; /* Ensure body scrolls */
 }
@@ -13,6 +28,11 @@ body {
     height: auto; /* Allow content to expand */
 }
 
+/* ----------------------------------------------------------------------------
+ * SETTINGS CONTAINER
+ * Main container for settings content
+ * ----------------------------------------------------------------------------
+ */
 .settings-container {
     max-width: 800px;
     margin: 0 auto;
@@ -27,14 +47,22 @@ body {
     margin-bottom: 2rem;
 }
 
-/* AI dependent settings section */
+/* ----------------------------------------------------------------------------
+ * CONDITIONAL SETTINGS
+ * Settings that depend on AI features being enabled
+ * ----------------------------------------------------------------------------
+ */
 .ai-dependent-settings {
     margin-top: 1rem;
     padding-left: 1rem;
     border-left: 2px solid var(--input-border);
 }
 
-/* Custom Categories Section */
+/* ----------------------------------------------------------------------------
+ * CUSTOM CATEGORIES COMPONENTS
+ * Interface for managing custom email categories
+ * ----------------------------------------------------------------------------
+ */
 .custom-categories-section {
     margin-top: 1rem;
 }
@@ -48,6 +76,11 @@ body {
     box-sizing: border-box;
 }
 
+/* ----------------------------------------------------------------------------
+ * CATEGORY ITEM COMPONENTS
+ * Individual category card components
+ * ----------------------------------------------------------------------------
+ */
 .custom-category-item {
     background: var(--setting-item-bg);
     border-radius: 8px;
@@ -73,6 +106,11 @@ body {
     box-sizing: border-box;
 }
 
+/* ----------------------------------------------------------------------------
+ * COLOR PICKER ELEMENT
+ * Custom styling for the color picker input
+ * ----------------------------------------------------------------------------
+ */
 .category-color {
     width: 40px !important;
     height: 40px !important;
@@ -100,6 +138,11 @@ body {
     padding: 0;
 }
 
+/* ----------------------------------------------------------------------------
+ * CATEGORY DESCRIPTION INPUT
+ * Text area for category descriptions
+ * ----------------------------------------------------------------------------
+ */
 .category-description {
     display: block;
     width: 100%;
@@ -117,6 +160,11 @@ body {
     box-sizing: border-box;
 }
 
+/* ----------------------------------------------------------------------------
+ * CATEGORY VALUES COMPONENTS
+ * Input elements for category key terms
+ * ----------------------------------------------------------------------------
+ */
 .category-values {
     margin-top: 0.75rem;
     width: 100%;
@@ -131,7 +179,11 @@ body {
     box-sizing: border-box;
 }
 
-/* Override defaults for category items */
+/* ----------------------------------------------------------------------------
+ * FORM ELEMENT OVERRIDES
+ * Input styling customizations
+ * ----------------------------------------------------------------------------
+ */
 .custom-category-item input,
 .custom-category-item textarea {
     margin: 0;
@@ -139,12 +191,15 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
-/* Hover effects for category items */
 .custom-category-item:hover {
     border-color: var(--toggle-active);
 }
 
-/* Delete category button */
+/* ----------------------------------------------------------------------------
+ * ACTION BUTTONS
+ * Delete and add category controls
+ * ----------------------------------------------------------------------------
+ */
 .delete-category-btn {
     background: none;
     border: none;
@@ -159,7 +214,6 @@ body {
     color: var(--danger-color);
 }
 
-/* Add category button */
 #add-category-btn {
     display: flex;
     align-items: center;
@@ -184,7 +238,11 @@ body {
     line-height: 1;
 }
 
-/* Hide elements for AI settings when disabled */
+/* ----------------------------------------------------------------------------
+ * DISABLED STATE COMPONENTS
+ * Hide elements when AI features are disabled
+ * ----------------------------------------------------------------------------
+ */
 .slider-container,
 .slider-input,
 .slider-input::-webkit-slider-thumb,
