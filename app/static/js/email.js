@@ -24,10 +24,8 @@ async function fetchUserSettings() {
             const data = await response.json();
             if (data.status === 'success' && data.settings) {
                 userSettings = data.settings;
-                // For demo mode, keep the larger days_back value
-                if (!window.location.pathname.includes('demo')) {
-                    config.days_back = userSettings.email_preferences.days_to_analyze;
-                }
+                // Always apply the user's days_back setting, even in demo mode
+                config.days_back = userSettings.email_preferences.days_to_analyze;
                 console.log('Updated user settings:', userSettings);
             }
         }
@@ -173,8 +171,18 @@ async function setupSSEConnection() {
     window.lastSSEConnection = now;
     
     try {
+        // Check if we're in demo mode
+        const isDemoMode = document.body.hasAttribute('data-demo-mode');
+        
+        // Choose the appropriate API endpoint based on demo mode
+        const streamEndpoint = isDemoMode 
+            ? '/demo/api/emails/stream' 
+            : '/email/api/emails/stream';
+            
+        console.log(`Connecting to ${streamEndpoint} (Demo Mode: ${isDemoMode})`);
+        
         // Create new EventSource with credentials
-        eventSource = new EventSource('/email/api/emails/stream', {
+        eventSource = new EventSource(streamEndpoint, {
             withCredentials: true  // Include cookies for auth
         });
         
@@ -541,7 +549,7 @@ function updateEmailList() {
         const sortedEmails = Array.from(uniqueEmails.values())
             .filter(email => {
                 // Special handling for demo mode - show all emails
-                const isDemo = emailMap.get(email.id)?.id?.startsWith('demo');
+                // const isDemo = document.body.hasAttribute('data-demo-mode') || emailMap.get(email.id)?.id?.startsWith('demo');
                 // if (isDemo) {
                 //     return true;
                 // }

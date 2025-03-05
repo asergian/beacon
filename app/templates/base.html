@@ -9,19 +9,19 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     {% endblock %}
 </head>
-<body>
+<body {% block body_attributes %}{% endblock %}>
     <!-- Navigation Bar -->
     <header>
         <div class="header-container">
             <div class="logo-container">
-                <a href="{{ url_for('email.home') }}">
+                <a href="{% if session.get('user', {}).get('is_demo', False) %}{{ url_for('demo.demo_home') }}{% else %}{{ url_for('email.home') }}{% endif %}">
                     <img src="{{ url_for('static', filename='images/beacon-logo-hero.svg') }}" alt="Beacon" height="40">
                 </a>
             </div>
             {% if session.get('user') %}
             <nav class="header-nav">
                 <ul>
-                    <li><a href="{{ url_for('email.home') }}" class="nav-link {{ 'active' if request.endpoint == 'email.home' }}">Home</a></li>
+                    <li><a href="{% if session.get('user', {}).get('is_demo', False) %}{{ url_for('demo.demo_home') }}{% else %}{{ url_for('email.home') }}{% endif %}" class="nav-link {{ 'active' if request.endpoint == 'email.home' or request.endpoint == 'demo.demo_home' }}">Home</a></li>
                     {% if session.user.get('roles', []) and 'admin' in session.user.get('roles', []) %}
                     <li><a href="{{ url_for('user.analytics_dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'user.analytics_dashboard' }}">Analytics</a></li>
                     {% endif %}

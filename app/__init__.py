@@ -30,22 +30,18 @@ from .config import Config, configure_logging
 from .models import db, User
 from flask_migrate import Migrate
 from .email.core.email_processor import EmailProcessor
-from .email.core.email_connection import EmailConnection
 from .email.core.email_parsing import EmailParser
 from .email.models.analysis_settings import ProcessingConfig
 from .email.analyzers.semantic_analyzer import SemanticAnalyzer
-from .email.analyzers.content_analyzer import ContentAnalyzer
 from .email.analyzers.content_analyzer_subprocess import ContentAnalyzerSubprocess
 from .email.utils.priority_scoring import PriorityScorer
 from .email.pipeline.pipeline import create_pipeline
-from .email.core.gmail_client import GmailClient
 from .email.core.gmail_client_subprocess import GmailClientSubprocess
 from .email.storage.cache import RedisEmailCache
 from .utils.memory_utils import MemoryProfilingMiddleware
 
 from .routes import init_routes
 from .email.utils.nlp_setup import create_nlp_model
-#from .utils.async_utils import async_manager
 
 # This will be our ASGI application instance
 application = None

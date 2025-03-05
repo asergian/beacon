@@ -8,7 +8,7 @@ import os
 import pathlib
 from datetime import datetime
 import logging
-from ..models import db, User, log_activity, UserSetting
+from ..models import db, User, log_activity
 import json
 
 # Set up logger
@@ -260,6 +260,7 @@ def logout():
 @auth_bp.route('/demo-login')
 def demo_login():
     """Create a demo session without OAuth."""
+    logger.info("Starting demo login")
     try:
         # Clear any existing session
         session.clear()
@@ -313,7 +314,7 @@ def demo_login():
         db.session.commit()
         logger.info(f"Demo user logged in successfully")
         
-        return redirect(url_for('email.home'))
+        return redirect(url_for('demo.demo_home'))
         
     except Exception as e:
         db.session.rollback()
