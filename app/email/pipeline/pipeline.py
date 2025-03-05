@@ -119,6 +119,13 @@ class EmailPipeline:
             # Get cache duration from settings
             cache_duration = user.get_setting('email_preferences.cache_duration_days', 7)
             
+            # Ensure cache_duration is an integer
+            try:
+                cache_duration = int(cache_duration)
+            except (ValueError, TypeError):
+                self.logger.warning(f"Invalid cache_duration value: {cache_duration}, using default of 7 days")
+                cache_duration = 7
+            
             # Fetch emails from cache first if enabled
             cached_emails = []
             if self.cache and command.use_cache and cache_duration > 0:
@@ -448,6 +455,13 @@ class EmailPipeline:
             
             # Get cache duration from settings
             cache_duration = user.get_setting('email_preferences.cache_duration_days', 7)
+            
+            # Ensure cache_duration is an integer
+            try:
+                cache_duration = int(cache_duration)
+            except (ValueError, TypeError):
+                self.logger.warning(f"Invalid cache_duration value: {cache_duration}, using default of 7 days")
+                cache_duration = 7
             
             # Set up cache and get cached emails
             cached_ids = set()

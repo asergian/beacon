@@ -264,12 +264,24 @@ export const EmailUI = {
             if (email.body) {
                 detailsElements.emailBody.style.display = 'block';
                 
+                // Add a loading indicator first
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'email-loading';
+                loadingIndicator.innerHTML = '<span>Loading email content...</span>';
+                detailsElements.emailBody.appendChild(loadingIndicator);
+                
                 // Create a sandboxed iframe for email content
                 const iframe = document.createElement('iframe');
                 iframe.style.width = '100%';
-                iframe.style.height = '100%';
+                iframe.style.height = '0'; // Start at zero and grow to fit content
                 iframe.style.border = 'none';
                 iframe.style.backgroundColor = 'transparent';
+                
+                // Set attributes for proper display
+                iframe.setAttribute('scrolling', 'no');
+                
+                // Allow more features to preserve email functionality
+                iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-popups');
                 
                 // Add iframe to DOM
                 detailsElements.emailBody.appendChild(iframe);
@@ -287,67 +299,22 @@ export const EmailUI = {
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
                         <style>
-                            /* Remove borders from all elements in the email body */
-                            * {
-                                border: none !important;
+                            /* Minimal reset - only essential styles */
+                            html, body {
+                                margin: 0;
+                                padding: 0;
+                                width: 100%;
                             }
                             
                             body {
-                                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-                                line-height: 1.6;
-                                color: var(--text-color, #333);
-                                margin: 0;
-                                padding: 0;
-                                overflow-x: hidden;
+                                font-family: inherit;
+                                line-height: inherit;
+                                color: inherit;
                             }
                             
+                            /* Only set max-width for images to prevent overflow */
                             img {
                                 max-width: 100%;
-                                height: auto;
-                            }
-                            
-                            pre, code {
-                                background-color: var(--code-bg, #f5f5f5);
-                                border-radius: 4px;
-                                padding: 0.2em 0.4em;
-                                font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-                                font-size: 0.9em;
-                                overflow-x: auto;
-                            }
-                            
-                            pre {
-                                padding: 1em;
-                            }
-                            
-                            pre code {
-                                background-color: transparent;
-                                padding: 0;
-                            }
-                            
-                            blockquote {
-                                border-left: 3px solid var(--border-color, #ccc);
-                                margin-left: 0;
-                                padding-left: 1em;
-                                color: var(--text-muted, #666);
-                            }
-                            
-                            table {
-                                width: 100%;
-                                margin: 1em 0;
-                                border-collapse: collapse;
-                            }
-                            
-                            tr:nth-child(even) {
-                                background-color: var(--bg-accent, #f8f8f8);
-                            }
-                            
-                            td, th {
-                                padding: 0.5em;
-                                text-align: left;
-                            }
-                            
-                            th {
-                                background-color: var(--bg-accent, #f5f5f5);
                             }
                         </style>
                     </head>
@@ -360,11 +327,54 @@ export const EmailUI = {
                 
                 // Adjust iframe height based on content
                 iframe.onload = () => {
-                    // Allow time for content to render
-                    setTimeout(() => {
-                        const height = iframe.contentWindow.document.body.scrollHeight;
-                        iframe.style.height = `${height + 20}px`; // Add padding
-                    }, 100);
+                    // Remove loading indicator when content is ready
+                    const loadingEl = detailsElements.emailBody.querySelector('.email-loading');
+                    if (loadingEl) {
+                        loadingEl.remove();
+                    }
+                    
+                    // Function to recalculate height
+                    const adjustHeight = () => {
+                        try {
+                            // Get just the scrollHeight - simplest approach
+                            const body = iframe.contentWindow.document.body;
+                            const docHeight = body.scrollHeight;
+                            
+                            // Set iframe height with minimal buffer
+                            iframe.style.height = `${docHeight + 5}px`;
+                        } catch (e) {
+                            console.error('Error adjusting iframe height:', e);
+                        }
+                    };
+                    
+                    // Initial adjustment
+                    adjustHeight();
+                    
+                    // Also check after images load which can change height
+                    const images = iframe.contentWindow.document.images;
+                    let imagesLoaded = 0;
+                    const totalImages = images.length;
+                    
+                    if (totalImages > 0) {
+                        for (let i = 0; i < totalImages; i++) {
+                            if (images[i].complete) {
+                                imagesLoaded++;
+                            } else {
+                                images[i].onload = () => {
+                                    imagesLoaded++;
+                                    if (imagesLoaded === totalImages) {
+                                        // Recalculate height after all images load
+                                        adjustHeight();
+                                    }
+                                };
+                            }
+                        }
+                        
+                        // If all images already loaded, recalculate immediately
+                        if (imagesLoaded === totalImages) {
+                            adjustHeight();
+                        }
+                    }
                 };
             } else {
                 detailsElements.emailBody.innerHTML = '<p class="no-content">No email content available</p>';

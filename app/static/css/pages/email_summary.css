@@ -296,8 +296,32 @@ body {
   font-size: 0.95rem;
   line-height: 1.6;
   color: var(--text-color);
-  overflow-wrap: break-word;
-  word-wrap: break-word;
+  position: relative;
+  min-height: 20px; /* Smaller min-height */
+}
+
+/* Style for iframe within email body - minimal styling */
+.email-body iframe {
+  display: block;
+  width: 100%;
+  border: none;
+}
+
+/* Email loading indicator */
+.email-loading {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  background-color: var(--card-bg);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }
 
 /* Tags */
@@ -508,6 +532,8 @@ body {
   padding: 15px;
   margin-bottom: 15px;
   box-shadow: var(--card-shadow);
+  position: relative;
+  overflow: visible;
 }
 
 .sender-date {

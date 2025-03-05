@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.innerHTML = '<span class="spinner"></span> Sending...';
             
             // Send form data to server
-            fetch('/api/support-message', {
+            fetch('/pages/api/support-message', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
