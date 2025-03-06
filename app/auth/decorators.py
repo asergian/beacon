@@ -1,4 +1,10 @@
-"""Authentication decorators."""
+"""Authentication decorators for route protection.
+
+This module provides decorators that can be applied to Flask routes
+to enforce authentication requirements and role-based access control.
+These decorators check the user's session and redirect to login or
+abort with appropriate status codes when requirements are not met.
+"""
 
 from functools import wraps
 from flask import session, redirect, url_for, abort
@@ -7,8 +13,20 @@ from app.models.user import User
 def login_required(f):
     """Decorator to require login for routes.
     
-    Checks if user is logged in by verifying session data.
-    If not logged in, redirects to login page.
+    Verifies that a user is logged in by checking if user data exists in the
+    session. If no user is logged in, redirects to the login page.
+    
+    Args:
+        f: The Flask route function to be decorated.
+        
+    Returns:
+        function: The decorated function with login verification.
+        
+    Example:
+        @app.route('/protected')
+        @login_required
+        def protected_route():
+            return "This page requires login"
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -18,7 +36,27 @@ def login_required(f):
     return decorated_function
 
 def admin_required(f):
-    """Decorator to require admin role for routes."""
+    """Decorator to require admin role for routes.
+    
+    Verifies that a user is logged in and has the 'admin' role.
+    If no user is logged in, redirects to the login page.
+    If the user lacks admin privileges, responds with 403 Forbidden.
+    
+    Args:
+        f: The Flask route function to be decorated.
+        
+    Returns:
+        function: The decorated function with admin verification.
+        
+    Raises:
+        HTTPException: 403 Forbidden if user is not an admin.
+        
+    Example:
+        @app.route('/admin-only')
+        @admin_required
+        def admin_route():
+            return "This page requires admin privileges"
+    """
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user' not in session:
