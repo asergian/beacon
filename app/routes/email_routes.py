@@ -38,7 +38,7 @@ def home():
     """
     # Check if user is in demo mode and redirect to demo home
     if session.get('user', {}).get('is_demo', False):
-        logger.info("Redirecting demo user from email.home to demo.demo_home")
+        logger.info("Redirecting demo user from email.home to demo.home")
         return redirect(url_for('demo.demo_home'))
         
     return render_template('email_summary.html', emails=[])

@@ -16,7 +16,8 @@ from .email_routes import email_bp
 from .test_routes import test_bp
 from .user_routes import user_bp
 from .static_pages import static_pages_bp
-from .demo_routes import demo_bp
+# Import demo blueprint from the new module
+from ..demo import demo_bp
 logger = logging.getLogger(__name__)
 
 def init_routes(app: Flask):

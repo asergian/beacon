@@ -78,18 +78,43 @@ export const EmailEvents = {
         this._setupEventListeners();
         
         EmailState.clearAll();
-        const userSettings = await EmailService.fetchUserSettings();
-        EmailState.setUserSettings(userSettings);
         
         try {
-            await this.setupSSEConnection();
+            // Initialize editor if not already done in the template
+            if (window.BalloonEditor && !document.querySelector('.ck-editor__editable')) {
+                await this._initializeEditor();
+            } else {
+                console.log('CKEditor already initialized in the HTML template');
+            }
+        } catch (e) {
+            console.log('Error initializing CKEditor:', e);
+        }
+        
+        try {
+            // Set a timeout to prevent hanging if setupSSEConnection never resolves or rejects
+            const connectionPromise = this.setupSSEConnection();
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Connection timed out')), 30000); // 30 second timeout
+            });
+            
+            await Promise.race([connectionPromise, timeoutPromise]);
         } catch (error) {
             console.error('Error loading emails:', error);
             // Reset initialization flag so we can try again
             EmailState.setHasInitialized(false);
             
-            // Hide loading indicators on error
-            this._updateLoadingIndicators(0, "Error loading emails: " + error.message, true);
+            // Show error message to the user
+            this._updateLoadingIndicators(
+                100,
+                `Error loading emails: ${error.message}. Please refresh the page to try again.`,
+                true
+            );
+            
+            // If we still have an open connection, close it
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
         }
     },
     
@@ -153,14 +178,6 @@ export const EmailEvents = {
             eventSource = null;
         }
         
-        // Add connection cooldown
-        const now = Date.now();
-        if (window.lastSSEConnection && (now - window.lastSSEConnection) < 5000) {
-            console.log('Connection attempt too soon, waiting...');
-            await new Promise(resolve => setTimeout(resolve, 5000));
-        }
-        window.lastSSEConnection = now;
-        
         // Show connecting message
         this._updateLoadingIndicators(5, 'Connecting to server...');
         
@@ -187,7 +204,6 @@ export const EmailEvents = {
             return new Promise((resolve, reject) => {
                 eventSource.addEventListener('connected', (event) => {
                     console.log('SSE connection established');
-                    reconnectAttempts = 0; // Reset reconnect attempts on successful connection
                     sseConnectedOnce = true;
                     
                     // Update loading indicator to show connection success
@@ -239,48 +255,7 @@ export const EmailEvents = {
                         console.log('Error event is not a parseable MessageEvent, treating as connection error');
                     }
                     
-                    // If this is a server error (not just a connection issue)
-                    if (isServerError) {
-                        // Check for specific error patterns we won't retry
-                        const fatalErrors = [
-                            "unsupported operand type",
-                            "Failed to connect to Gmail",
-                            "Authentication error",
-                            "Permission denied",
-                            "User not found"
-                        ];
-                        
-                        if (fatalErrors.some(pattern => errorMessage.includes(pattern))) {
-                            console.error('Fatal server error detected, not reconnecting:', errorMessage);
-                            
-                            // Show user-friendly error
-                            let userMessage = "Server error: ";
-                            
-                            if (errorMessage.includes("unsupported operand type")) {
-                                userMessage += "Invalid date format in your settings. Please check your account preferences.";
-                            } else if (errorMessage.includes("Failed to connect to Gmail")) {
-                                userMessage += "Couldn't connect to Gmail. Please check your account connection."; 
-                            } else if (errorMessage.includes("Authentication error") || errorMessage.includes("Permission denied")) {
-                                userMessage += "Authentication problem. Please log out and log back in.";
-                            } else {
-                                userMessage += errorMessage;
-                            }
-                            
-                            this._updateLoadingIndicators(100, userMessage, true);
-                            
-                            // Close connection and stop reconnection attempts
-                            if (eventSource) {
-                                eventSource.close();
-                                eventSource = null;
-                            }
-                            
-                            // Resolve rather than reject to prevent further reconnection
-                            resolve();
-                            return;
-                        }
-                    }
-                    
-                    // If we already have emails loaded, we can tolerate connection errors
+                    // If emails already loaded, ignore error
                     if (emailsLoadedSuccessfully) {
                         console.log('Emails already loaded, ignoring connection error');
                         if (eventSource) {
@@ -292,6 +267,15 @@ export const EmailEvents = {
                         return;
                     }
                     
+                    // Close current connection
+                    if (eventSource) {
+                        console.log('Closing EventSource before reconnect attempt');
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                    
+                    // Handle reconnection if we haven't exceeded max attempts
+                    // THIS IS THE CRITICAL PART - Increment our reconnection counter here, not in setupSSEConnection
                     if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                         reconnectAttempts++;
                         console.log(`Reconnecting... Attempt ${reconnectAttempts} of ${MAX_RECONNECT_ATTEMPTS}`);
@@ -302,36 +286,36 @@ export const EmailEvents = {
                             `Connection lost. Reconnecting (attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})...`
                         );
                         
-                        // Close current connection before reconnecting
-                        if (eventSource) {
-                            console.log('Closing EventSource before reconnect attempt');
-                            eventSource.close();
-                            eventSource = null;
-                        }
+                        // Schedule reconnection attempt with increasing delay
+                        const delay = RECONNECT_DELAY * Math.pow(1.5, reconnectAttempts - 1);
+                        console.log(`Waiting ${delay}ms before reconnection attempt ${reconnectAttempts}`);
                         
-                        setTimeout(() => this.setupSSEConnection(), RECONNECT_DELAY);
+                        setTimeout(() => {
+                            console.log(`Starting reconnection attempt ${reconnectAttempts}`);
+                            
+                            // Call setupSSEConnection again to try reconnecting
+                            this.setupSSEConnection()
+                                .catch(err => {
+                                    console.error(`Reconnection attempt ${reconnectAttempts} failed:`, err);
+                                });
+                        }, delay);
                     } else {
-                        console.error('Max reconnect attempts reached');
+                        console.error(`Maximum reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached, giving up`);
                         
                         // Show error in loading indicator
                         this._updateLoadingIndicators(
                             100,
                             `Failed to connect after ${MAX_RECONNECT_ATTEMPTS} attempts. Please refresh the page to try again.`,
-                            true
+                            false
                         );
-                        
-                        if (eventSource) {
-                            console.log('Closing EventSource after max reconnect attempts');
-                            eventSource.close();
-                            eventSource = null;
-                        }
-                        reject(new Error('Failed to connect to email stream'));
                     }
+                    
+                    // Always reject the promise since there was an error
+                    reject(new Error('SSE connection error'));
                 });
             });
         } catch (error) {
             console.error('Error setting up SSE connection:', error);
-            this._updateLoadingIndicators(100, `Error connecting: ${error.message}`, true);
             throw error;
         }
     },

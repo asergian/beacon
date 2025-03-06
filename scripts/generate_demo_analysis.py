@@ -22,9 +22,10 @@ import logging
 # Add the parent directory to sys.path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app.routes.demo_routes import get_demo_emails
-from app.email.demo_emails import get_demo_email_bodies
-from app.email.demo_analysis import generate_all_demo_analysis, save_analysis_cache, load_analysis_cache
+# Import from the new demo module structure
+from app.demo.routes import get_demo_emails
+from app.demo.data import get_demo_email_bodies
+from app.demo.analysis import generate_all_demo_analysis, save_analysis_cache, load_analysis_cache
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -39,52 +40,30 @@ def main():
     3. Generates analysis for each email using multiple models and context lengths
     4. Saves the generated analysis to the cache for future use
     
-    The analysis generation involves multiple API calls and may take significant time
-    depending on the number of demo emails and API response times.
-    
     Returns:
-        None
-        
-    Raises:
-        Exception: Any errors during the analysis generation process will be
-            logged with traceback and cause the script to exit with code 1.
+        int: 0 for success, 1 for error
     """
     try:
-        logger.info("Starting Demo Email Analysis Generation")
-        
-        # Try to load existing cache
-        logger.info("\nChecking for existing analysis cache...")
+        logger.info("Loading existing analysis cache")
         load_analysis_cache()
         
-        # Get demo emails
-        logger.info("\nFetching demo emails...")
+        logger.info("Fetching demo emails")
         demo_emails = get_demo_emails()
-        logger.info(f"Found {len(demo_emails)} demo emails")
         
-        # Process all emails
-        logger.info("\nStarting analysis generation...")
+        logger.info(f"Generating analysis for {len(demo_emails)} demo emails")
         logger.info(f"This will test {len(demo_emails)} emails × 6 combinations (2 models × 3 context lengths)")
-        logger.info(f"Total API calls: {len(demo_emails) * 6}")
-        
-        # Generate analysis for all combinations
         generate_all_demo_analysis(demo_emails)
         
-        # Save the analysis cache
-        logger.info("\nSaving analysis cache...")
+        logger.info("Saving analysis cache")
         save_analysis_cache()
         
-        logger.info("\n=== Analysis Generation Complete ===")
+        logger.info("Analysis generation complete!")
+        return 0
         
     except Exception as e:
-        logger.error("\n!!! Error during analysis generation !!!")
-        logger.error(f"Error: {str(e)}")
-        logger.error("\nFull traceback:")
+        logger.error(f"Error generating demo analysis: {e}")
         traceback.print_exc()
-        sys.exit(1)
+        return 1
 
 if __name__ == "__main__":
-    """Script entry point.
-    
-    Calls the main function to start the analysis generation process.
-    """
-    main() 
+    sys.exit(main()) 
