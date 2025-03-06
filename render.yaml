@@ -1,52 +1,81 @@
+# Configuration for the Render service deployment
+
 services:
-  - type: web
-    name: beacon
-    env: python
-    plan: starter
-    buildCommand: chmod +x build.sh && ./build.sh
-    # Render automatically provides PORT environment variable
-    # Hypercorn binds to this port and Render handles the routing
-    startCommand: hypercorn app:application --bind "0.0.0.0:$PORT" --worker-class asyncio --workers 1 --access-logfile - --error-logfile - --keep-alive 120 --graceful-timeout 120 --websocket-ping-interval 20
-    healthCheckPath: /health
-    healthCheckTimeout: 100
-    autoDeploy: true
+  - type: web  # Defines this service as a web application
+    name: beacon  # Service name
+    env: python  # Specifies the runtime environment as Python
+    plan: starter  # Deployment plan (starter, standard, etc.)
+    
+    buildCommand: chmod +x build.sh && ./build.sh  
+    # Command to build the application before deployment
+
+    startCommand: > 
+      # Command to start the application using Hypercorn
+      hypercorn app:application --bind "0.0.0.0:$PORT"
+      --worker-class asyncio --workers 1
+      --access-logfile - --error-logfile -
+      --keep-alive 120 --graceful-timeout 120
+      --websocket-ping-interval 20
+
+    healthCheckPath: /health  # Endpoint for health checks
+    healthCheckTimeout: 100  # Timeout in seconds for health checks
+    autoDeploy: true  # Enables automatic deployment on code changes
+
     envVars:
+      # Runtime environment variables
+      
       - key: PYTHON_VERSION
-        value: 3.11.11
+        value: 3.11.11  # Specifies the Python version
+      
       - key: FLASK_ENV
-        value: production
+        value: production  # Flask environment mode
+      
       - key: DATABASE_URL
         fromDatabase:
-          name: beacon-db
+          name: beacon-db  # References the database connection string
           property: connectionString
+      
       - key: REDIS_URL
-        value: "https://rare-dory-16482.upstash.io"
-      - key: REDIS_TOKEN
-        sync: false
-      - key: OPENAI_API_KEY
-        sync: false
-      - key: FLASK_SECRET_KEY
-        generateValue: true
-      - key: EMAIL
-        sync: false
-      - key: IMAP_PASSWORD
-        sync: false
-      - key: TINYMCE_API_KEY
-        sync: false
-      - key: RENDER
-        value: "true"
-      - key: PIP_NO_CACHE_DIR
-        value: "false"
-      - key: TORCH_CPU_ONLY
-        value: "true"
-      - key: HYPERCORN_GRACEFUL_TIMEOUT
-        value: "120"
-      - key: HYPERCORN_WORKER_CLASS
-        value: "asyncio"
-      - key: HYPERCORN_KEEP_ALIVE_TIMEOUT
-        value: "120"
+        value: "https://rare-dory-16482.upstash.io"  # Redis connection URL
 
+      - key: REDIS_TOKEN
+        sync: false  # Token for Redis authentication (not synced)
+
+      - key: OPENAI_API_KEY
+        sync: false  # API key for OpenAI (not stored in config)
+
+      - key: FLASK_SECRET_KEY
+        generateValue: true  # Auto-generates a secret key for Flask sessions
+
+      - key: EMAIL
+        sync: false  # Email configuration (not synced)
+
+      - key: IMAP_PASSWORD
+        sync: false  # IMAP password for email handling (not synced)
+
+      - key: TINYMCE_API_KEY
+        sync: false  # API key for TinyMCE rich text editor (not synced)
+
+      - key: RENDER
+        value: "true"  # Indicates the application is running on Render
+
+      - key: PIP_NO_CACHE_DIR
+        value: "false"  # Disables PIP cache for package installation
+
+      - key: TORCH_CPU_ONLY
+        value: "true"  # Ensures PyTorch runs only on CPU
+
+      - key: HYPERCORN_GRACEFUL_TIMEOUT
+        value: "120"  # Timeout for graceful shutdown of workers
+
+      - key: HYPERCORN_WORKER_CLASS
+        value: "asyncio"  # Worker class for handling asynchronous tasks
+
+      - key: HYPERCORN_KEEP_ALIVE_TIMEOUT
+        value: "120"  # Timeout for keeping connections alive
+
+# Database configuration
 databases:
-  - name: beacon-db
-    databaseName: beacon
-    plan: free 
+  - name: beacon-db  # Logical name for the database
+    databaseName: beacon  # Actual database name
+    plan: free  # Database hosting plan (free, standard, etc.)

@@ -22,7 +22,20 @@ configure_logging()
 logger = logging.getLogger(__name__)
 
 def setup_https_config() -> Config:
-    """Set up Hypercorn configuration with HTTPS support."""
+    """Set up Hypercorn configuration with HTTPS support.
+    
+    This function configures Hypercorn for HTTPS using self-signed certificates.
+    If certificates don't exist in the 'certs' directory, they will be generated.
+    The function also sets appropriate worker settings, SSL parameters, and 
+    SSE-specific configurations for the server.
+    
+    Returns:
+        Config: A fully configured Hypercorn Config object with HTTPS settings.
+        
+    Raises:
+        ImportError: If the certificate generation script cannot be imported.
+        OSError: If there are permission issues accessing or creating certificates.
+    """
     config = Config()
     
     # Certificate setup
@@ -69,6 +82,11 @@ def setup_https_config() -> Config:
     return config
 
 if __name__ == "__main__":
+    """Application entry point.
+    
+    Initializes the application configuration and runs the Hypercorn server
+    with HTTPS support. Any exceptions during startup are logged and re-raised.
+    """
     try:
         config = setup_https_config()
         run(config)
