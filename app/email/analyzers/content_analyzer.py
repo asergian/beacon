@@ -11,7 +11,7 @@ import asyncio
 from concurrent.futures import ProcessPoolExecutor
 import math
 import gc
-from app.utils.memory_utils import log_memory_usage
+from app.utils.memory_profiling import log_memory_usage
 
 class ContentAnalyzer:
     """Analyzes text using spaCy for entities and urgency."""

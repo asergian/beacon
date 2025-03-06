@@ -49,7 +49,7 @@ gc.set_threshold(700, 10, 5)  # Default is (700, 10, 10)
 
 # Import memory utilities for consistent memory tracking
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../..'))
-from app.utils.memory_utils import get_process_memory, log_memory_usage, log_memory_cleanup
+from app.utils.memory_profiling import get_process_memory, log_memory_usage, log_memory_cleanup
 
 # Configure logging
 logging.basicConfig(

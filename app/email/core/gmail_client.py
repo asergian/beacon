@@ -20,7 +20,7 @@ import random
 import asyncio
 from functools import lru_cache
 from google.oauth2 import id_token
-from app.utils.memory_utils import log_memory_usage
+from app.utils.memory_profiling import log_memory_usage
 
 class GmailAPIError(Exception):
     """Exception raised for Gmail API-related errors."""

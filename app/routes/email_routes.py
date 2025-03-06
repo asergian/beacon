@@ -18,7 +18,7 @@ import json
 import time
 from datetime import datetime
 import random
-from ..utils.memory_utils import log_memory_cleanup
+from ..utils.memory_profiling import log_memory_cleanup
 import gc
 
 # Set up logger

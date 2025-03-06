@@ -15,7 +15,7 @@ from ..utils.priority_scoring import PriorityScorer
 from ..models.processed_email import ProcessedEmail
 from ..models.exceptions import EmailProcessingError
 from ..models.analysis_command import AnalysisCommand
-from app.utils.memory_utils import log_memory_usage, log_memory_cleanup
+from app.utils.memory_profiling import log_memory_usage, log_memory_cleanup
 
 class EmailProcessor:
     """Processes emails using various analyzers and tracks analytics."""

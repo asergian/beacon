@@ -24,7 +24,7 @@ from flask import Flask, g, session, jsonify
 
 # Local application imports
 from .config import Config
-from .utils.logging_config import configure_logging
+from .utils.logging_setup import configure_logging
 from .models import db, User
 
 # Email processing components
@@ -39,7 +39,7 @@ from .email.core.gmail_client_subprocess import GmailClientSubprocess
 from .email.storage.cache import RedisEmailCache
 
 # Utility imports
-from .utils.memory_utils import MemoryProfilingMiddleware
+from .utils.memory_profiling import MemoryProfilingMiddleware
 
 # Service initialization
 from .services.openai_service import init_openai_client

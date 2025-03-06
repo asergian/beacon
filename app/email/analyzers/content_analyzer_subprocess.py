@@ -46,7 +46,7 @@ class ContentAnalyzerSubprocess:
 
     async def analyze_batch(self, texts: List[str]) -> List[Dict]:
         """Analyze a batch of texts efficiently using subprocess isolation."""
-        from app.utils.memory_utils import log_memory_usage
+        from app.utils.memory_profiling import log_memory_usage
 
         log_memory_usage(self.logger, "ContentAnalyzer Batch Start")
         

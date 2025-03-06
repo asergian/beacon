@@ -26,7 +26,7 @@ from flask import session
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request as AuthRequest
 
-from app.utils.memory_utils import log_memory_usage, log_memory_cleanup
+from app.utils.memory_profiling import log_memory_usage, log_memory_cleanup
 import base64
 from email import message_from_bytes
 import platform
