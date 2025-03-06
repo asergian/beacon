@@ -15,7 +15,7 @@ from hypercorn.config import Config
 from hypercorn.run import run
 import os
 import pathlib
-from app.config import configure_logging
+from app.utils.logging_config import configure_logging
 
 # Initialize logging first
 configure_logging()

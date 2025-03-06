@@ -23,7 +23,8 @@ from asgiref.wsgi import WsgiToAsgi
 from flask import Flask, g, session, jsonify
 
 # Local application imports
-from .config import Config, configure_logging
+from .config import Config
+from .utils.logging_config import configure_logging
 from .models import db, User
 
 # Email processing components
