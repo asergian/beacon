@@ -13,7 +13,8 @@ import logging
 from ..auth.decorators import login_required
 from ..email.models.analysis_command import AnalysisCommand
 import asyncio
-from ..models import User
+from app.models.user import User
+from app.models.activity import log_activity
 import json
 import time
 from datetime import datetime
@@ -489,7 +490,6 @@ def send_email():
             user_id = session['user']['id']
             try:
                 # Direct call to log_activity
-                from ..models import log_activity
                 log_activity(
                     user_id=user_id,
                     activity_type='email_sent',

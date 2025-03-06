@@ -2,7 +2,7 @@
 
 from functools import wraps
 from flask import session, redirect, url_for, abort
-from ..models import User
+from app.models.user import User
 
 def login_required(f):
     """Decorator to require login for routes.

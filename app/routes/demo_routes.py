@@ -12,7 +12,7 @@ Typical usage example:
 from flask import Blueprint, current_app, render_template, jsonify, redirect, url_for, session, Response, stream_with_context
 import logging
 from ..auth.decorators import login_required
-from ..models import User
+from app.models.user import User
 import json
 import time
 from datetime import datetime, timedelta

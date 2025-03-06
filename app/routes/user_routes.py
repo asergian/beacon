@@ -9,12 +9,12 @@ Typical usage example:
 """
 
 from flask import Blueprint, jsonify, request, session, render_template
-from ..models import User, UserActivity, log_activity
+from app.models.user import User
+from app.models.activity import UserActivity, log_activity
 from ..auth.decorators import login_required, admin_required
 import logging
 from datetime import datetime
-from .. import db
-from zoneinfo import ZoneInfo, available_timezones
+from app.models import db
 
 user_bp = Blueprint('user', __name__)
 logger = logging.getLogger(__name__)

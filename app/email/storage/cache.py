@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import logging
 from redis.asyncio import Redis
-from app.models import User
+from app.models.user import User
 import hashlib
 from zoneinfo import ZoneInfo
 

@@ -7,7 +7,7 @@ import time
 from flask import session, current_app
 import json
 
-from ...models import log_activity
+from app.models.activity import log_activity
 from .email_parsing import EmailMetadata
 from ..analyzers.semantic_analyzer import SemanticAnalyzer
 from ..analyzers.content_analyzer import ContentAnalyzer
@@ -53,7 +53,7 @@ class EmailProcessor:
             
             # Get user settings if user_id is provided
             if user_id:
-                from ...models import User
+                from app.models.user import User
                 user = User.query.get(user_id)
                 if user:
                     # Check if AI features are enabled first

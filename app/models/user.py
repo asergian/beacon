@@ -1,55 +1,36 @@
+"""User account model for authentication and user management.
+
+This module contains the User model that represents user accounts in the system,
+along with methods for settings management and authentication.
+"""
+
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy import text
 import logging
-import json
-from sqlalchemy import func
 from typing import Any, Dict, Optional
 
-"""User and activity models."""
+from sqlalchemy.dialects.postgresql import JSONB
 
-db = SQLAlchemy()
-
-class UserSetting(db.Model):
-    """Key-value store for user settings."""
-    
-    __tablename__ = 'user_settings'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    key = db.Column(db.String(100), nullable=False)
-    value = db.Column(JSONB, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relationships
-    user = db.relationship('User', back_populates='settings_entries')
-    
-    __table_args__ = (
-        db.UniqueConstraint('user_id', 'key', name='unique_user_setting'),
-    )
-    
-    @classmethod
-    def get_setting(cls, user_id: int, key: str, default: Any = None) -> Any:
-        """Get a single setting value."""
-        setting = cls.query.filter_by(user_id=user_id, key=key).first()
-        return setting.value if setting else default
-    
-    @classmethod
-    def set_setting(cls, user_id: int, key: str, value: Any) -> None:
-        """Set a single setting value."""
-        setting = cls.query.filter_by(user_id=user_id, key=key).first()
-        if setting:
-            setting.value = value
-            setting.updated_at = datetime.utcnow()
-        else:
-            setting = cls(user_id=user_id, key=key, value=value)
-            db.session.add(setting)
-        db.session.commit()
+from . import db
+from .settings import UserSetting
 
 class User(db.Model):
-    """User model for storing user account information."""
+    """User model for storing user account information.
+    
+    This model represents a user account in the system and provides methods
+    for user settings management and role-based access control.
+    
+    Attributes:
+        id: Primary key
+        email: User's email address (unique)
+        name: User's display name
+        picture: URL to user's profile picture
+        created_at: Timestamp when account was created
+        last_login: Timestamp of last login
+        is_active: Flag indicating if account is active
+        roles: List of roles assigned to the user (stored as JSONB)
+        activities: Relationship to UserActivity records
+        settings_entries: Relationship to UserSetting records
+    """
     
     __tablename__ = 'users'
     
@@ -65,14 +46,6 @@ class User(db.Model):
     # Relationships
     activities = db.relationship('UserActivity', back_populates='user', lazy='dynamic')
     settings_entries = db.relationship('UserSetting', back_populates='user', lazy='dynamic')
-    
-    def __repr__(self):
-        return f'<User {self.email}>'
-    
-    def update_last_login(self):
-        """Update the last login timestamp."""
-        self.last_login = datetime.utcnow()
-        db.session.commit()
     
     # Default settings structure that matches the template expectations
     DEFAULT_SETTINGS = {
@@ -105,8 +78,36 @@ class User(db.Model):
         'timezone': 'US/Pacific'
     }
     
+    def __repr__(self):
+        """Return a string representation of the User.
+        
+        Returns:
+            String representation with user email
+        """
+        return f'<User {self.email}>'
+    
+    def update_last_login(self):
+        """Update the last login timestamp.
+        
+        Sets the last_login field to the current UTC time and commits
+        the change to the database.
+        """
+        self.last_login = datetime.utcnow()
+        db.session.commit()
+    
     def get_setting(self, key: str, default: Any = None) -> Any:
-        """Get a single setting value with default fallback."""
+        """Get a single setting value with default fallback.
+        
+        Args:
+            key: Setting key to retrieve (can be nested with dot notation)
+            default: Default value if setting doesn't exist
+            
+        Returns:
+            The setting value or an appropriate default
+            
+        For nested settings (using dot notation like 'email_preferences.days_to_analyze'),
+        this method traverses the DEFAULT_SETTINGS structure to find the appropriate default.
+        """
         # Split the key into parts for nested settings
         parts = key.split('.')
         
@@ -133,7 +134,12 @@ class User(db.Model):
         return setting if setting is not None else default_value
     
     def set_setting(self, key: str, value: Any) -> None:
-        """Set a single setting value."""
+        """Set a single setting value.
+        
+        Args:
+            key: Setting key to set (can be nested with dot notation)
+            value: Value to store
+        """
         # Log the setting update
         if key == 'ai_features.model_type':
             logging.info(f"Setting model_type - Key: {key}, Value: {value}")
@@ -141,7 +147,17 @@ class User(db.Model):
         UserSetting.set_setting(self.id, key, value)
     
     def get_settings_group(self, prefix: str) -> Dict[str, Any]:
-        """Get all settings with a specific prefix."""
+        """Get all settings with a specific prefix.
+        
+        Args:
+            prefix: The settings group prefix (e.g., 'email_preferences')
+            
+        Returns:
+            Dict containing all settings in the specified group
+            
+        This method retrieves all settings with keys that start with the
+        given prefix, merging with default values as appropriate.
+        """
         if prefix not in self.DEFAULT_SETTINGS:
             logging.warning(f"Prefix {prefix} not found in DEFAULT_SETTINGS")
             return {}
@@ -167,7 +183,18 @@ class User(db.Model):
         return settings
     
     def update_settings_group(self, prefix: str, values: Dict[str, Any]) -> None:
-        """Update multiple settings with a specific prefix."""
+        """Update multiple settings with a specific prefix.
+        
+        Args:
+            prefix: The settings group prefix (e.g., 'email_preferences')
+            values: Dictionary of settings to update
+            
+        Raises:
+            Exception: If there's an error updating the settings
+            
+        This method uses a database transaction to ensure all settings
+        are updated atomically.
+        """
         try:
             db.session.begin_nested()
             
@@ -182,11 +209,22 @@ class User(db.Model):
             raise
 
     def has_role(self, role):
-        """Check if user has a specific role."""
+        """Check if user has a specific role.
+        
+        Args:
+            role: Role name to check for
+            
+        Returns:
+            Boolean indicating if user has the specified role
+        """
         return role in (self.roles or ['user'])
     
     def get_all_settings(self) -> Dict[str, Any]:
-        """Get all settings with defaults."""
+        """Get all settings with defaults.
+        
+        Returns:
+            Dictionary containing all user settings with default fallbacks
+        """
         settings = {}
         for key, default in self.DEFAULT_SETTINGS.items():
             if isinstance(default, dict):
@@ -197,7 +235,19 @@ class User(db.Model):
     
     @classmethod
     def get_or_create(cls, email, name=None, picture=None):
-        """Get existing user or create a new one."""
+        """Get existing user or create a new one.
+        
+        Args:
+            email: User's email address
+            name: User's display name (optional)
+            picture: URL to user's profile picture (optional)
+            
+        Returns:
+            User: Existing or newly created user object
+            
+        This method searches for a user with the given email and creates a new
+        user if none exists. For new users, default settings are initialized.
+        """
         user = cls.query.filter_by(email=email).first()
         if user is None:
             user = cls(
@@ -221,44 +271,4 @@ class User(db.Model):
                 else:
                     UserSetting.set_setting(user.id, key, value)
                 
-        return user
-
-class UserActivity(db.Model):
-    """Model for tracking user activity in the application."""
-    
-    __tablename__ = 'user_activities'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    activity_type = db.Column(db.String(50), nullable=False)  # e.g., 'login', 'email_analysis', 'settings_update'
-    description = db.Column(db.String(500))
-    activity_metadata = db.Column(JSONB, default={})  # Additional activity-specific data
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Relationships
-    user = db.relationship('User', back_populates='activities')
-    
-    def __repr__(self):
-        return f'<UserActivity {self.activity_type} by {self.user.email}>'
-
-def log_activity(user_id: int, activity_type: str, description: str = None, metadata: dict = None) -> UserActivity:
-    """Helper function to log user activity."""
-    if user_id is None:
-        raise ValueError("user_id cannot be None")
-    
-    try:
-        # Only log at debug level for detailed activity tracking
-        logging.debug(f"Activity: {activity_type} for user {user_id}")
-        activity = UserActivity(
-            user_id=user_id,
-            activity_type=activity_type,
-            description=description,
-            activity_metadata=metadata or {}
-        )
-        db.session.add(activity)
-        db.session.commit()  # Commit the transaction
-        return activity
-    except Exception as e:
-        db.session.rollback()
-        logging.error(f"Failed to log activity: {e}")
-        raise 
+        return user 

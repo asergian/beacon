@@ -25,7 +25,8 @@ from flask import Flask, g, session, jsonify
 # Local application imports
 from .config import Config
 from .utils.logging_setup import configure_logging
-from .models import db, User
+from .models import db
+from .models.user import User
 
 # Email processing components
 from .email.core.email_processor import EmailProcessor

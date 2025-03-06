@@ -8,7 +8,9 @@ import os
 import pathlib
 from datetime import datetime
 import logging
-from ..models import db, User, log_activity
+from app.models import db
+from app.models.user import User
+from app.models.activity import log_activity
 import json
 
 # Set up logger

@@ -22,9 +22,9 @@ from ..models.processed_email import ProcessedEmail
 from ..storage.cache import EmailCache
 from ..core.gmail_client import GmailClient
 from ..core.email_parsing import EmailParser
-from ...models import log_activity
+from app.models.activity import log_activity
 from ..models.analysis_command import AnalysisCommand
-from app.models import User
+from app.models.user import User
 from app.utils.memory_profiling import log_memory_usage
 
 @dataclass

@@ -11,7 +11,7 @@ Typical usage example:
 import logging
 from flask import current_app
 from flask_migrate import Migrate
-from ..models import db
+from app.models import db
 
 logger = logging.getLogger(__name__)
 
