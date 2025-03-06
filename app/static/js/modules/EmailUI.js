@@ -49,10 +49,22 @@ export const EmailUI = {
             return;
         }
         
-        // Sort emails by date (newest first)
-        const sortedEmails = [...emails].sort((a, b) => 
-            new Date(b.date || 0) - new Date(a.date || 0)
-        );
+        // Sort emails by priority (high, medium, low) and then by date (newest first)
+        const sortedEmails = [...emails].sort((a, b) => {
+            // Priority order: high (0), medium (1), low (2)
+            const priorityOrder = { 'high': 0, 'medium': 1, 'low': 2 };
+            
+            const priorityA = (a.priority_level || 'medium').toLowerCase();
+            const priorityB = (b.priority_level || 'medium').toLowerCase();
+            
+            // First sort by priority
+            if (priorityOrder[priorityA] !== priorityOrder[priorityB]) {
+                return priorityOrder[priorityA] - priorityOrder[priorityB];
+            }
+            
+            // If priorities are equal, sort by date (newest first)
+            return new Date(b.date || 0) - new Date(a.date || 0);
+        });
         
         // Create email list items
         sortedEmails.forEach(email => {
@@ -560,8 +572,12 @@ export const EmailUI = {
                                (action === 'required' && email.needs_action) || 
                                (action === 'none' && !email.needs_action);
             
-            // Show or hide based on all filters
-            item.style.display = priorityMatch && categoryMatch && actionMatch ? 'flex' : 'none';
+            // Show or hide based on all filters - preserve existing styling
+            if (priorityMatch && categoryMatch && actionMatch) {
+                item.style.display = ''; // Reset to default display value from CSS
+            } else {
+                item.style.display = 'none';
+            }
         });
     },
     
