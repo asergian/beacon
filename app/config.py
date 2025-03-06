@@ -9,7 +9,6 @@ a centralized configuration object for the application.
 import os
 from typing import Any
 from dotenv import load_dotenv
-import logging
 
 # Load environment variables immediately
 load_dotenv()
@@ -27,35 +26,31 @@ class Config:
         Loads configuration values from environment variables with defaults
         for development environments.
         """
+        # Flask Configuration
+        self.FLASK_SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'your-default-flask-secret-key'
+        self.LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'ERROR').upper()
+        self.DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
+
         # IMAP Configuration
         self.IMAP_SERVER = os.environ.get('IMAP_SERVER') or 'imap.gmail.com'
         self.EMAIL = os.environ.get('EMAIL') or 'your-email@example.com'
         self.IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD') or 'your-email-password'
         
-        # SMTP Configuration
+        # SMTP Configuration; use the same email and password as IMAP by default
         self.SMTP_SERVER = os.environ.get('SMTP_SERVER') or 'smtp.gmail.com'
         self.SMTP_PORT = int(os.environ.get('SMTP_PORT') or 587)
         self.SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', '1') == '1'
-        # Use the same email and password as IMAP by default
         self.SMTP_EMAIL = os.environ.get('SMTP_EMAIL') or self.EMAIL
         self.SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD') or self.IMAP_PASSWORD
         self.SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL') or 'support@shronas.com'
         
         # Load environment variables into config
         self.REDIS_TOKEN = os.environ.get('REDIS_TOKEN')
-        self.REDIS_URL = os.environ.get('REDIS_URL')
+        self.REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
 
         # OpenAI Configuration
         self.OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY') or 'your-default-openai-key'
 
-        self.FLASK_SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'your-default-flask-secret-key'
-        
-        # Logging Configuration
-        self.LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'ERROR').upper()
-        
-        # Redis Configuration (if used)
-        self.REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
-        
         # Database Configuration
         database_url = os.environ.get('DATABASE_URL', 'postgresql://localhost/beacon')
         # Handle Render's postgres:// URLs
@@ -63,9 +58,6 @@ class Config:
             database_url = database_url.replace('postgres://', 'postgresql://', 1)
         self.SQLALCHEMY_DATABASE_URI = database_url
         self.SQLALCHEMY_TRACK_MODIFICATIONS = os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS', False)
-        
-        # Debug flag
-        self.DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
         
     def __getitem__(self, key: str) -> Any:
         """Allow dictionary-style access to config values.
