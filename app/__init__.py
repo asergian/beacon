@@ -37,7 +37,7 @@ from .email.analyzers.content_analyzer_subprocess import ContentAnalyzerSubproce
 from .email.utils.priority_scorer import PriorityScorer
 from .email.pipeline.pipeline import create_pipeline
 from .email.core.gmail_client_subprocess import GmailClientSubprocess
-from .email.storage.cache import RedisEmailCache
+from .email.storage.redis_cache import RedisEmailCache
 
 # Utility imports
 from .utils.memory_profiling import MemoryProfilingMiddleware

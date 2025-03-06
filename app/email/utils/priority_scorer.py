@@ -5,9 +5,10 @@ based on various factors like sender importance, urgency, action requirements, a
 content analysis. It helps in ranking and categorizing emails by their relative importance.
 """
 
-from typing import Set, Tuple, Dict, Union
+from typing import Set, Tuple, Dict, Union, Any
 from ..models.analysis_settings import ProcessingConfig
-from ..core.email_parsing import EmailMetadata
+# Remove the circular import
+# from ..core.email_parsing import EmailMetadata
 
 class PriorityScorer:
     """Calculates priority scores for emails based on various factors.
@@ -53,7 +54,7 @@ class PriorityScorer:
         """
         self.priority_threshold = threshold
 
-    def score(self, email_data: Union[EmailMetadata, str], nlp_results: Dict, llm_results: Dict) -> Tuple[int, str]:
+    def score(self, email_data: Union[Any, str], nlp_results: Dict, llm_results: Dict) -> Tuple[int, str]:
         """Calculate the priority score and level for an email.
         
         Analyzes email metadata and analysis results to calculate a numeric
@@ -92,7 +93,7 @@ class PriorityScorer:
             print(f"Error calculating priority: {e}")
             return self.config.BASE_PRIORITY_SCORE, self.PRIORITY_LOW
     
-    def _extract_sender(self, email_data: Union[EmailMetadata, str]) -> str:
+    def _extract_sender(self, email_data: Union[Any, str]) -> str:
         """Extract sender information from email data.
         
         Args:
@@ -101,7 +102,8 @@ class PriorityScorer:
         Returns:
             String containing the sender's email address
         """
-        return str(email_data.sender) if isinstance(email_data, EmailMetadata) else str(email_data)
+        # Check if it has a sender attribute instead of checking the specific type
+        return str(email_data.sender) if hasattr(email_data, 'sender') else str(email_data)
     
     def _calculate_base_score(self) -> int:
         """Get the base priority score from configuration.

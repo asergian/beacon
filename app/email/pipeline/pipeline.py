@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 
 from ..core.email_processor import EmailProcessor
 from ..models.processed_email import ProcessedEmail
-from ..storage.cache import EmailCache
+from ..storage.base_cache import EmailCache
 from ..core.gmail_client import GmailClient
 from ..core.email_parsing import EmailParser
 from app.models.activity import log_activity

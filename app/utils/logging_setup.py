@@ -72,13 +72,13 @@ def configure_logging() -> None:
             'console': {
                 'level': log_level,  # Use environment-specified level
                 'formatter': 'standard',
-                'class': 'app.utils.logging_config.SafeStreamHandler',
+                'class': 'app.utils.logging_setup.SafeStreamHandler',
                 'stream': 'ext://sys.stdout',
             },
             'operation': {
                 'level': log_level,  # Use environment-specified level
                 'formatter': 'operation',
-                'class': 'app.utils.logging_config.SafeStreamHandler',
+                'class': 'app.utils.logging_setup.SafeStreamHandler',
                 'stream': 'ext://sys.stdout',
             }
         },
