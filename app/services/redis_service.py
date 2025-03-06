@@ -45,6 +45,18 @@ def init_redis_client(app):
             
             # Test the connection
             async def test_redis_connection():
+                """Test Redis connection by setting and retrieving a test key.
+                
+                This function validates that the Redis connection is working properly
+                by performing a simple set and get operation.
+                
+                Returns:
+                    bool: True if the connection test passes
+                    
+                Raises:
+                    ValueError: If the test fails or if the retrieved value is incorrect
+                    Exception: For other connection errors
+                """
                 try:
                     await redis_client.set("_test_key", "test_value", ex=10)
                     test_result = await redis_client.get("_test_key")
@@ -72,6 +84,16 @@ def init_redis_client(app):
 
         # Create Redis client getter
         def get_redis_client():
+            """Get or create a Redis client for the current request context.
+            
+            This function returns a Redis client from the Flask application context
+            or creates a new one if it doesn't exist. It handles different client 
+            types based on the environment (Upstash Redis in production, standard 
+            Redis in development).
+            
+            Returns:
+                Redis: A configured Redis client instance
+            """
             if 'redis_client' not in g:
                 if os.environ.get('RENDER'):
                     # In production, use the Upstash client directly
@@ -89,7 +111,14 @@ def init_redis_client(app):
 
         # Create Redis client cleanup
         async def close_redis_client(e=None):
-            """Close the Redis client when the request ends."""
+            """Close the Redis client when the request ends.
+            
+            This function is registered as a teardown handler to ensure proper 
+            cleanup of Redis resources when the application context ends.
+            
+            Args:
+                e: Optional exception that caused the context to end
+            """
             client = g.pop('redis_client', None)
             logger = logging.getLogger(__name__)
             

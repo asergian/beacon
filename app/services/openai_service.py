@@ -39,6 +39,15 @@ def init_openai_client(app):
         
         # Create a function to get or create the OpenAI client
         def get_openai_client():
+            """Get or create an OpenAI client for the current request context.
+            
+            This function returns an AsyncOpenAI client from the Flask application
+            context or creates a new one if it doesn't exist. The client is configured
+            with the application's API key and a reasonable timeout setting.
+            
+            Returns:
+                AsyncOpenAI: A configured OpenAI client instance
+            """
             if 'async_openai_client' not in g:
                 g.async_openai_client = AsyncOpenAI(
                     api_key=app.config['OPENAI_API_KEY'],
