@@ -1,10 +1,37 @@
-"""Generate self-signed certificates for development HTTPS."""
+"""Generate self-signed certificates for development HTTPS.
+
+This script creates self-signed SSL certificates for local development with HTTPS.
+It generates both a certificate and a private key file in PEM format,
+configuring them with sensible defaults for localhost development.
+
+Typical usage:
+    $ python scripts/generate_cert.py
+
+The script will create certificates in a 'certs' directory by default.
+"""
 
 from OpenSSL import crypto
 import os
 
 def generate_self_signed_cert(cert_dir="certs"):
-    """Generate self-signed certificate and private key."""
+    """Generate a self-signed SSL certificate and private key.
+    
+    This function creates a 2048-bit RSA key pair and a self-signed X509 certificate
+    valid for one year. The certificate is configured for local development with
+    'localhost' and '127.0.0.1' as Subject Alternative Names.
+    
+    Args:
+        cert_dir (str): Directory path where the certificate and key will be saved.
+            Defaults to 'certs' in the current directory. The directory will be 
+            created if it does not exist.
+    
+    Returns:
+        None: Files are written directly to the filesystem.
+    
+    Raises:
+        OSError: If there are permission issues when creating directories or files.
+        OpenSSL.crypto.Error: If certificate generation fails.
+    """
     
     # Create certificates directory if it doesn't exist
     if not os.path.exists(cert_dir):
@@ -43,4 +70,8 @@ def generate_self_signed_cert(cert_dir="certs"):
         f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
 
 if __name__ == "__main__":
+    """Script entry point.
+    
+    Calls the certificate generation function with default parameters.
+    """
     generate_self_signed_cert() 
