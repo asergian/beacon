@@ -19,7 +19,7 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from dateutil.parser import parse
 import re
-from ..utils.clean_message_id import clean_message_id
+from ..utils.message_id_cleaner import clean_message_id
 import base64
 from html import escape
 import email.parser

@@ -33,7 +33,7 @@ from .email.core.email_parsing import EmailParser
 from .email.models.analysis_settings import ProcessingConfig
 from .email.analyzers.semantic_analyzer import SemanticAnalyzer
 from .email.analyzers.content_analyzer_subprocess import ContentAnalyzerSubprocess
-from .email.utils.priority_scoring import PriorityScorer
+from .email.utils.priority_scorer import PriorityScorer
 from .email.pipeline.pipeline import create_pipeline
 from .email.core.gmail_client_subprocess import GmailClientSubprocess
 from .email.storage.cache import RedisEmailCache

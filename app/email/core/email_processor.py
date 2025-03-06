@@ -11,7 +11,7 @@ from ...models import log_activity
 from .email_parsing import EmailMetadata
 from ..analyzers.semantic_analyzer import SemanticAnalyzer
 from ..analyzers.content_analyzer import ContentAnalyzer
-from ..utils.priority_scoring import PriorityScorer
+from ..utils.priority_scorer import PriorityScorer
 from ..models.processed_email import ProcessedEmail
 from ..models.exceptions import EmailProcessingError
 from ..models.analysis_command import AnalysisCommand
