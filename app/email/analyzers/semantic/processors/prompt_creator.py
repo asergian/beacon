@@ -5,7 +5,7 @@ This module handles the creation of prompts for LLM analysis of emails.
 """
 import json
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 from flask import g
 
 from ....core.email_parsing import EmailMetadata
@@ -284,31 +284,14 @@ Example format: "Quarterly strategy review for APAC expansion. Team reports 30% 
             questions = nlp_results['questions']
             time_sensitivity = nlp_results['time_sensitivity']
             
-            # Format sentiment information with validation
-            sentiment_info = (
-                "Positive" if sentiment_analysis.get('is_positive', False) else "Negative"
-                if sentiment_analysis.get('is_strong_sentiment', False) else "Neutral"
-            )
-            if sentiment_analysis.get('has_gratitude', False):
-                sentiment_info += " (expressing gratitude)"
-            if sentiment_analysis.get('has_dissatisfaction', False):
-                sentiment_info += " (expressing dissatisfaction)"
+            # Process sentiment information
+            sentiment_info = self._format_sentiment_info(sentiment_analysis)
             
-            # Format question information with validation (limit to top 2 of each type)
-            question_info = []
-            if questions.get('direct_questions'):
-                direct_q = [q[:100] for q in questions['direct_questions'][:2]]  # Truncate long questions
-                question_info.append(f"Direct questions: {format_list(direct_q)}")
-            if questions.get('request_questions'):
-                request_q = [q[:100] for q in questions['request_questions'][:2]]  # Truncate long questions
-                question_info.append(f"Requests: {format_list(request_q)}")
+            # Process question information
+            question_info = self._format_question_info(questions)
             
-            # Format time sensitivity information with validation (limit phrases)
-            deadline_info = []
-            if time_sensitivity.get('has_deadline', False):
-                deadline_info.extend([p[:100] for p in time_sensitivity.get('deadline_phrases', [])[:2]])
-            if time_sensitivity.get('time_references'):
-                deadline_info.extend([r[:50] for r in time_sensitivity.get('time_references', [])[:2]])
+            # Process deadline/time information
+            deadline_info = self._format_deadline_info(time_sensitivity)
             
             # Select most important sentiment patterns
             important_patterns = select_important_patterns(
@@ -316,29 +299,14 @@ Example format: "Quarterly strategy review for APAC expansion. Team reports 30% 
                 max_items=3
             )
             
-            # Determine email type string
-            email_type = "Standard"
-            if email_patterns.get('is_automated', False):
-                email_type = "Automated"
-            if email_patterns.get('is_bulk', False):
-                email_type = "Bulk/Marketing" if email_type == "Standard" else email_type + ", Bulk/Marketing"
-                
-            # Determine question type for priority
-            question_type = "No questions"
-            if questions.get('request_questions'):
-                question_type = "Requests present"
-            elif questions.get('direct_questions'):
-                question_type = "Direct questions"
-                
+            # Format email type information
+            email_type, email_type_raw = self._format_email_type_info(email_patterns)
+            
+            # Format question type for priority
+            question_type = self._determine_question_type(questions)
+            
             # Format sentiment strength for priority
             sentiment_strength = "Strong" if sentiment_analysis.get('is_strong_sentiment', False) else "Neutral"
-            
-            # Format email type raw for priority
-            email_type_raw = ""
-            if email_patterns.get('is_automated', False):
-                email_type_raw = "Automated"
-            if email_patterns.get('is_bulk', False):
-                email_type_raw = "Bulk" if not email_type_raw else email_type_raw + ", Bulk"
             
             return {
                 'entities': format_dict(nlp_results['entities']),
@@ -374,6 +342,119 @@ Example format: "Quarterly strategy review for APAC expansion. Team reports 30% 
                 'sentiment_strength': "Neutral",
                 'email_type_raw': ""
             }
+            
+    def _format_sentiment_info(self, sentiment_analysis: Dict) -> str:
+        """
+        Format sentiment information from NLP results.
+        
+        Args:
+            sentiment_analysis: Sentiment analysis results dictionary
+            
+        Returns:
+            Formatted sentiment information string
+        """
+        # Format sentiment information with validation
+        sentiment_info = (
+            "Positive" if sentiment_analysis.get('is_positive', False) else "Negative"
+            if sentiment_analysis.get('is_strong_sentiment', False) else "Neutral"
+        )
+        
+        # Add additional sentiment indicators if present
+        if sentiment_analysis.get('has_gratitude', False):
+            sentiment_info += " (expressing gratitude)"
+        if sentiment_analysis.get('has_dissatisfaction', False):
+            sentiment_info += " (expressing dissatisfaction)"
+            
+        return sentiment_info
+    
+    def _format_question_info(self, questions: Dict) -> List[str]:
+        """
+        Format question information from NLP results.
+        
+        Args:
+            questions: Question analysis results dictionary
+            
+        Returns:
+            List of formatted question information strings
+        """
+        question_info = []
+        
+        # Add direct questions if present (limit to top 2)
+        if questions.get('direct_questions'):
+            direct_q = [q[:100] for q in questions['direct_questions'][:2]]  # Truncate long questions
+            question_info.append(f"Direct questions: {format_list(direct_q)}")
+            
+        # Add request questions if present (limit to top 2)
+        if questions.get('request_questions'):
+            request_q = [q[:100] for q in questions['request_questions'][:2]]  # Truncate long questions
+            question_info.append(f"Requests: {format_list(request_q)}")
+            
+        return question_info
+    
+    def _format_deadline_info(self, time_sensitivity: Dict) -> List[str]:
+        """
+        Format deadline information from NLP results.
+        
+        Args:
+            time_sensitivity: Time sensitivity analysis results dictionary
+            
+        Returns:
+            List of formatted deadline information strings
+        """
+        deadline_info = []
+        
+        # Add deadline phrases if present (limit to top 2)
+        if time_sensitivity.get('has_deadline', False):
+            deadline_info.extend([p[:100] for p in time_sensitivity.get('deadline_phrases', [])[:2]])
+            
+        # Add time references if present (limit to top 2)
+        if time_sensitivity.get('time_references'):
+            deadline_info.extend([r[:50] for r in time_sensitivity.get('time_references', [])[:2]])
+            
+        return deadline_info
+    
+    def _format_email_type_info(self, email_patterns: Dict) -> Tuple[str, str]:
+        """
+        Format email type information from NLP results.
+        
+        Args:
+            email_patterns: Email patterns analysis results dictionary
+            
+        Returns:
+            Tuple of (formatted email type string, raw email type string)
+        """
+        # Determine email type string for display
+        email_type = "Standard"
+        if email_patterns.get('is_automated', False):
+            email_type = "Automated"
+        if email_patterns.get('is_bulk', False):
+            email_type = "Bulk/Marketing" if email_type == "Standard" else email_type + ", Bulk/Marketing"
+            
+        # Format email type raw string for priority calculation
+        email_type_raw = ""
+        if email_patterns.get('is_automated', False):
+            email_type_raw = "Automated"
+        if email_patterns.get('is_bulk', False):
+            email_type_raw = "Bulk" if not email_type_raw else email_type_raw + ", Bulk"
+            
+        return email_type, email_type_raw
+    
+    def _determine_question_type(self, questions: Dict) -> str:
+        """
+        Determine question type for priority calculation.
+        
+        Args:
+            questions: Question analysis results dictionary
+            
+        Returns:
+            Question type string
+        """
+        if questions.get('request_questions'):
+            return "Requests present"
+        elif questions.get('direct_questions'):
+            return "Direct questions"
+        else:
+            return "No questions"
             
     def _get_schema_template(self, custom_categories_prompt: bool) -> str:
         """Get the JSON schema template.

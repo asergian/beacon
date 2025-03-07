@@ -12,7 +12,11 @@ semantic/
 ├── utilities/              # Utility functions and classes
 │   ├── __init__.py
 │   ├── text_processor.py   # Text processing utilities
-│   └── token_handler.py    # Token counting and truncation
+│   ├── token_handler.py    # Token counting and truncation
+│   ├── settings_util.py    # User settings management
+│   ├── cost_calculator.py  # LLM cost calculations
+│   ├── llm_client.py       # OpenAI client operations
+│   └── email_validator.py  # Email validation and preprocessing
 └── processors/             # Core processing components
     ├── __init__.py
     ├── prompt_creator.py   # LLM prompt generation
@@ -42,6 +46,26 @@ The main class that orchestrates the email analysis process. It:
 - Formats data structures for LLM consumption
 - Selects important entities, keywords, and patterns
 
+#### SettingsUtil
+- Retrieves and manages user settings with proper defaults
+- Handles configuration access and validation
+- Provides easy access to common settings like model type and context length
+
+#### CostCalculator
+- Manages LLM cost calculations for different models
+- Formats usage statistics for responses
+- Tracks token usage and associated costs
+
+#### LLMClient
+- Handles OpenAI client operations
+- Provides consistent error handling for API requests
+- Manages completion requests with appropriate parameters
+
+#### EmailValidator
+- Validates email data structure and required fields
+- Preprocesses emails by cleaning HTML and truncating content
+- Ensures consistent data format for analysis
+
 ### Processors
 
 #### PromptCreator
@@ -61,6 +85,16 @@ The main class that orchestrates the email analysis process. It:
 - Handles parallel processing with asyncio
 - Tracks token usage and costs
 - Provides detailed processing statistics
+
+## Code Organization
+
+The semantic analyzer module follows these organizational principles:
+
+1. **Small, focused methods**: Each method has a single responsibility
+2. **Proper error handling**: Consistent error handling patterns throughout
+3. **Utility extraction**: Common operations are extracted into dedicated utility modules
+4. **Separation of concerns**: Clear boundaries between data validation, LLM operations, and business logic
+5. **Consistent logging**: Structured logging with appropriate log levels
 
 ## Usage
 
