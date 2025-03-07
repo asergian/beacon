@@ -32,8 +32,8 @@ from .models.user import User
 from .email.core.email_processor import EmailProcessor
 from .email.core.email_parsing import EmailParser
 from .email.models.analysis_settings import ProcessingConfig
-from .email.analyzers.semantic_analyzer import SemanticAnalyzer
-from .email.analyzers.content_analyzer_subprocess import ContentAnalyzerSubprocess
+from .email.analyzers.semantic.analyzer import SemanticAnalyzer
+from .email.analyzers.content.core.nlp_subprocess_analyzer import ContentAnalyzerSubprocess
 from .email.utils.priority_scorer import PriorityScorer
 from .email.pipeline.pipeline import create_pipeline
 from .email.core.gmail_client_subprocess import GmailClientSubprocess

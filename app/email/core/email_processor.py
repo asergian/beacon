@@ -9,8 +9,8 @@ import json
 
 from app.models.activity import log_activity
 from .email_parsing import EmailMetadata
-from ..analyzers.semantic_analyzer import SemanticAnalyzer
-from ..analyzers.content_analyzer import ContentAnalyzer
+from ..analyzers.semantic.analyzer import SemanticAnalyzer
+from ..analyzers.content.core.nlp_analyzer import ContentAnalyzer
 from ..utils.priority_scorer import PriorityScorer
 from ..models.processed_email import ProcessedEmail
 from ..models.exceptions import EmailProcessingError

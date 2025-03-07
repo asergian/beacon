@@ -4,15 +4,14 @@ from typing import Dict, Any, List, Tuple
 from flask import g, current_app
 import tiktoken
 import re
-from concurrent.futures import ThreadPoolExecutor
 import time
 import asyncio
 
-#from ..models.processed_email import ProcessedEmail
-from ..core.email_parsing import EmailMetadata
-from ..models.exceptions import LLMProcessingError
+from ...core.email_parsing import EmailMetadata
+from ...models.exceptions import LLMProcessingError
+from ..base import BaseAnalyzer
 
-class SemanticAnalyzer:
+class SemanticAnalyzer(BaseAnalyzer):
     """Analyzes emails using LLM for semantic understanding."""
     
     def __init__(self):
