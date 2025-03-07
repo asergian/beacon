@@ -1,7 +1,7 @@
 """Gmail API client for fetching and managing emails.
 
-This module provides a Gmail API client that implements the same interface as
-the IMAP client but uses Google's Gmail API for better integration and performance.
+This module provides a Gmail API client that implements the BaseEmailClient interface
+using Google's Gmail API for better integration and performance.
 """
 
 import logging
@@ -22,13 +22,18 @@ from functools import lru_cache
 from google.oauth2 import id_token
 from app.utils.memory_profiling import log_memory_usage
 
+from ..base import BaseEmailClient
+
+
 class GmailAPIError(Exception):
     """Exception raised for Gmail API-related errors."""
     pass
 
+
 class RateLimitError(GmailAPIError):
     """Exception raised when hitting Gmail API rate limits."""
     pass
+
 
 class MemoryCache(Cache):
     """In-memory cache for Gmail API discovery document."""
@@ -41,11 +46,13 @@ class MemoryCache(Cache):
     def set(self, url, content):
         self._GLOBAL_CACHE[url] = content
 
+
 # Initialize cache with common discovery URLs
 _DISCOVERY_URL = "https://gmail.googleapis.com/$discovery/rest?version=v1"
 MemoryCache._GLOBAL_CACHE[_DISCOVERY_URL] = None  # Will be populated on first use
 
-class GmailClient:
+
+class GmailClient(BaseEmailClient):
     """
     A client for interacting with Gmail using the Gmail API.
     
@@ -198,9 +205,17 @@ class GmailClient:
             return parsedate_to_datetime(date_str)
         except Exception:
             return None
-
-    async def connect(self, user_email: str):
+            
+    # Add the required methods from BaseEmailClient
+    async def connect(self, user_email: Optional[str] = None):
         """Establish a connection to Gmail API using OAuth credentials."""
+        if not user_email:
+            # Added to match the interface
+            user_email = self._user_email
+            
+        if not user_email:
+            raise ValueError("user_email is required to fetch emails")
+            
         try:
             # First ensure we have valid credentials for this user
             await self._ensure_valid_credentials(user_email)
@@ -304,14 +319,14 @@ class GmailClient:
             result = await self._execute_with_retry(batch_request.execute)
             self._last_request_time = time.time()
             return result
-            
+
         except Exception as e:
             if "429" in str(e) or "quota" in str(e).lower():
                 # If we hit rate limit, adjust parameters dynamically
                 self._min_request_interval = min(self._min_request_interval * 1.2, 0.5)  # Increase interval up to max 0.5s
                 raise RateLimitError(str(e))
             raise
-
+     
     async def fetch_emails(self, days_back: int = 1, user_email: str = None) -> List[Dict]:
         """
         Fetch emails from Gmail using the API with rate limiting and retries.
@@ -464,7 +479,7 @@ class GmailClient:
                 # Retry the fetch once
                 return await self.fetch_emails(days_back, user_email)
             raise GmailAPIError(f"Failed to fetch emails: {e}")
-    
+
     async def close(self):
         """Close the Gmail API connection."""
         try:

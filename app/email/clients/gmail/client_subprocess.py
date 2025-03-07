@@ -1,9 +1,8 @@
 """Gmail client that uses a subprocess for memory isolation.
 
-This module provides a Gmail client that uses a subprocess to fetch and decode
-emails, which isolates the memory-intensive operations from the main process.
-The subprocess handles all raw message parsing and returns only the essential
-metadata and content, eliminating the transfer of raw message data between processes.
+This module provides a Gmail client that implements the BaseEmailClient interface
+but delegates the actual Gmail API operations to a subprocess for memory isolation.
+It communicates with the subprocess via pipes or files.
 
 Key features:
 - Full memory isolation for Gmail API operations
@@ -12,36 +11,35 @@ Key features:
 - Robust error handling and resource cleanup
 """
 
-import asyncio
-import json
 import logging
+import json
+import asyncio
 import os
 import sys
 import tempfile
-from datetime import datetime, timedelta, timezone
 from typing import Dict, List
+from datetime import datetime, timedelta, timezone
 import time
 
+from ..base import BaseEmailClient
 from flask import session
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request as AuthRequest
 
 from app.utils.memory_profiling import log_memory_usage, log_memory_cleanup
-import base64
-from email import message_from_bytes
 import platform
 from zoneinfo import ZoneInfo
 
 # Directory of this file
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Path to the subprocess script (this file)
-SUBPROCESS_PATH = os.path.join(CURRENT_DIR, "gmail_subprocess.py")
+SUBPROCESS_PATH = os.path.join(CURRENT_DIR, "gmail_subprocess_worker.py")
 
 class GmailAPIError(Exception):
     """Exception raised for Gmail API-related errors."""
     pass
 
-class GmailClientSubprocess:
+class GmailClientSubprocess(BaseEmailClient):
     """
     A client for interacting with Gmail using a subprocess for memory isolation.
     
@@ -196,7 +194,7 @@ class GmailClientSubprocess:
             self.logger.debug(f"Modified query to exclude sent emails: {query}")
             
             # Use subprocess script path from the module
-            subprocess_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gmail_subprocess.py")
+            subprocess_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gmail_subprocess_worker.py")
             
             # Execute the subprocess command
             self.logger.debug(f"Fetching emails with query: {query}")
@@ -206,6 +204,17 @@ class GmailClientSubprocess:
             
             # Build Python command
             python_executable = sys.executable
+            
+            # Get the project root directory to add to PYTHONPATH
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.abspath(os.path.join(current_dir, '../../../../'))
+            
+            # Set environment variables for the subprocess
+            env = os.environ.copy()
+            if 'PYTHONPATH' in env:
+                env['PYTHONPATH'] = f"{project_root}:{env['PYTHONPATH']}"
+            else:
+                env['PYTHONPATH'] = project_root
             
             # Pass days_back to the subprocess
             cmd = f"{python_executable} {subprocess_path} --credentials @{credentials_path} --user_email {user} --query \"{query}\" {include_spam_trash_arg} --days_back {days_back} --max_results 100 --user_timezone \"{user_timezone}\""
@@ -224,13 +233,15 @@ class GmailClientSubprocess:
                     cmd,
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
-                    preexec_fn=set_priority
+                    preexec_fn=set_priority,
+                    env=env  # Add the environment variables
                 )
             else:
                 process = await asyncio.create_subprocess_shell(
                     cmd,
                     stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                    stderr=asyncio.subprocess.PIPE,
+                    env=env  # Add the environment variables
                 )
             
             # Timing for performance analysis
@@ -354,10 +365,45 @@ class GmailClientSubprocess:
             # Process duration
             duration = time.time() - start_time
             
-            # Check if process exited successfully
+            # Check for errors and log detailed information
             if process.returncode != 0:
+                # Fix the type handling for stderr_lines
+                if isinstance(stderr_lines, list):
+                    stderr_output = "\n".join([line.decode("utf-8") if isinstance(line, bytes) else line for line in stderr_lines])
+                elif isinstance(stderr_lines, bytes):
+                    stderr_output = stderr_lines.decode("utf-8")
+                else:
+                    stderr_output = str(stderr_lines)
+                    
                 self.logger.error(f"Subprocess failed with code {process.returncode}")
-                raise GmailAPIError(f"Gmail subprocess failed with code {process.returncode}")
+                self.logger.error(f"Subprocess stderr output:")
+                
+                # Split stderr output by lines for better readability in logs
+                if stderr_output:
+                    for line in stderr_output.splitlines():
+                        self.logger.error(f"  {line}")
+                else:
+                    self.logger.error("  [No stderr output]")
+                
+                # Log stdout as well in case it contains useful information
+                if stdout_data:
+                    if isinstance(stdout_data, bytes):
+                        stdout_output = stdout_data.decode("utf-8")
+                    else:
+                        stdout_output = str(stdout_data)
+                        
+                    self.logger.error(f"Subprocess stdout output:")
+                    for line in stdout_output.splitlines():
+                        self.logger.error(f"  {line}")
+                
+                # More robust error message
+                error_summary = f"Gmail subprocess failed with code {process.returncode}"
+                if stderr_output:
+                    # Extract the last line which might contain the actual error
+                    last_error_line = stderr_output.splitlines()[-1] if stderr_output.splitlines() else ""
+                    error_summary += f": {last_error_line}"
+                
+                raise GmailAPIError(error_summary)
             
             # Parse the JSON output - use faster ujson if available
             log_memory_usage(self.logger, "Before JSON Deserialization")
@@ -487,7 +533,18 @@ class GmailClientSubprocess:
         try:
             # Build command to execute subprocess
             python_executable = sys.executable
-            subprocess_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gmail_subprocess.py")
+            subprocess_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gmail_subprocess_worker.py")
+            
+            # Get the project root directory to add to PYTHONPATH
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.abspath(os.path.join(current_dir, '../../../../'))
+            
+            # Set environment variables for the subprocess
+            env = os.environ.copy()
+            if 'PYTHONPATH' in env:
+                env['PYTHONPATH'] = f"{project_root}:{env['PYTHONPATH']}"
+            else:
+                env['PYTHONPATH'] = project_root
             
             # Create command for sending email
             cmd_parts = [
@@ -534,7 +591,8 @@ class GmailClientSubprocess:
             process = await asyncio.create_subprocess_exec(
                 *cmd_parts,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
+                env=env  # Add the environment variables
             )
             
             # Set up concurrent readers for stdout and stderr

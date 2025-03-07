@@ -363,7 +363,7 @@ def send_email():
                 
                 # Initialize Gmail client
                 try:
-                    from app.email.core.gmail_client_subprocess import GmailClientSubprocess
+                    from app.email.clients.gmail.client_subprocess import GmailClientSubprocess
                     gmail_client = GmailClientSubprocess()
                     # Connect to Gmail API using our async runner
                     run_async(gmail_client.connect(user_email))

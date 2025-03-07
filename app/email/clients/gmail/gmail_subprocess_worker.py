@@ -1,4 +1,4 @@
-"""Gmail subprocess for memory-isolated email processing.
+"""Gmail worker process for memory-isolated email processing.
 
 This module provides a self-contained process for fetching and processing emails from 
 the Gmail API. It's designed to run as a separate process to isolate memory-intensive
@@ -13,10 +13,11 @@ Key features:
 - Efficient data filtering and processing
 
 Typical usage:
-  python gmail_subprocess.py --credentials @/path/to/creds --user_email user@gmail.com 
+  python gmail_subprocess_worker.py --credentials @/path/to/creds --user_email user@gmail.com 
                             --query "after:2023/01/01" --days_back 7
 """
 
+# Import standard library modules
 import argparse
 import asyncio
 import base64
@@ -48,8 +49,36 @@ from email.mime.text import MIMEText
 gc.set_threshold(700, 10, 5)  # Default is (700, 10, 10)
 
 # Import memory utilities for consistent memory tracking
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../..'))
-from app.utils.memory_profiling import get_process_memory, log_memory_usage, log_memory_cleanup
+# First make sure we can import from the main app
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+try:
+    # Print debugging info to help diagnose import issues
+    print(f"Python path: {sys.path}", file=sys.stderr)
+    from app.utils.memory_profiling import get_process_memory, log_memory_usage, log_memory_cleanup
+    print("Successfully imported memory_profiling", file=sys.stderr)
+except ImportError as e:
+    # Print detailed import error information and use fallback functions
+    print(f"Import error: {e}", file=sys.stderr)
+    print(f"Failed to import from app.utils.memory_profiling", file=sys.stderr)
+    print(f"Current directory: {os.getcwd()}", file=sys.stderr)
+    print(f"__file__: {__file__}", file=sys.stderr)
+    
+    # Define fallback functions if imports fail
+    def get_process_memory():
+        return 0
+    
+    def log_memory_usage(logger=None, message=None):
+        if logger and message:
+            logger.info(f"{message} (memory tracking unavailable)")
+        return 0
+    
+    def log_memory_cleanup(logger=None, message=None):
+        if logger and message:
+            logger.info(f"{message} (memory cleanup unavailable)")
+        gc.collect()
 
 # Configure logging
 logging.basicConfig(
@@ -224,7 +253,7 @@ def decode_header(header_text):
     return header_text
 
 
-async def fetch_and_process_emails(service, user_email, query, include_spam_trash=False, cutoff_time=None):
+async def fetch_and_process_emails(service, user_email, query, include_spam_trash=False, cutoff_time=None, max_results=100):
     """Fetch and process emails from Gmail API.
     
     This function fetches emails from Gmail API, processes them to extract 
@@ -237,6 +266,7 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
         query: Gmail search query string
         include_spam_trash: Whether to include emails from spam and trash
         cutoff_time: Optional datetime to filter emails by date
+        max_results: Maximum number of results to fetch
     
     Returns:
         list: List of processed email dictionaries containing metadata and content 
@@ -258,7 +288,7 @@ async def fetch_and_process_emails(service, user_email, query, include_spam_tras
             userId=user_email,
             q=query,
             includeSpamTrash=include_spam_trash,
-            maxResults=args.max_results  # Use command line argument
+            maxResults=max_results  # Use passed parameter instead of args
         )
         
         # Fetch all matching message IDs
@@ -770,7 +800,7 @@ async def main(credentials_json, user_email, query, include_spam_trash, days_bac
         
         # Fetch and process emails with cutoff time for filtering
         log_memory_usage(logger, "Before Email Processing")
-        emails = await fetch_and_process_emails(service, user_email, query, include_spam_trash, cutoff_time)
+        emails = await fetch_and_process_emails(service, user_email, query, include_spam_trash, cutoff_time, max_results)
         
         # Clear service reference
         service = None
