@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Tuple
 
 from flask import g, current_app
 
-from ...core.email_parsing import EmailMetadata
+from ...parsing.parser import EmailMetadata
 from ...models.exceptions import LLMProcessingError
 from ..base import BaseAnalyzer
 from .utilities import (

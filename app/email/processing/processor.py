@@ -8,7 +8,7 @@ from flask import session, current_app
 import json
 
 from app.models.activity import log_activity
-from .email_parsing import EmailMetadata
+from ..parsing.parser import EmailMetadata
 from ..analyzers.semantic.analyzer import SemanticAnalyzer
 from ..analyzers.content.core.nlp_analyzer import ContentAnalyzer
 from ..utils.priority_scorer import PriorityScorer

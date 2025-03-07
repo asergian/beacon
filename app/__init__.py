@@ -29,13 +29,13 @@ from .models import db
 from .models.user import User
 
 # Email processing components
-from .email.core.email_processor import EmailProcessor
-from .email.core.email_parsing import EmailParser
+from .email.processing.processor import EmailProcessor
+from .email.parsing.parser import EmailParser
 from .email.models.analysis_settings import ProcessingConfig
 from .email.analyzers.semantic.analyzer import SemanticAnalyzer
 from .email.analyzers.content.core.nlp_subprocess_analyzer import ContentAnalyzerSubprocess
 from .email.utils.priority_scorer import PriorityScorer
-from .email.pipeline.pipeline import create_pipeline
+from .email.pipeline.orchestrator import create_pipeline
 from .email.clients.gmail.client_subprocess import GmailClientSubprocess
 from .email.storage.redis_cache import RedisEmailCache
 

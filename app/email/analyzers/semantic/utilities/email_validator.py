@@ -7,7 +7,7 @@ email data for semantic analysis.
 import logging
 from typing import Dict, Any
 
-from ....core.email_parsing import EmailMetadata
+from ....parsing.parser import EmailMetadata
 from ..utilities.text_processor import strip_html
 
 logger = logging.getLogger(__name__)

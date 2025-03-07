@@ -9,7 +9,7 @@ import time
 from typing import Dict, Any, List, Tuple
 from flask import g
 
-from ....core.email_parsing import EmailMetadata
+from ....parsing.parser import EmailMetadata
 from ....models.exceptions import LLMProcessingError
 from ..utilities import (
     # LLM client operations

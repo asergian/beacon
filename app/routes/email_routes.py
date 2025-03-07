@@ -452,7 +452,7 @@ def send_email():
             
             try:
                 # Create email sender and send the email
-                from app.email.core.email_sender import EmailSender, EmailSendingError
+                from app.email.processing.sender import EmailSender, EmailSendingError
                 sender = EmailSender(**email_config)
                 
                 # Set reply-to as the user's email if available

@@ -8,7 +8,7 @@ import logging
 from typing import Dict, Any, List, Tuple
 from flask import g
 
-from ....core.email_parsing import EmailMetadata
+from ....parsing.parser import EmailMetadata
 from ..utilities.text_processor import format_list, format_dict, sanitize_text, select_important_patterns
 
 

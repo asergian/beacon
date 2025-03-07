@@ -73,7 +73,7 @@ async def test_connection():
         Exception: If connection test fails, returns a 500 error with details.
     """
     try:
-        from app.email.core.email_connection import IMAPEmailClient
+        from app.email.clients.imap.client import IMAPEmailClient
         
         email_config = {
             'server': current_app.config.get('IMAP_SERVER'),
@@ -123,8 +123,8 @@ def test_parsing():
         Exception: If parsing test fails, returns a 500 error with details.
     """
     try:
-        from app.email.core.email_connection import IMAPEmailClient
-        from app.email.core.email_parsing import EmailParser
+        from app.email.clients.imap.client import IMAPEmailClient
+        from app.email.parsing.parser import EmailParser
         
         email_config = {
             'server': current_app.config.get('IMAP_SERVER'),
