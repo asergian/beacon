@@ -241,14 +241,6 @@ export const EmailEvents = {
                                 errorMessage = data.message;
                                 isServerError = true;
                                 console.error('Server error details:', errorMessage);
-                                
-                                // Log debugging info to help diagnose server issues
-                                console.error('Error debug information:');
-                                console.error('- Type error in date calculation. This is likely due to:');
-                                console.error('  1. The server trying to subtract a date using string instead of int');
-                                console.error('  2. Improperly formatted days_back value in user settings');
-                                console.error('  3. Timezone conversion issue in the server pipeline');
-                                console.error('Please check server logs and user settings.');
                             }
                         }
                     } catch (e) {
@@ -259,15 +251,15 @@ export const EmailEvents = {
                     if (emailsLoadedSuccessfully) {
                         console.log('Emails already loaded, ignoring connection error');
                         if (eventSource) {
-                            console.log('Closing EventSource after error (emails already loaded)');
                             eventSource.close();
                             eventSource = null;
                         }
-                        resolve();
+                        console.log('Closing EventSource after error (emails already loaded)');
+                        resolve(); // Resolve the promise since we already have emails
                         return;
                     }
                     
-                    // Close current connection
+                    // Close current connection before attempting reconnect
                     if (eventSource) {
                         console.log('Closing EventSource before reconnect attempt');
                         eventSource.close();
@@ -275,7 +267,6 @@ export const EmailEvents = {
                     }
                     
                     // Handle reconnection if we haven't exceeded max attempts
-                    // THIS IS THE CRITICAL PART - Increment our reconnection counter here, not in setupSSEConnection
                     if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                         reconnectAttempts++;
                         console.log(`Reconnecting... Attempt ${reconnectAttempts} of ${MAX_RECONNECT_ATTEMPTS}`);
