@@ -261,6 +261,14 @@ class GmailService:
         try:
             # Use the quota manager to execute with retry
             async def fetch_operation():
+                """Execute the actual API call to fetch a Gmail message.
+                
+                This nested function encapsulates the API call for use with
+                the quota manager's retry mechanism.
+                
+                Returns:
+                    Dict[str, Any]: Raw Gmail API message response
+                """
                 message = self.service.users().messages().get(
                     userId="me",
                     id=msg_id,

@@ -23,7 +23,7 @@ check-docstrings:
 # Check if READMEs are complete
 check-readme:
 	@echo "Checking README documentation..."
-	python ../scripts/check_docstrings.py ../app -v
+	python ../scripts/check_readme.py --path .. --recursive
 
 # Update module READMEs based on template (placeholder for future automation)
 update-readmes:
