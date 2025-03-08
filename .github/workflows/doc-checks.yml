@@ -24,7 +24,10 @@ jobs:
           # Install interrogate for docstring checking
           pip install interrogate
 
-      - name: Run documentation checks
+      - name: Run documentation checks (docstrings)
         run: |
           cd docs && make check-docstrings
+
+      - name: Run documentation checks (readme)
+        run: |
           cd docs && make check-readme
