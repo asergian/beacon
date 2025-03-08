@@ -1,12 +1,21 @@
 """
 Module for parsing and extracting metadata from email messages.
 
-Provides robust email parsing capabilities with comprehensive 
-metadata extraction and error handling.
+This module provides a comprehensive email parsing implementation with 
+robust error handling and metadata extraction. It processes raw email content
+into structured metadata objects.
 
-Typical usage:
+Example:
+    ```python
     parser = EmailParser()
     metadata = parser.extract_metadata(raw_email)
+    ```
+
+Attributes:
+    MIN_EMAIL_LENGTH (int): Minimum length for a valid email message
+    SUPPORTED_ENCODINGS (list): List of supported character encodings
+    EMAIL_REGEX (str): Regular expression pattern for validating email addresses
+    REQUIRED_HEADERS (list): List of required email headers for validation
 """
 
 import logging
@@ -33,13 +42,23 @@ EMAIL_REGEX = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$'
 REQUIRED_HEADERS = ['From:', 'Subject:']
 
 class EmailParsingError(Exception):
-    """Exception raised for email parsing-related errors."""
+    """Exception raised for email parsing-related errors.
+    
+    This exception is used to indicate failures in the email parsing process,
+    such as missing required headers or invalid email format.
+    
+    Attributes:
+        message (str): Explanation of the error
+    """
     pass
 
 @dataclass
 class EmailMetadata:
     """
     Structured representation of email metadata.
+
+    This dataclass encapsulates the essential metadata extracted from an email
+    message in a clean, normalized format.
 
     Attributes:
         id (str): Unique email Message-ID (cleaned)
@@ -55,7 +74,14 @@ class EmailMetadata:
     date: datetime = field(default_factory=datetime.now)
     
     def __post_init__(self) -> None:
-        """Validate metadata after initialization."""
+        """Validate metadata after initialization.
+        
+        Performs validation and cleanup of metadata fields after the object
+        is initialized. Currently validates the date field and cleans the ID.
+        
+        Raises:
+            ValueError: If date is not a datetime object
+        """
         if not isinstance(self.date, datetime):
             raise ValueError("date must be a datetime object")
         # Clean the Message-ID by removing angle brackets and whitespace
@@ -65,7 +91,13 @@ class EmailParser:
     """
     A comprehensive email parsing utility.
 
-    Handles various email formats and extracts structured metadata.
+    This class provides methods for validating, parsing, and extracting
+    structured metadata from raw email content, handling various email
+    formats and encodings.
+    
+    Attributes:
+        parser: Email parser instance for processing raw email data
+        logger: Logger instance for tracking parsing events
     """
 
     def __init__(self, parser=None):
@@ -80,10 +112,13 @@ class EmailParser:
 
     def _validate_email(self, raw_email: bytes) -> None:
         """
-        Validates required headers and email address format
+        Validates required headers and email address format.
+        
+        Performs basic validation checks on an email to ensure it contains
+        required headers and a properly formatted email address.
         
         Args:
-            raw_email (bytes): Raw email content
+            raw_email: Raw email content as bytes
         
         Raises:
             EmailParsingError: If email fails validation
@@ -125,7 +160,15 @@ class EmailParser:
             raise EmailParsingError(f"Email parsing failed: {str(e)}")
 
     def _validate_email_address(self, email_addr: str) -> bool:
-        """Validate email address format."""
+        """
+        Validate email address format using regex pattern.
+
+        Args:
+            email_addr: Email address string to validate
+            
+        Returns:
+            bool: True if the email address is valid, False otherwise
+        """
         if not email_addr:
             return False
         return bool(re.match(EMAIL_REGEX, email_addr))
@@ -134,11 +177,14 @@ class EmailParser:
         """
         Extract and clean the Message-ID.
         
+        Retrieves the Message-ID header from an email message, cleaning
+        and normalizing it. Generates a fallback ID if none is found.
+        
         Args:
             msg: Email message object
             
         Returns:
-            Cleaned Message-ID or generated fallback ID
+            str: Cleaned Message-ID or generated fallback ID
         """
         message_id = safe_extract_header(msg, 'Message-ID')
         if message_id:
@@ -153,11 +199,14 @@ class EmailParser:
         """
         Create EmailMetadata object from raw email dictionary.
         
+        Converts a dictionary of email data into a structured EmailMetadata
+        object, handling date normalization and content selection.
+        
         Args:
             raw_email: Dictionary containing email data
             
         Returns:
-            EmailMetadata object
+            EmailMetadata: Structured email metadata object
         """
         email_date = normalize_date(raw_email.get('parsed_date'))
         body = get_best_body_content(raw_email)
@@ -172,25 +221,24 @@ class EmailParser:
 
     def extract_metadata(self, raw_email: Dict[str, Any]) -> Optional[EmailMetadata]:
         """
-        Extract metadata from an email dictionary, handling both pre-parsed emails and raw emails.
+        Extract metadata from an email dictionary.
         
         This method processes email data in two ways:
-        1. For pre-parsed emails from the subprocess (preferred): Uses the already extracted
-           fields like body_text, body_html, subject, etc.
-        2. For raw emails (fallback): Parses the raw_message data to extract metadata
+        1. For pre-parsed emails: Uses the already extracted fields
+        2. For raw emails: Parses the raw_message data to extract metadata
         
-        The method prioritizes using pre-parsed data to reduce memory usage and improve
-        performance, falling back to raw message parsing only when necessary.
+        The method prioritizes using pre-parsed data when available.
         
         Args:
-            raw_email: Dictionary containing email data, either pre-parsed or with raw_message
+            raw_email: Dictionary containing email data, either pre-parsed 
+                or with raw_message
             
         Returns:
-            EmailMetadata object containing structured email information, or None if parsing failed
+            Optional[EmailMetadata]: Structured email metadata, or None if parsing failed
             
         Note:
-            This implementation has been optimized to work without raw_message data,
-            relying instead on pre-processed body_text and body_html from the subprocess.
+            This implementation is optimized to work without raw_message data,
+            relying instead on pre-processed content when available.
         """
         try:
             # First check if this is a pre-parsed email with all fields already extracted

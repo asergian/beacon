@@ -1,5 +1,17 @@
 """
 Utilities for handling email headers, including decoding and sanitization.
+
+This module provides comprehensive functions for processing email headers,
+including decoding MIME-encoded headers, extracting header values from
+email message objects, and sanitizing text.
+
+Example:
+    ```python
+    from app.email.parsing.utils.header_utils import decode_header
+    
+    subject = decode_header("=?utf-8?B?SGVsbG8gV29ybGQ=?=")
+    # Returns: "Hello World"
+    ```
 """
 
 import email.header
@@ -11,7 +23,23 @@ import logging
 logger = logging.getLogger(__name__)
 
 def sanitize_text(text: str) -> str:
-    """Clean and sanitize extracted text."""
+    """
+    Clean and sanitize extracted text.
+    
+    Removes redundant whitespace and trims the text.
+    
+    Args:
+        text: Input text to be sanitized
+        
+    Returns:
+        str: Cleaned and sanitized text
+        
+    Examples:
+        >>> sanitize_text("  Hello   World  ")
+        "Hello World"
+        >>> sanitize_text("")
+        ""
+    """
     if not text:
         return ''
     return ' '.join(text.split()).strip()
@@ -19,13 +47,22 @@ def sanitize_text(text: str) -> str:
 def safe_extract_header(msg: email.message.Message, header: str) -> str:
     """
     Safely extract email headers with fallback.
-
+    
+    Extracts a header value from an email message, handling decoding and
+    fallback to empty string if the header doesn't exist or extraction fails.
+    
     Args:
         msg: Email message object
-        header: Header to extract
-
+        header: Header name to extract
+        
     Returns:
-        Extracted header value or empty string
+        str: Extracted and decoded header value or empty string
+        
+    Examples:
+        >>> safe_extract_header(msg, 'Subject')
+        "Re: Meeting tomorrow"
+        >>> safe_extract_header(msg, 'X-NonExistent')
+        ""
     """
     try:
         value = msg[header.lower()]
@@ -50,13 +87,24 @@ def safe_extract_header(msg: email.message.Message, header: str) -> str:
 def decode_header(header_text: str) -> str:
     """
     Decodes email headers that may contain encoded text.
-    Returns the decoded text.
+    
+    Handles RFC 2047 encoded words in email headers using multiple decoding
+    approaches with comprehensive fallback mechanisms for robustness.
     
     Args:
-        header_text (str): The header text to decode
-        
+        header_text: The header text to decode, which may contain
+            encoded words in the format "=?charset?encoding?text?="
+            
     Returns:
-        str: The decoded header text
+        str: The fully decoded header text
+        
+    Examples:
+        >>> decode_header("=?utf-8?Q?Hello=20World?=")
+        "Hello World"
+        >>> decode_header("=?utf-8?B?SGVsbG8gV29ybGQ=?=")
+        "Hello World"
+        >>> decode_header("Regular text")
+        "Regular text"
     """
     if not header_text:
         return ""
@@ -154,6 +202,15 @@ def decode_header(header_text: str) -> str:
             pattern = r'=\?([^?]*)\?([BQ])\?([^?]*)\?='
             
             def decode_match(match):
+                """
+                Decode a matched MIME encoded word.
+                
+                Args:
+                    match: Regex match object containing the encoded word components
+                    
+                Returns:
+                    str: Decoded text for this match
+                """
                 charset, encoding, encoded_text = match.groups()
                 if encoding.upper() == 'B':
                     # Base64 encoding

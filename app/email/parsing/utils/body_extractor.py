@@ -1,5 +1,17 @@
 """
 Utilities for extracting and processing email message bodies.
+
+This module provides functions for extracting body content from email messages,
+handling multipart messages, determining content types, and processing
+different encodings to produce usable text.
+
+Example:
+    ```python
+    from app.email.parsing.utils.body_extractor import extract_body_content
+    
+    body = extract_body_content(email_message)
+    # Returns the email body, prioritizing HTML content over plain text
+    ```
 """
 
 import logging
@@ -10,7 +22,24 @@ from .html_utils import text_to_html
 logger = logging.getLogger(__name__)
 
 def has_attachments(msg: email.message.Message) -> bool:
-    """Check if the email has any attachments."""
+    """
+    Check if an email message has any attachments.
+    
+    Examines an email message for attachment parts based on content
+    disposition headers.
+    
+    Args:
+        msg: Email message object to check
+        
+    Returns:
+        bool: True if the message has attachments, False otherwise
+        
+    Examples:
+        >>> has_attachments(email_message_with_pdf)
+        True
+        >>> has_attachments(email_message_text_only)
+        False
+    """
     if msg.is_multipart():
         for part in msg.walk():
             if part.get_content_maintype() == 'multipart':
@@ -24,11 +53,19 @@ def get_best_body_content(raw_email: Dict[str, Any]) -> str:
     """
     Get the best available body content from a preprocessed email dict.
     
+    Prioritizes HTML content over plain text when selecting the email body.
+    
     Args:
-        raw_email: Dictionary containing email data
+        raw_email: Dictionary containing email data with body_html and/or body_text keys
         
     Returns:
-        The best available body content
+        str: The best available body content, preferring HTML over plain text
+        
+    Examples:
+        >>> get_best_body_content({'body_html': '<p>Hello</p>', 'body_text': 'Hello'})
+        '<p>Hello</p>'
+        >>> get_best_body_content({'body_text': 'Hello'})
+        'Hello'
     """
     body = raw_email.get('body_html', '')
     if not body:
@@ -39,11 +76,20 @@ def extract_body_content(msg: email.message.Message) -> str:
     """
     Extract the body from an email message, handling different content types.
     
+    Processes an email message to extract body content, handling multipart
+    messages and different content types. Prioritizes HTML content when available.
+    
     Args:
-        msg: Email message object
+        msg: Email message object to extract content from
         
     Returns:
-        Extracted body text, preferring HTML content
+        str: Extracted body text, preferring HTML content when available
+        
+    Examples:
+        >>> extract_body_content(html_email_message)
+        '<html><body>Hello World</body></html>'
+        >>> extract_body_content(text_email_message)
+        '<div style="font-family: Arial...">Hello World</div>'  # Converted to HTML
     """
     body = ""
     html_content = ""
@@ -69,11 +115,14 @@ def _extract_content_parts(msg: email.message.Message) -> Tuple[str, str]:
     """
     Extract HTML and plain text content from email parts.
     
+    Processes multipart and single-part email messages to extract
+    both HTML and plain text content.
+    
     Args:
-        msg: Email message object
+        msg: Email message object to process
         
     Returns:
-        Tuple of (html_content, plain_text)
+        Tuple[str, str]: A tuple containing (html_content, plain_text)
     """
     html_content = ""
     plain_text = ""
@@ -116,11 +165,14 @@ def _is_attachment(part) -> bool:
     """
     Check if a message part is an attachment.
     
+    Determines if an email part should be considered an attachment
+    based on content disposition and filename.
+    
     Args:
-        part: Email message part
+        part: Email message part to check
         
     Returns:
-        True if the part is an attachment, False otherwise
+        bool: True if the part is an attachment, False otherwise
     """
     if part.get_filename():
         return True
@@ -135,13 +187,15 @@ def _process_payload(payload: bytes, content_type: str, charset: str) -> Tuple[s
     """
     Process a message payload based on content type.
     
+    Decodes payload bytes into text based on content type and charset.
+    
     Args:
-        payload: Message payload bytes
-        content_type: Content type string
-        charset: Character encoding
+        payload: Message payload bytes to process
+        content_type: Content type string (e.g., 'text/html', 'text/plain')
+        charset: Character encoding to use for decoding
         
     Returns:
-        Tuple of (html_content, plain_text)
+        Tuple[str, str]: A tuple containing (html_content, plain_text)
     """
     html_content = ""
     plain_text = ""
