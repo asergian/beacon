@@ -74,7 +74,7 @@ def logout():
                 description=f"User logged out: {session['user'].get('email')}"
             )
     
-    logger.info("User logged out")
+    logger.info("User logged out\n")
     session.clear()
     return redirect(url_for('auth.show_login', from_logout=1))
 

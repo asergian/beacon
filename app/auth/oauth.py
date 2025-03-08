@@ -151,7 +151,7 @@ async def oauth2callback():
             create_or_update_user(id_info, creds_dict)
             
             # Redirect to home page on success
-            logger.info(f"User authenticated successfully: {id_info.get('email')}")
+            logger.info(f"User authenticated successfully: {id_info.get('email')}\n")
             return redirect(url_for('email.home'))
             
         except Exception as e:

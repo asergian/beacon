@@ -86,15 +86,35 @@ export function extractEmailAddress(text) {
  * @return {void}
  */
 export function showToast(message, type = 'info') {
+    // Create toast element with proper structure
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.textContent = message;
+    toast.className = `toast ${type}`;
+    
+    const toastContent = document.createElement('div');
+    toastContent.className = 'toast-content';
+    
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'toast-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', () => {
+        toast.remove();
+    });
+    
+    // Assemble toast components
+    toastContent.appendChild(toastBody);
+    toastContent.appendChild(closeBtn);
+    toast.appendChild(toastContent);
     
     // Add to DOM
     const toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
         const container = document.createElement('div');
         container.id = 'toast-container';
+        container.className = 'toast-container';
         document.body.appendChild(container);
         container.appendChild(toast);
     } else {
@@ -112,6 +132,7 @@ export function showToast(message, type = 'info') {
     // Auto-hide after timeout
     setTimeout(() => {
         toast.classList.remove('show');
+        toast.classList.add('hiding');
         setTimeout(() => {
             toast.remove();
         }, 300); // Wait for fade-out transition to complete
