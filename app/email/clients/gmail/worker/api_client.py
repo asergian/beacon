@@ -551,7 +551,7 @@ class GmailService:
         retries = 0
         last_error = None
         
-        while retries <= max_retries:
+        while retries < max_retries:
             try:
                 if retries > 0:
                     delay = 2 ** retries  # Exponential backoff
@@ -590,16 +590,7 @@ class GmailService:
                     body={'raw': raw_message}
                 ).execute()
                 
-                # Label the message as SENT if it's not already
-                message_id = result.get('id')
-                # Ensure the message has the SENT label
-                self.service.users().messages().modify(
-                    userId='me',
-                    id=message_id,
-                    body={'addLabelIds': ['SENT']}
-                ).execute()
-                
-                self.logger.info(f"Email sent successfully, message ID: {message_id}")
+                self.logger.info(f"Email sent successfully, message ID: {result.get('id')}")
                 
                 return {
                     "success": True,
