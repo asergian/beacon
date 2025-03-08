@@ -18,7 +18,7 @@ diff.txt
 # Development & Temporary Files  
 playground/  
 backups/  
-.cursor/  
+.cursor/
 
 # Jupyter Notebook Checkpoints  
 .ipynb_checkpoints/  
@@ -27,6 +27,7 @@ backups/
 *.swp
 *.swo
 .DS_Store  
+tmp_img/
 
 # Testing & Pytest Cache  
 .pytest_cache/

@@ -22,6 +22,17 @@ except ImportError:
 
 def create_image(filename, width, height, bg_color, text, text_color=(255, 255, 255)):
     """Create a simple image with text."""
+    # Skip creating the image if it already exists and has been recently modified
+    # (assume it's our custom image)
+    if os.path.exists(filename):
+        file_age = os.path.getmtime(filename)
+        script_age = os.path.getmtime(__file__)
+        
+        # If the image is newer than this script, don't overwrite it
+        if file_age > script_age:
+            print(f"Skipping image creation, using existing file: {filename}")
+            return
+    
     img = Image.new('RGB', (width, height), color=bg_color)
     d = ImageDraw.Draw(img)
     

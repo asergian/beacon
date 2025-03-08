@@ -18,6 +18,7 @@ import os
 import logging
 from datetime import datetime
 import re
+from flask import send_from_directory
 
 static_pages_bp = Blueprint('static_pages', __name__)
 
@@ -32,7 +33,21 @@ limiter = Limiter(
 @static_pages_bp.route('/docs/<path:path>')
 def serve_docs(path='index.html'):
     """Serve the Sphinx documentation."""
-    docs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs/sphinx/build/html')
+    # Use the absolute path to the project root and then add the docs path
+    project_root = os.path.abspath(os.path.join(current_app.root_path, '..'))
+    docs_dir = os.path.join(project_root, 'docs', 'sphinx', 'build', 'html')
+    current_app.logger.info(f"Serving docs from: {docs_dir}, requested path: {path}")
+    
+    # Check if the directory exists and log the result
+    if not os.path.exists(docs_dir):
+        current_app.logger.error(f"Documentation directory does not exist: {docs_dir}")
+        return jsonify({"error": "Documentation not found"}), 404
+        
+    # Check if the requested file exists
+    full_path = os.path.join(docs_dir, path)
+    if not os.path.exists(full_path) and not os.path.exists(os.path.join(docs_dir, path, 'index.html')):
+        current_app.logger.error(f"Requested documentation file not found: {full_path}")
+        
     return send_from_directory(docs_dir, path) 
 
 @static_pages_bp.route('/privacy-policy')
