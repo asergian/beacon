@@ -24,8 +24,7 @@ jobs:
           # Install interrogate for docstring checking
           pip install interrogate
 
-      - name: Check docstrings
-        run: python scripts/check_docstrings.py app --min-coverage 95.0
-
-      - name: Check READMEs
-        run: cd docs && make check-readme
+      - name: Run documentation checks
+        run: |
+          cd docs && make check-docstrings
+          cd docs && make check-readme
