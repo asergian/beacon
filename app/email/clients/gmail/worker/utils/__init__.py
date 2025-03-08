@@ -15,6 +15,11 @@ from .memory_management import (
     get_process_memory,
     get_processing_stats
 )
+from .process_utils import (
+    setup_signal_handlers,
+    optimize_process,
+    parse_arguments
+)
 
 __all__ = [
     # Date utilities
@@ -36,5 +41,10 @@ __all__ = [
     'cleanup_resources',
     'track_email_processing',
     'get_process_memory',
-    'get_processing_stats'
+    'get_processing_stats',
+    
+    # Process utilities
+    'setup_signal_handlers',
+    'optimize_process',
+    'parse_arguments'
 ] 

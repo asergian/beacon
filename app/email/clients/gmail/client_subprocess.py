@@ -16,30 +16,31 @@ import json
 import asyncio
 import os
 import sys
-import tempfile
+import time
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta, timezone
-import time
-import subprocess
-import traceback
-
-from ..base import BaseEmailClient
-from flask import session
-from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request as AuthRequest
-
-from app.utils.memory_profiling import log_memory_usage, log_memory_cleanup
 import platform
 from zoneinfo import ZoneInfo
 
+from flask import session
+from google.oauth2.credentials import Credentials
+
+from ..base import BaseEmailClient
+from app.utils.memory_profiling import log_memory_usage, log_memory_cleanup
+from .utils import (
+    GmailAPIError,
+    run_subprocess,
+    parse_json_response,
+    handle_subprocess_result,
+    build_command,
+    TempFileManager,
+    calculate_date_cutoff
+)
+
 # Directory of this file
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-# Path to the subprocess script (this file)
+# Path to the subprocess script
 SUBPROCESS_PATH = os.path.join(CURRENT_DIR, "worker/main.py")
-
-class GmailAPIError(Exception):
-    """Exception raised for Gmail API-related errors."""
-    pass
 
 class GmailClientSubprocess(BaseEmailClient):
     """
@@ -68,48 +69,27 @@ class GmailClientSubprocess(BaseEmailClient):
     
     async def connect(self, user_email: str):
         """Establish a connection to Gmail API using OAuth credentials."""
-        try:
-            # Store the user email
-            self._user_email = user_email
-            
-            # Verify we have credentials for this user
-            if 'credentials' not in session:
-                raise GmailAPIError("No credentials found. Please authenticate first.")
-            
-            creds_dict = session['credentials']
-            
-            # Create credentials object to check if it's valid
-            # We'll only use this to verify and refresh if needed
-            credentials = Credentials(
-                token=creds_dict['token'],
-                refresh_token=creds_dict['refresh_token'],
-                token_uri=creds_dict['token_uri'],
-                client_id=creds_dict['client_id'],
-                client_secret=creds_dict['client_secret'],
-                scopes=creds_dict['scopes']
-            )
-            
-            # Check if credentials need refresh
-            # if credentials.expired and credentials.refresh_token:
-            #     self.logger.info("Refreshing expired credentials")
-            #     credentials.refresh(AuthRequest())
-                
-            #     # Update session with new token
-            #     creds_dict['token'] = credentials.token
-            #     session['credentials'] = creds_dict
-                
-            #     self.logger.info("Credentials refreshed successfully")
-            
-            self._credentials = credentials
-            
-            self.logger.info(f"Connected to Gmail API for user {user_email}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Connection error: {e}")
-            self._credentials = None
-            self._user_email = None
-            raise GmailAPIError(f"Failed to connect: {e}")
+        # Store the user email
+        self._user_email = user_email
+        
+        # Verify we have credentials for this user
+        if 'credentials' not in session:
+            raise GmailAPIError("No credentials found. Please authenticate first.")
+        
+        creds_dict = session['credentials']
+        
+        # Create credentials object
+        self._credentials = Credentials(
+            token=creds_dict['token'],
+            refresh_token=creds_dict['refresh_token'],
+            token_uri=creds_dict['token_uri'],
+            client_id=creds_dict['client_id'],
+            client_secret=creds_dict['client_secret'],
+            scopes=creds_dict['scopes']
+        )
+        
+        self.logger.info(f"Connected to Gmail API for user {user_email}")
+        return True
     
     async def fetch_emails(self, days_back: int = 1, user_email: str = None, label_ids: List[str] = None,
                        query: str = None, include_spam_trash: bool = False, user_timezone: str = 'US/Pacific') -> List[Dict]:
@@ -135,10 +115,6 @@ class GmailClientSubprocess(BaseEmailClient):
         Raises:
             ValueError: If user_email is not provided
             GmailAPIError: If the subprocess fails or returns an error
-        
-        Note:
-            This implementation eliminates memory usage growth in the main process
-            by ensuring raw message data remains only in the subprocess.
         """
         if not self._user_email and not user_email:
             raise ValueError("User email is required")
@@ -147,396 +123,71 @@ class GmailClientSubprocess(BaseEmailClient):
         
         log_memory_usage(self.logger, "Before Gmail Client Subprocess - Main Process")
         
-        # Import gc at the beginning of the method for consistent access
-        import gc
-        credentials_path = None
-        
-        # Refresh token if needed before launching worker
-        # try:
-        #     # Force refresh regardless of expiry status
-        #     if hasattr(self._credentials, 'refresh') and self._credentials.refresh_token:
-        #         self.logger.info(f"Proactively refreshing token for {user}")
-        #         self._credentials.refresh(AuthRequest())
-        #         self.logger.info("Token refreshed successfully")
-        # except Exception as e:
-        #     self.logger.warning(f"Failed to refresh token: {e}")
-        
-        try:
-            with tempfile.NamedTemporaryFile(mode='w+', delete=False) as f:
-                credentials_path = f.name
-                # Extract credentials data from the credentials object
-                creds_data = {
-                    'token': self._credentials.token,
-                    'refresh_token': self._credentials.refresh_token,
-                    'token_uri': self._credentials.token_uri,
-                    'client_id': self._credentials.client_id,
-                    'client_secret': self._credentials.client_secret,
-                    'scopes': self._credentials.scopes,
-                    'user_email': user  # Add user_email for token caching
-                }
-                # Write credentials to temp file
-                json.dump(creds_data, f)
+        # Use TempFileManager to handle file cleanup
+        with TempFileManager(self.logger) as temp_files:
+            # Create temporary credentials file with properly serialized credentials
+            creds_data = {
+                'token': self._credentials.token,
+                'refresh_token': self._credentials.refresh_token,
+                'token_uri': self._credentials.token_uri,
+                'client_id': self._credentials.client_id,
+                'client_secret': self._credentials.client_secret,
+                'scopes': self._credentials.scopes,
+                'user_email': user
+            }
+            credentials_path = temp_files.create_file(
+                json.dumps(creds_data),
+                suffix=".json"
+            )
             
             # Default query to filter by date if not provided
             if not query:
-                # Adjust days_back to match cache logic (days_back=1 means today only)
-                adjusted_days = max(0, days_back - 1)  # Ensure we don't use negative days
-                
-                # Calculate the time range using user's timezone
-                try:
-                    # Create timezone object from string
-                    user_tz = ZoneInfo(user_timezone)
-                    self.logger.debug(f"Using user timezone: {user_timezone}")
-                except (ImportError, Exception) as e:
-                    self.logger.warning(f"Could not use user timezone ({user_timezone}), falling back to US/Pacific: {e}")
-                    try:
-                        user_tz = ZoneInfo('US/Pacific')
-                    except Exception:
-                        user_tz = timezone.utc
-                
-                # Calculate the time range using user's timezone
-                user_now = datetime.now(user_tz)
-                user_midnight = (user_now - timedelta(days=adjusted_days)).replace(
-                    hour=0, minute=0, second=0, microsecond=0
-                )
-                
-                # Convert to UTC for the Gmail query
-                utc_date = user_midnight.astimezone(timezone.utc)
-                date_cutoff = utc_date.strftime('%Y/%m/%d')
-                query = f"after:{date_cutoff}"
-                
-                self.logger.debug(f"Fetching emails with days_back={days_back}, adjusted_days={adjusted_days}")
-                self.logger.debug(f"    User timezone: {user_timezone}")
-                self.logger.debug(f"    User now: {user_now}")
-                self.logger.debug(f"    User midnight cutoff: {user_midnight}")
-                self.logger.debug(f"    UTC query cutoff: {utc_date}")
-                self.logger.debug(f"    Gmail query: {query}")
+                # Calculate the date cutoff
+                query = calculate_date_cutoff(days_back, user_timezone)
+                self.logger.debug(f"Generated date query: {query}")
             
             # Modify the query to exclude emails from the SENT folder
             query = f"{query} -in:sent"
             self.logger.debug(f"Modified query to exclude sent emails: {query}")
             
-            # Use subprocess script path from the module
-            subprocess_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "worker/main.py")
+            # Build command using the helper
+            command = build_command(SUBPROCESS_PATH, credentials_path, user)
             
-            # Execute the subprocess command
-            self.logger.debug(f"Fetching emails with query: {query}")
-            
-            # Convert include_spam_trash to a command-line argument
-            include_spam_trash_arg = "--include_spam_trash" if include_spam_trash else ""
-            
-            # Build Python command
-            python_executable = sys.executable
-            
-            # Get the project root directory to add to PYTHONPATH
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.abspath(os.path.join(current_dir, '../../../../'))
-            
-            # Set environment variables for the subprocess
-            env = os.environ.copy()
-            if 'PYTHONPATH' in env:
-                env['PYTHONPATH'] = f"{project_root}:{env['PYTHONPATH']}"
-            else:
-                env['PYTHONPATH'] = project_root
-            
-            # Create command for subprocess execution
-            # Build each argument separately for proper escaping
-            command = [
-                python_executable,
-                subprocess_path,
-                "--credentials", f"@{credentials_path}",
-                "--user_email", user,
+            # Add fetch-specific parameters, including include_spam_trash flag if needed
+            command.extend([
                 "--query", query,
                 "--days_back", str(days_back),
                 "--max_results", "100",
-                "--user_timezone", user_timezone
-            ]
-            
-            # Add include_spam_trash flag if needed
-            if include_spam_trash:
-                command.append("--include_spam_trash")
+                "--user_timezone", user_timezone,
+                *(["--include_spam_trash"] if include_spam_trash else [])
+            ])
             
             # Start measuring time
             start_time = time.time()
             
             self.logger.info(f"Fetching emails for {user} with query: {query} (days_back={days_back})")
             
-            # Execute subprocess asynchronously with asyncio
-            process = await asyncio.create_subprocess_exec(
-                *command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                env=env
-            )
+            # Execute subprocess
+            stdout_data, stderr_lines, return_code = await run_subprocess(command, self.logger)
             
-            # Initialize metrics
-            metrics = {
-                'emails_found': None,
-                'emails_retrieved': None,
-                'raw_data_size': None,
-                'peak_memory': None,
-                'start_memory': None,
-                'end_memory': None
-            }
+            # Process result using standardized error handling
+            email_data = handle_subprocess_result(stdout_data, stderr_lines, return_code, "fetch emails", self.logger)
             
-            # Create async tasks to read stdout and stderr concurrently
-            # This ensures each stream has only one reader
-            async def read_stdout():
-                return await process.stdout.read()
-            
-            async def read_stderr():
-                lines = []
-                while True:
-                    line = await process.stderr.readline()
-                    if not line:  # EOF
-                        break
-                        
-                    lines.append(line)
-                    decoded_line = line.decode().strip()
-                    
-                    # Try to parse structured log line
-                    if " - " in decoded_line and " | " in decoded_line:
-                        # Split by pipe character to get components
-                        # Format is typically: TIMESTAMP - MODULE | LEVEL | MESSAGE 
-                        log_parts = [part.strip() for part in decoded_line.split(" | ")]
-                        
-                        # Extract the timestamp and message parts
-                        timestamp, module, message = log_parts
-                        
-                        # Log each subprocess line with proper context
-                        if "ERROR" in decoded_line or "ERROR" in module:
-                            self.logger.error(f"Subprocess: [{module}] {message}")
-                        elif "WARNING" in decoded_line or "WARNING" in module:
-                            self.logger.warning(f"Subprocess: [{module}] {message}")
-                        else:
-                            self.logger.debug(f"Subprocess: [{module}] {message}")  # Changed to debug level to reduce noise
-                        
-                        # Extract key metrics for summary
-                        if "Found" in message and "emails matching" in message:
-                            try:
-                                metrics['emails_found'] = int(message.split("Found ")[1].split(" emails")[0])
-                            except:
-                                pass
-                        elif "Successfully retrieved" in message:
-                            try:
-                                metrics['emails_retrieved'] = int(message.split("Successfully retrieved ")[1].split(" emails")[0])
-                            except:
-                                pass
-                        elif "Total data processed:" in message:
-                            try:
-                                raw_mb = float(message.split("Total data processed: ")[1].split(" MB")[0])
-                                metrics['raw_data_size'] = raw_mb
-                            except:
-                                pass
-                        elif "Memory Usage" in message:
-                            try:
-                                if "RSS=" in message:
-                                    rss = float(message.split("RSS=")[1].split("MB")[0])
-                                    if metrics['peak_memory'] is None or rss > metrics['peak_memory']:
-                                        metrics['peak_memory'] = rss
-                                    if "Subprocess Start" in message and metrics['start_memory'] is None:
-                                        metrics['start_memory'] = rss
-                                    if "Before Exit" in message:
-                                        metrics['end_memory'] = rss
-                            except:
-                                pass
-                    else:
-                        # Fall back for lines that don't match expected format
-                        self.logger.debug(f"Subprocess: {decoded_line}")  # Changed to debug level
-                
-                return lines
-            
-            # Start reading stdout and stderr concurrently
-            stdout_task = asyncio.create_task(read_stdout())
-            stderr_task = asyncio.create_task(read_stderr())
-            
-            # Wait for both tasks and the process to complete
-            try:
-                # Use asyncio.gather to await both tasks
-                stdout_data, stderr_lines = await asyncio.gather(stdout_task, stderr_task)
-                
-                # Wait for the process to exit
-                await process.wait()
-                
-                # Log a concise summary of key metrics
-                if any(v is not None for v in metrics.values()):
-                    memory_change = ""
-                    if metrics['start_memory'] and metrics['peak_memory']:
-                        memory_increase = metrics['peak_memory'] - metrics['start_memory']
-                        memory_change = f", Memory +{memory_increase:.1f}MB"
-                        
-                    summary_msg = f"Subprocess summary: "
-                    if metrics['emails_found'] is not None:
-                        summary_msg += f"Found {metrics['emails_found']} emails"
-                    if metrics['emails_retrieved'] is not None:
-                        summary_msg += f", Retrieved {metrics['emails_retrieved']} emails"
-                    summary_msg += memory_change
-                    
-                    self.logger.info(summary_msg)
-            except asyncio.CancelledError:
-                # If we're cancelled, make sure to terminate the subprocess
-                process.terminate()
-                raise
-            except Exception as e:
-                self.logger.error(f"Error during subprocess execution: {e}")
-                # Try to terminate the process in case it's still running
-                process.terminate()
-                raise GmailAPIError(f"Error during subprocess execution: {e}")
-            
-            # Process duration
-            duration = time.time() - start_time
-            
-            # Parse the JSON output first - before checking process return code
-            log_memory_usage(self.logger, "Before JSON Deserialization")
-            email_data = None
-            json_parse_error = None
-            
-            try:
-                # Log the first part of stdout for debugging
-                if stdout_data:
-                    stdout_str = stdout_data.decode('utf-8', errors='replace')
-                    self.logger.debug(f"Subprocess stdout first 200 chars: {stdout_str[:200]}...")
-                    
-                    # Handle potential extra data by finding the JSON object
-                    json_start = stdout_str.find('{')
-                    json_end = stdout_str.rfind('}') + 1
-                    
-                    if json_start < 0 or json_end <= json_start:
-                        json_parse_error = f"Could not find valid JSON object in subprocess output"
-                    else:
-                        json_str = stdout_str[json_start:json_end]
-                        
-                        # Try to use orjson for faster processing if available
-                        try:
-                            import orjson
-                            email_data = orjson.loads(json_str)
-                        except ImportError:
-                            try:
-                                # Try to use ujson for faster parsing if available
-                                import ujson
-                                email_data = ujson.loads(json_str)
-                            except ImportError:
-                                # Fall back to standard json
-                                email_data = json.loads(json_str)
-                else:
-                    json_parse_error = "No output from subprocess"
-                    
-            except (json.JSONDecodeError, ValueError) as e:
-                json_parse_error = f"Failed to parse subprocess output: {e}"
-                # Detailed error will be logged below if process.returncode is non-zero
-            
-            # Now check process return code
-            if process.returncode != 0 or json_parse_error:
-                # If we have output but failed to parse it, or if the process returned an error
-                error_details = "Unknown error in Gmail subprocess"
-                
-                try:
-                    # Check if we have JSON data despite process error (sometimes happens)
-                    if email_data and 'error' in email_data:
-                        error_details = email_data['error']
-                    else:
-                        # Join stderr lines into a single string for error reporting
-                        stderr_text = ""
-                        if stderr_lines and len(stderr_lines) > 0:
-                            stderr_text = "\n".join([
-                                line.decode('utf-8', errors='replace') if isinstance(line, bytes) else str(line)
-                                for line in stderr_lines
-                            ])
-                        
-                        # Extract error details from stderr
-                        if stderr_text and len(stderr_text) > 0:
-                            # Extract last few lines which often contain the actual error
-                            error_lines = stderr_text.strip().split('\n')
-                            if error_lines:
-                                last_lines = error_lines[-3:] if len(error_lines) >= 3 else error_lines
-                                error_details = ' | '.join(last_lines)
-                
-                    if json_parse_error:
-                        self.logger.error(f"JSON parsing error: {json_parse_error}")
-                        # Log more of the stdout for debugging JSON parsing issues
-                        if stdout_data:
-                            stdout_str = stdout_data.decode('utf-8', errors='replace')
-                            self.logger.debug(f"Subprocess stdout (first 500 chars): {stdout_str[:500]}...")
-                
-                    self.logger.error(f"Gmail subprocess returned error: {error_details}")
-                    
-                    # Check if there's a log file we can refer to for more details
-                    log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
-                                           '../../../../logs/gmail_worker.log')
-                    if os.path.exists(log_file):
-                        self.logger.error(f"See log file for details: {log_file}")
-                    
-                    # # Check if this is a token error (401) that needs a retry with fresh token
-                    # if '401' in error_details or 'unauthorized' in error_details.lower() or 'unauthenticated' in error_details.lower():
-                    #     self.logger.info("Detected authorization error, refreshing token and trying again...")
-                    #     # Force a token refresh
-                    #     try:
-                    #         self._credentials.refresh(AuthRequest())
-                    #         self.logger.info("Token refreshed successfully")
-                            
-                    #         # Now retry the fetch_emails operation with the same parameters
-                    #         self.logger.info("Retrying fetch_emails with refreshed token...")
-                    #         return await self.fetch_emails(
-                    #             days_back=days_back,
-                    #             user_email=user_email,
-                    #             label_ids=label_ids,
-                    #             query=query,
-                    #             include_spam_trash=include_spam_trash,
-                    #             user_timezone=user_timezone
-                    #         )
-                    #     except Exception as refresh_error:
-                    #         self.logger.error(f"Failed to refresh token: {refresh_error}")
-                    #         raise GmailAPIError(f"Failed to refresh token: {refresh_error}")
-                    
-                    # If not a token error, raise the error
-                    raise GmailAPIError(f"Failed to fetch emails: {error_details}")
-                except GmailAPIError:
-                    # Re-raise the GmailAPIError for handling
-                    raise
-                except Exception as e:
-                    # Fallback error handling
-                    self.logger.error(f"Error parsing subprocess output: {e}")
-                    raise GmailAPIError(f"Failed to fetch emails: Unknown error in Gmail subprocess")
-            
-            # If we reach here, email_data should contain our parsed JSON data
-            # Check for success - for email fetching we expect an array of emails, not a success flag
-            if 'error' in email_data:
-                self.logger.error(f"Gmail API returned error: {email_data['error']}")
-                raise GmailAPIError(f"Failed to fetch emails: {email_data['error']}")
-            
-            # Make sure we have emails data
+            # Verify we have emails data
             if 'emails' not in email_data:
-                self.logger.error("Gmail API response missing 'emails' field")
-                self.logger.debug(f"Response keys: {', '.join(email_data.keys())}")
-                raise GmailAPIError("Invalid response format from Gmail API")
+                raise GmailAPIError("Invalid response format: 'emails' field missing")
             
-            log_memory_usage(self.logger, "After JSON Deserialization")
-            
-            # Extract the email data
+            # Extract and process emails
             emails = email_data['emails']
             
-            # Add debug logging about response structure
-            self.logger.debug(f"Gmail API response: {len(emails)} emails, count={email_data.get('count')}, " +
-                             f"query='{email_data.get('query')}', days_back={email_data.get('days_back')}")
-            
-            # Log final stats
-            fetched_count = len(emails)
-            
-            # Add appropriate cache headers for filtering
+            # Add cache key to each email
             for email in emails:
                 email['cache_key'] = f"gmail:{user}:{email.get('id', '')}"
             
-            self.logger.info(f"Fetched {fetched_count} emails in {duration:.2f}s")
+            duration = time.time() - start_time
+            self.logger.info(f"Fetched {len(emails)} emails in {duration:.2f}s")
             
             return emails
-            
-        finally:
-            # Clean up the credentials file
-            if credentials_path and os.path.exists(credentials_path):
-                try:
-                    os.remove(credentials_path)
-                except Exception as e:
-                    self.logger.warning(f"Error removing credentials file: {e}")
     
     async def send_email(self, to: str, subject: str, content: str, cc: List[str] = None, 
                          bcc: List[str] = None, html_content: str = None, user_email: str = None) -> Dict:
@@ -565,22 +216,9 @@ class GmailClientSubprocess(BaseEmailClient):
         
         user = user_email or self._user_email
         
-        # # Refresh token if needed before launching worker
-        # try:
-        #     # Force refresh regardless of expiry status
-        #     if hasattr(self._credentials, 'refresh') and self._credentials.refresh_token:
-        #         self.logger.info(f"Proactively refreshing token for {user}")
-        #         self._credentials.refresh(AuthRequest())
-        #         self.logger.info("Token refreshed successfully")
-        # except Exception as e:
-        #     self.logger.warning(f"Failed to refresh token: {e}")
-        # Let the Google Auth library handle token refreshing automatically when needed
-        # No need for explicit refresh since the library will do it if it gets a 401
-        
-        # Temporary file for credentials
-        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as credentials_file:
-            credentials_path = credentials_file.name
-            # Extract credentials data from the credentials object
+        # Use the TempFileManager context manager to handle file cleanup
+        with TempFileManager(self.logger) as temp_files:
+            # Create temporary credentials file with properly serialized credentials
             creds_data = {
                 'token': self._credentials.token,
                 'refresh_token': self._credentials.refresh_token,
@@ -588,137 +226,50 @@ class GmailClientSubprocess(BaseEmailClient):
                 'client_id': self._credentials.client_id,
                 'client_secret': self._credentials.client_secret,
                 'scopes': self._credentials.scopes,
-                'user_email': user  # Add user_email for token caching
+                'user_email': user
             }
-            # Write credentials to temp file
-            json.dump(creds_data, credentials_file)
-        
-        try:
-            # Build command to execute subprocess
-            python_executable = sys.executable
-            subprocess_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "worker/main.py")
-            
-            # Get the project root directory to add to PYTHONPATH
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.abspath(os.path.join(current_dir, '../../../../'))
-            
-            # Set environment variables for the subprocess
-            env = os.environ.copy()
-            if 'PYTHONPATH' in env:
-                env['PYTHONPATH'] = f"{project_root}:{env['PYTHONPATH']}"
-            else:
-                env['PYTHONPATH'] = project_root
-            
-            # Create command for sending email
-            cmd_parts = [
-                python_executable,
-                subprocess_path,
-                "--credentials", f"@{credentials_path}",
-                "--user_email", user,
-                "--action", "send_email",
-                "--to", to,
-                "--subject", f"{subject}"
-            ]
-            
-            # Add optional parameters
-            if cc:
-                if isinstance(cc, list):
-                    cmd_parts.extend(["--cc", ",".join(cc)])
-                else:
-                    cmd_parts.extend(["--cc", cc])
-            
-            if bcc:
-                if isinstance(bcc, list):
-                    cmd_parts.extend(["--bcc", ",".join(bcc)])
-                else:
-                    cmd_parts.extend(["--bcc", bcc])
-            
-            # Content and HTML content need to be written to temporary files to avoid command line issues
-            with tempfile.NamedTemporaryFile(mode='w+', delete=False) as content_file:
-                content_path = content_file.name
-                content_file.write(content)
-            
-            cmd_parts.extend(["--content", f"@{content_path}"])
-            
-            if html_content:
-                with tempfile.NamedTemporaryFile(mode='w+', delete=False) as html_file:
-                    html_path = html_file.name
-                    html_file.write(html_content)
-                cmd_parts.extend(["--html_content", f"@{html_path}"])
-            
-            # Create process
-            cmd = " ".join(cmd_parts)
-            #self.logger.info(f"Executing command: {cmd}")
-            
-            # Use asyncio.create_subprocess_exec for better security and argument handling
-            process = await asyncio.create_subprocess_exec(
-                *cmd_parts,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                env=env  # Add the environment variables
+            credentials_path = temp_files.create_file(
+                json.dumps(creds_data),
+                suffix=".json"
             )
+            # Build base command using helper
+            cmd_parts = build_command(SUBPROCESS_PATH, credentials_path, user, action="send_email")
             
-            # Set up concurrent readers for stdout and stderr
-            async def read_stdout():
-                data = await process.stdout.read()
-                return data.decode('utf-8')
+            # Add email-specific parameters
+            cmd_parts.extend([
+                "--to", to,
+                "--subject", subject,
+                "--content", f"@{temp_files.create_file(content, suffix='.txt')}"
+            ])
             
-            async def read_stderr():
-                data = await process.stderr.read()
-                return data.decode('utf-8')
+            # Add HTML content if provided
+            if html_content:
+                cmd_parts.extend([
+                    "--html_content", 
+                    f"@{temp_files.create_file(html_content, suffix='.html')}"
+                ])
             
-            # Wait for both readers
-            stdout_data, stderr_data = await asyncio.gather(read_stdout(), read_stderr())
+            # Add optional CC and BCC parameters
+            for param, value in [("cc", cc), ("bcc", bcc)]:
+                if value:
+                    cmd_parts.extend([
+                        f"--{param}", 
+                        ",".join(value) if isinstance(value, list) else value
+                    ])
             
-            # Wait for process to complete
-            exit_code = await process.wait()
+            # Execute subprocess
+            stdout_data, stderr_lines, return_code = await run_subprocess(cmd_parts, self.logger)
             
-            # If process failed, raise error
-            if exit_code != 0:
-                error = stderr_data or f"Process exited with code {exit_code}"
-                self.logger.error(f"Subprocess error: {error}")
-                raise GmailAPIError(f"Subprocess error: {error}")
+            # Process result using standardized error handling
+            result = handle_subprocess_result(stdout_data, stderr_lines, return_code, "send email", self.logger)
             
-            # Fix JSON parsing by extracting just the JSON part from stdout
-            try:
-                # Try to find JSON in the output - look for the first '{' and last '}'
-                json_start = stdout_data.find('{')
-                json_end = stdout_data.rfind('}') + 1
-                
-                if json_start >= 0 and json_end > json_start:
-                    json_str = stdout_data[json_start:json_end]
-                    self.logger.debug(f"Extracted JSON: {json_str}")
-                    result = json.loads(json_str)
-                else:
-                    self.logger.error(f"Could not find JSON in output: {stdout_data}")
-                    raise GmailAPIError(f"Could not find JSON in subprocess output: {stdout_data[:100]}...")
-            except json.JSONDecodeError as e:
-                self.logger.error(f"JSON parsing error: {e}")
-                self.logger.error(f"Raw output: {stdout_data}")
-                raise GmailAPIError("Failed to parse subprocess output")
-            except Exception as e:
-                self.logger.error(f"Error processing subprocess output: {e}")
-                self.logger.error(f"Stdout: {stdout_data}")
-                self.logger.error(f"Stderr: {stderr_data}")
-                raise GmailAPIError("Failed to parse subprocess output")
-            
-            # Check for success
-            if result.get('success', False):
-                self.logger.debug(f"Email sent successfully via Gmail API: {result.get('message_id')}")
-                return result
-            else:
+            # Verify success flag
+            if not result.get('success', False):
                 error = result.get('error', 'Unknown error')
-                self.logger.error(f"Gmail API error: {error}")
                 raise GmailAPIError(f"Failed to send email: {error}")
-        
-        finally:
-            # Clean up temporary files
-            if 'credentials_path' in locals():
-                os.unlink(credentials_path)
-            if 'content_path' in locals():
-                os.unlink(content_path)
-            if 'html_path' in locals() and html_content:
-                os.unlink(html_path)
+                
+            self.logger.debug(f"Email sent successfully via Gmail API: {result.get('message_id')}")
+            return result
     
     async def close(self):
         """Close the Gmail API connection."""
@@ -735,89 +286,29 @@ class GmailClientSubprocess(BaseEmailClient):
             self._credentials = None
             self._user_email = None
             
-            # Force deep garbage collection
-            for _ in range(3):
-                gc.collect(generation=2)  # Force full collection including oldest generation
+            # Force garbage collection
+            gc.collect(generation=2)
             
-            # Run the Python garbage collector in a more aggressive way
-            # This helps free memory that might be held in reference cycles
-            import sys
-            try:
-                # Get a reference to all objects
-                all_objects = gc.get_objects()
+            # Clear any httplib2 connections if the module is loaded
+            if 'httplib2' in sys.modules:
+                httplib2_mod = sys.modules['httplib2']
                 
-                # Clear any large string objects that might be lingering
-                for obj in all_objects:
-                    # Use a try-except block to catch any issues with accessing object lengths
-                    try:
-                        # Only check pure Python strings, not torch objects
-                        if type(obj) is str and len(obj) > 10000:
-                            # Large strings - set local references to None 
-                            obj = None
-                    except Exception:
-                        # Skip any objects that cause errors when checking length
-                        pass
+                # Clear connection caches
+                if hasattr(httplib2_mod, 'SCHEMES'):
+                    for scheme in list(httplib2_mod.SCHEMES.keys()):
+                        if hasattr(httplib2_mod.SCHEMES[scheme], 'connections'):
+                            httplib2_mod.SCHEMES[scheme].connections.clear()
                 
-                # Explicitly break reference cycles in these modules if used
-                modules_to_clear = ['json', 'email', 'google.auth', 'googleapiclient', 'httplib2']
-                for module_name in modules_to_clear:
-                    if module_name in sys.modules:
-                        mod = sys.modules[module_name]
-                        if hasattr(mod, '_reset_caches'):
-                            mod._reset_caches()  # For modules with explicit cache reset
-                        
-                        # For httplib2 - Clear connection caches
-                        if module_name == 'httplib2' and hasattr(mod, 'Http'):
-                            # Safely clean up httplib2 connections without requiring service object
-                            http_class = mod.Http
-                            for attr in dir(http_class):
-                                if attr.startswith('_conn_') and hasattr(http_class, attr):
-                                    setattr(http_class, attr, {})
-                            
-                            # Clear SCHEMES to prevent errors during cleanup
-                            if hasattr(mod, 'SCHEMES'):
-                                try:
-                                    for scheme in list(mod.SCHEMES.keys()):
-                                        mod.SCHEMES[scheme].clear()
-                                except (AttributeError, TypeError):
-                                    # If SCHEMES isn't a dict or doesn't have clear method
-                                    pass
-                
-                # Clear all objects reference
-                all_objects = None
-            except Exception as e:
-                self.logger.warning(f"Advanced memory cleanup failed: {e}")
+                # Clear HTTP instance connection caches
+                if hasattr(httplib2_mod, 'Http'):
+                    http_class = httplib2_mod.Http
+                    for attr in dir(http_class):
+                        if attr.startswith('_conn_') and hasattr(http_class, attr):
+                            setattr(http_class, attr, {})
             
-            # Force additional garbage collection after reference cleanup
-            for _ in range(3):
-                gc.collect()
-                
             log_memory_cleanup(self.logger, "After Gmail Subprocess Disconnect")
             self.logger.info("Gmail client subprocess disconnected and memory cleaned")
             
-            # Import psutil for more aggressive cleanup if available
-            try:
-                import psutil
-                process = psutil.Process()
-                # Try to return memory to OS (Linux/MacOS)
-                if hasattr(process, 'memory_maps'):
-                    maps = process.memory_maps()
-                    self.logger.debug(f"Memory maps count before cleanup: {len(maps)}")
-                    
-                # Python doesn't reliably release memory back to OS, but we can try
-                # system-specific approaches like calling malloc_trim on Linux
-                if sys.platform.startswith('linux'):
-                    try:
-                        import ctypes
-                        ctypes.CDLL('libc.so.6').malloc_trim(0)
-                        self.logger.debug("Called malloc_trim to release memory to OS")
-                    except Exception as e:
-                        self.logger.debug(f"malloc_trim failed: {e}")
-            except ImportError:
-                self.logger.debug("psutil not available for advanced memory management")
-            except Exception as e:
-                self.logger.debug(f"Advanced OS memory release failed: {e}")
-                
             return True
         except Exception as e:
             self.logger.error(f"Error during disconnection: {e}")
