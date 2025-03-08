@@ -38,20 +38,22 @@ def async_route(f):
 @login_required
 @async_route
 async def test_emails():
-    """Test route for analyzing recent emails.
+    """Test endpoint for email processing.
     
-    Fetches and analyzes emails from the past day and displays them in a 
-    template.
+    Fetches and analyzes recent emails for the current user with full processing.
     
     Returns:
-        Flask response: Rendered template with email analysis results or error message.
+        HTML: Rendered template with processed email data.
         
     Raises:
         Exception: If email processing fails, returns a 500 error with the error message.
     """
     try:
+        from app.email.pipeline.orchestrator import AnalysisCommand
+        
         analyzer = current_app.config['EMAIL_ANALYZER']
-        emails = await analyzer.analyze_recent_emails(days_back=1)
+        command = AnalysisCommand(days_back=1, cache_duration_days=7)
+        emails = await analyzer.analyze_recent_emails(command=command)
         return render_template('email_summary.html', emails=emails)
     except Exception as e:
         logger.error(f"Email processing error: {e}")

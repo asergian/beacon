@@ -92,25 +92,15 @@ class EmailSender:
             msg['From'] = formataddr(("Beacon", self.email))
             msg['To'] = to
             
-            if cc:
-                msg['Cc'] = ', '.join(cc)
-            if reply_to:
-                msg['Reply-To'] = reply_to
+            msg['Cc'] = ', '.join(cc) if cc else None
+            msg['Reply-To'] = reply_to if reply_to else None
                 
-            # Add plain text part
-            text_part = MIMEText(content, 'plain')
-            msg.attach(text_part)
-            
-            # Add HTML part if provided, otherwise use content
-            html_part = MIMEText(html_content or content, 'html')
-            msg.attach(html_part)
+            # Add plain text and HTML parts
+            msg.attach(MIMEText(content, 'plain'))
+            msg.attach(MIMEText(html_content or content, 'html'))
             
             # Get all recipients
-            recipients = [to]
-            if cc:
-                recipients.extend(cc)
-            if bcc:
-                recipients.extend(bcc)
+            recipients = [to] + (cc or []) + (bcc or [])
             
             # Send email using asyncio to avoid blocking
             return await self._send_message(msg, recipients)
