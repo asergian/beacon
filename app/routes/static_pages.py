@@ -36,7 +36,7 @@ def serve_docs(path='index.html'):
     # Use the absolute path to the project root and then add the docs path
     project_root = os.path.abspath(os.path.join(current_app.root_path, '..'))
     docs_dir = os.path.join(project_root, 'docs', 'sphinx', 'build', 'html')
-    current_app.logger.info(f"Serving docs from: {docs_dir}, requested path: {path}")
+    current_app.logger.debug(f"Serving docs from: {docs_dir}, requested path: {path}")
     
     # Check if the directory exists and log the result
     if not os.path.exists(docs_dir):

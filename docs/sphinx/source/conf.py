@@ -132,10 +132,10 @@ def setup_build_environment(_):
             print(f"Installing {package}...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", package])
     
-    # 2. Generate placeholder images
+    # 2. Generate placeholder images only if they don't already exist
     image_script = os.path.join(os.path.dirname(__file__), '_static', 'create_images.py')
     if os.path.exists(image_script):
-        print("Generating placeholder images...")
+        print("Checking for required placeholder images (won't overwrite existing)...")
         subprocess.check_call([sys.executable, image_script])
     else:
         print(f"Warning: Image generation script not found at {image_script}")

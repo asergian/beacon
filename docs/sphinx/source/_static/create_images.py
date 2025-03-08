@@ -20,18 +20,22 @@ except ImportError:
     subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
     from PIL import Image, ImageDraw, ImageFont
 
-def create_image(filename, width, height, bg_color, text, text_color=(255, 255, 255)):
-    """Create a simple image with text."""
-    # Skip creating the image if it already exists and has been recently modified
-    # (assume it's our custom image)
-    if os.path.exists(filename):
-        file_age = os.path.getmtime(filename)
-        script_age = os.path.getmtime(__file__)
-        
-        # If the image is newer than this script, don't overwrite it
-        if file_age > script_age:
-            print(f"Skipping image creation, using existing file: {filename}")
-            return
+def create_image(filename, width, height, bg_color, text, text_color=(255, 255, 255), force=False):
+    """Create a simple image with text.
+    
+    Args:
+        filename: The output filename
+        width: Image width in pixels
+        height: Image height in pixels
+        bg_color: Background color tuple (R, G, B)
+        text: Text to display on the image
+        text_color: Text color tuple (R, G, B)
+        force: Whether to overwrite existing images (default: False)
+    """
+    # Skip creating the image if it already exists and force is False
+    if os.path.exists(filename) and not force:
+        print(f"Skipping image creation, using existing file: {filename}")
+        return
     
     img = Image.new('RGB', (width, height), color=bg_color)
     d = ImageDraw.Draw(img)
@@ -60,13 +64,17 @@ def main():
     # Get the directory where this script is located
     image_dir = Path(__file__).parent
     
-    # Create beacon logo
+    # Force flag from command line (if provided)
+    force = len(sys.argv) > 1 and sys.argv[1] == '--force'
+    
+    # Create beacon logo only if it doesn't exist or force is True
     create_image(
         image_dir / "beacon_logo.png",
         width=400,
         height=200,
         bg_color=(20, 60, 100),
         text="Beacon Logo",
+        force=force
     )
     
     # Create email analysis flow diagram
@@ -76,6 +84,7 @@ def main():
         height=400,
         bg_color=(60, 100, 20),
         text="Email Analysis Flow Diagram",
+        force=force
     )
 
 if __name__ == "__main__":

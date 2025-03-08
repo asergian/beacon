@@ -1,10 +1,10 @@
 Development Guide
-================
+=================
 
 This section provides guidelines for developers working on the Beacon codebase.
 
 Documentation Standards
-----------------------
+-----------------------
 
 Beacon follows these documentation standards:
 

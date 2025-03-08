@@ -34,14 +34,37 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
+# Import utilities explicitly for documentation purposes
+# This allows Sphinx to document them correctly
+from app.email.clients.gmail.worker.utils import (
+    get_logger,
+    parse_content_from_file,
+    cleanup_resources,
+    calculate_cutoff_time,
+    setup_signal_handlers,
+    optimize_process,
+    parse_arguments
+)
+
 # Expose key components at the package level
-from .api_client import GmailService
-from .email_parser import process_message
+from app.email.clients.gmail.worker.api_client import GmailService
+from app.email.clients.gmail.worker.email_parser import process_message
+
+# Re-export utilities for code that uses relative imports
+# This allows `.utils import X` to work in other modules
+from app.email.clients.gmail.worker.utils import *
 
 # Version information
 __version__ = '1.0.0'
 
 __all__ = [
     'GmailService',
-    'process_message'
+    'process_message',
+    'get_logger',
+    'parse_content_from_file',
+    'cleanup_resources',
+    'calculate_cutoff_time',
+    'setup_signal_handlers',
+    'optimize_process',
+    'parse_arguments'
 ] 

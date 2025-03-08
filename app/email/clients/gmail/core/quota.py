@@ -73,9 +73,11 @@ class QuotaManager:
         for attempt in range(self._max_retries):
             try:
                 # Ensure minimum time between requests
+                logger.info(f"Executing operation with attempt {attempt + 1}/{self._max_retries}")
                 now = time.time()
                 time_since_last = now - self._last_request_time
                 if time_since_last < self._min_request_interval:
+                    logger.warning(f"Waiting for {self._min_request_interval - time_since_last} seconds before next request")
                     await asyncio.sleep(self._min_request_interval - time_since_last)
                 
                 self._last_request_time = time.time()
@@ -85,6 +87,7 @@ class QuotaManager:
                 
             except Exception as e:
                 if "429" in str(e) or "quota" in str(e).lower():
+                    logger.warning(f"Rate limit hit. Backing off for {self._base_delay * (2 ** attempt)} seconds (attempt {attempt + 1}/{self._max_retries})")
                     await self.handle_rate_limit(attempt)
                     continue
                 raise

@@ -10,6 +10,8 @@ import json
 import logging
 import time
 import base64
+import random
+import asyncio
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime
@@ -30,8 +32,14 @@ from .utils import (
 )
 from .email_parser import process_message
 
+# Import quota manager 
+from app.email.clients.gmail.core.quota import QuotaManager
+
 # Ensure httplib2 caching is disabled to prevent memory leaks
 httplib2.RETRIES = 1
+
+# Create a global quota manager instance
+quota_manager = QuotaManager()
 
 
 def load_credentials(credentials_json: str) -> Dict[str, Any]:
@@ -251,12 +259,18 @@ class GmailService:
             await self.initialize()
             
         try:
-            # Fetch the message
-            message = self.service.users().messages().get(
-                userId="me",
-                id=msg_id,
-                format="full"
-            ).execute()
+            # Use the quota manager to execute with retry
+            async def fetch_operation():
+                message = self.service.users().messages().get(
+                    userId="me",
+                    id=msg_id,
+                    format="full"
+                ).execute()
+                return message
+                
+            # Track quota and execute with retry
+            await quota_manager.track_quota(quota_manager._quota_cost_get)
+            message = await quota_manager.execute_with_retry(fetch_operation)
             
             # Process the message
             processed_message = process_message(message)
@@ -355,9 +369,10 @@ class GmailService:
                         request_id=msg_id,
                         callback=callback
                     )
-                    
-                # Execute the batch request
-                batch.execute()
+                
+                # Track quota and execute with retry
+                await quota_manager.track_quota(quota_manager._quota_cost_get * len(batch_ids))
+                await quota_manager.execute_with_retry(batch.execute)
                 
                 # Process successful responses
                 for msg_id, response in responses.items():
@@ -371,6 +386,10 @@ class GmailService:
                         self.logger.error(f"Error processing message {msg_id}: {e}")
             except Exception as e:
                 self.logger.error(f"Error processing batch: {e}")
+            
+            # # Add a small delay between batches to avoid rate limits
+            # if i + BATCH_SIZE < len(message_ids):
+            #     await asyncio.sleep(0.25)  # Small delay between batches
         
         return messages
             
@@ -493,6 +512,9 @@ class GmailService:
         batch_size = 25  # Smaller batches for better memory management
         all_emails = []
         
+        # Track fetch time for rate limiting
+        start_time = time.time()
+        
         for i in range(0, len(message_ids), batch_size):
             batch = message_ids[i:i+batch_size]
             
@@ -511,7 +533,9 @@ class GmailService:
             self.logger.info(f"Processed batch {i//batch_size + 1}/{(len(message_ids) + batch_size - 1)//batch_size}: "
                           f"{len(emails)} emails in {batch_time:.2f}s")
         
-        self.logger.info(f"Fetched and processed {len(all_emails)} emails")
+        total_time = time.time() - start_time
+        rate = len(all_emails) / max(0.1, total_time)
+        self.logger.info(f"Fetched and processed {len(all_emails)} emails in {total_time:.2f}s ({rate:.1f}/s)")
             
         return all_emails
             

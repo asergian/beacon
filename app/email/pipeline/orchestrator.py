@@ -283,7 +283,6 @@ class EmailPipeline:
             try:
                 await self.connection.disconnect()
                 log_memory_usage(self.logger, "Streaming Pipeline After Disconnection")
-                self.logger.info("\n")
             except Exception as e:
                 self.logger.error(f"Error during streaming pipeline disconnect: {e}")
 

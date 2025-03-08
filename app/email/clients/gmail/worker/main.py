@@ -13,8 +13,13 @@ import traceback
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-# Import local modules with proper package references
-from .utils import (
+# Add the project root to sys.path to ensure imports work correctly
+project_root = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../../../'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+# Import local modules with absolute imports
+from app.email.clients.gmail.worker.utils import (
     get_logger,
     parse_content_from_file,
     cleanup_resources,
@@ -23,7 +28,7 @@ from .utils import (
     optimize_process,
     parse_arguments
 )
-from .api_client import GmailService
+from app.email.clients.gmail.worker.api_client import GmailService
 
 
 # Configure logging to write to a file
