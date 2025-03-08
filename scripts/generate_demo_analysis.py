@@ -1,52 +1,69 @@
-"""Script to generate pre-analyzed demo emails."""
+#!/usr/bin/env python3
+"""Pre-generate analysis for demo emails.
+
+This script generates and caches analysis results for all demo emails in the system.
+It runs the analysis with multiple models and context lengths to ensure
+all demo emails have pre-generated analysis available when accessed through the demo interface.
+
+The script is intended to be run before deploying the application or after
+adding new demo emails to ensure a smooth demo experience without API delays.
+
+Typical usage:
+    $ python scripts/generate_demo_analysis.py
+"""
 
 import os
 import sys
+import json
 from pathlib import Path
 import traceback
+import logging
 
-# Add the app directory to Python path
-app_dir = Path(__file__).resolve().parent.parent
-sys.path.append(str(app_dir))
+# Add the parent directory to sys.path
+sys.path.append(str(Path(__file__).parent.parent))
 
-from app.email.demo_emails import get_demo_email_bodies
-from app.email.demo_analysis import generate_all_demo_analysis, save_analysis_cache, load_analysis_cache
-from app.routes.email_routes import get_demo_emails
+# Import from the new demo module structure
+from app.demo.routes import get_demo_emails
+from app.demo.data import get_demo_email_bodies
+from app.demo.analysis import generate_all_demo_analysis, save_analysis_cache, load_analysis_cache
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def main():
-    """Generate and save analysis for all demo emails."""
+    """Generate and save analysis for all demo emails.
+    
+    This function orchestrates the entire demo analysis generation process:
+    1. Loads any existing analysis cache
+    2. Fetches all demo emails from the system
+    3. Generates analysis for each email using multiple models and context lengths
+    4. Saves the generated analysis to the cache for future use
+    
+    Returns:
+        int: 0 for success, 1 for error
+    """
     try:
-        print("\n=== Starting Demo Email Analysis Generation ===")
-        
-        # Try to load existing cache
-        print("\nChecking for existing analysis cache...")
+        logger.info("Loading existing analysis cache")
         load_analysis_cache()
         
-        # Get demo emails
-        print("\nFetching demo emails...")
+        logger.info("Fetching demo emails")
         demo_emails = get_demo_emails()
-        print(f"Found {len(demo_emails)} demo emails")
         
-        # Process all emails
-        print("\nStarting analysis generation...")
-        print(f"This will test {len(demo_emails)} emails × 6 combinations (2 models × 3 context lengths)")
-        print(f"Total API calls: {len(demo_emails) * 6}")
-        
-        # Generate analysis for all combinations
+        logger.info(f"Generating analysis for {len(demo_emails)} demo emails")
+        logger.info(f"This will test {len(demo_emails)} emails × 6 combinations (2 models × 3 context lengths)")
         generate_all_demo_analysis(demo_emails)
         
-        # Save the analysis cache
-        print("\nSaving analysis cache...")
+        logger.info("Saving analysis cache")
         save_analysis_cache()
         
-        print("\n=== Analysis Generation Complete ===")
+        logger.info("Analysis generation complete!")
+        return 0
         
     except Exception as e:
-        print("\n!!! Error during analysis generation !!!")
-        print(f"Error: {str(e)}")
-        print("\nFull traceback:")
+        logger.error(f"Error generating demo analysis: {e}")
         traceback.print_exc()
-        sys.exit(1)
+        return 1
 
 if __name__ == "__main__":
-    main() 
+    sys.exit(main()) 

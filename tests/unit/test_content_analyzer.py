@@ -1,6 +1,6 @@
 import pytest
 import spacy
-from app.email.analyzers.content_analyzer import ContentAnalyzer
+from app.email.analyzers.content.nlp_analyzer import ContentAnalyzer
 from app.email.models.analysis_settings import ProcessingConfig
 
 @pytest.fixture

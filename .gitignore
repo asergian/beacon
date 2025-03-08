@@ -1,15 +1,44 @@
-venv/*
-certs/
-diff.txt
-*.pem
-logs/
-cookies.txt
-.gitignore
-.env
-playground/*
-.DS_Store
-.ipynb_checkpoints
-__pycache__/
-.coverage
-beacon-gmail-client.json
+# Virtual Environment & Python Cache  
+venv/  
+.venv/  
+__pycache__/  
+
+# Credentials & Sensitive Files  
+.env  
+*.pem  
+certs/  
+beacon-gmail-client.json  
+cookies.txt  
+
+# Logs & Debugging Files  
+logs/  
+diff.txt  
+.coverage  
+
+# Development & Temporary Files  
+playground/  
+backups/  
 .cursor/
+
+# Jupyter Notebook Checkpoints  
+.ipynb_checkpoints/  
+
+# Temporary files
+*.swp
+*.swo
+.DS_Store  
+tmp_img/
+
+# Testing & Pytest Cache  
+.pytest_cache/
+
+# Sphinx documentation build artifacts
+docs/sphinx/build/
+docs/sphinx/_build/
+docs/sphinx/.doctrees/
+docs/sphinx/source/_autosummary/
+docs/sphinx/.buildinfo
+
+# Python artifacts in docs directory
+docs/**/__pycache__/
+docs/**/*.pyc

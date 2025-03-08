@@ -1,62 +1,56 @@
 # app/config.py
+"""
+Application configuration module.
+
+This module defines the configuration structure for the application,
+handling environment variables, logging setup, and providing
+a centralized configuration object for the application.
+"""
 import os
+from typing import Any
 from dotenv import load_dotenv
-import logging
-import logging.config
 
 # Load environment variables immediately
 load_dotenv()
 
-class SafeStreamHandler(logging.StreamHandler):
-    """A StreamHandler that safely handles string encoding."""
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            stream = self.stream
-            # Write with encoding if stream has encoding defined
-            if hasattr(stream, 'encoding') and stream.encoding:
-                stream.write(msg.encode(stream.encoding).decode(stream.encoding))
-            else:
-                stream.write(msg)
-            stream.write(self.terminator)
-            self.flush()
-        except Exception:
-            self.handleError(record)
-
 class Config:
-    """Base configuration class."""
+    """Base configuration class.
     
-    def __init__(self):
-        """Initialize configuration with environment variables."""
+    This class holds all configuration settings for the application,
+    primarily loaded from environment variables with sensible defaults.
+    """
+    
+    def __init__(self) -> None:
+        """Initialize configuration with environment variables.
+        
+        Loads configuration values from environment variables with defaults
+        for development environments.
+        """
+        # Flask Configuration
+        self.FLASK_SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'your-default-flask-secret-key'
+        self.LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'ERROR').upper()
+        self.DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
+
         # IMAP Configuration
         self.IMAP_SERVER = os.environ.get('IMAP_SERVER') or 'imap.gmail.com'
         self.EMAIL = os.environ.get('EMAIL') or 'your-email@example.com'
         self.IMAP_PASSWORD = os.environ.get('IMAP_PASSWORD') or 'your-email-password'
         
-        # SMTP Configuration
+        # SMTP Configuration; use the same email and password as IMAP by default
         self.SMTP_SERVER = os.environ.get('SMTP_SERVER') or 'smtp.gmail.com'
         self.SMTP_PORT = int(os.environ.get('SMTP_PORT') or 587)
         self.SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', '1') == '1'
-        # Use the same email and password as IMAP by default
         self.SMTP_EMAIL = os.environ.get('SMTP_EMAIL') or self.EMAIL
         self.SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD') or self.IMAP_PASSWORD
         self.SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL') or 'support@shronas.com'
         
         # Load environment variables into config
         self.REDIS_TOKEN = os.environ.get('REDIS_TOKEN')
-        self.REDIS_URL = os.environ.get('REDIS_URL')
+        self.REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
 
         # OpenAI Configuration
         self.OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY') or 'your-default-openai-key'
 
-        self.FLASK_SECRET_KEY = os.environ.get('FLASK_SECRET_KEY') or 'your-default-flask-secret-key'
-        
-        # Logging Configuration
-        self.LOGGING_LEVEL = os.environ.get('LOGGING_LEVEL', 'ERROR').upper()
-        
-        # Redis Configuration (if used)
-        self.REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379')
-        
         # Database Configuration
         database_url = os.environ.get('DATABASE_URL', 'postgresql://localhost/beacon')
         # Handle Render's postgres:// URLs
@@ -65,129 +59,28 @@ class Config:
         self.SQLALCHEMY_DATABASE_URI = database_url
         self.SQLALCHEMY_TRACK_MODIFICATIONS = os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS', False)
         
-        # Debug flag
-        self.DEBUG = os.environ.get('FLASK_DEBUG', '0') == '1'
+    def __getitem__(self, key: str) -> Any:
+        """Allow dictionary-style access to config values.
         
-    def __getitem__(self, key):
-        """Allow dictionary-style access to config values."""
+        Args:
+            key: The configuration key to retrieve
+            
+        Returns:
+            The value of the requested configuration item
+            
+        Raises:
+            AttributeError: If the key doesn't exist
+        """
         return getattr(self, key)
         
-    def get(self, key, default=None):
-        """Implement get method for compatibility with dict interface."""
-        return getattr(self, key, default)
-
-def configure_logging():
-    """Configure application-wide logging."""
-    # Get the logging level from environment
-    log_level = os.environ.get('LOGGING_LEVEL', 'ERROR').upper()
-    
-    logging.config.dictConfig({
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'standard': {
-                'format': '%(asctime)s | %(shortname)-40s | %(levelname)-8s | %(message)s',
-                'datefmt': '%H:%M:%S'
-            },
-            'operation': {
-                'format': '%(asctime)s | %(shortname)-40s | %(levelname)-8s | %(message)s',
-                'datefmt': '%H:%M:%S'
-            }
-        },
-        'handlers': {
-            'console': {
-                'level': log_level,  # Use environment-specified level
-                'formatter': 'standard',
-                'class': 'app.config.SafeStreamHandler',
-                'stream': 'ext://sys.stdout',
-            },
-            'operation': {
-                'level': log_level,  # Use environment-specified level
-                'formatter': 'operation',
-                'class': 'app.config.SafeStreamHandler',
-                'stream': 'ext://sys.stdout',
-            }
-        },
-        'loggers': {
-            '': {  # Root logger
-                'handlers': ['console'],
-                'level': log_level,  # Use environment-specified level
-                'propagate': False
-            },
-            'httpx': {
-                'handlers': ['console'],
-                'level': 'WARNING',  # Changed from DEBUG to WARNING to reduce log verbosity
-                'propagate': False
-            },
-            'app.email.pipeline': {
-                'handlers': ['operation'],
-                'level': log_level,  # Use environment-specified level
-                'propagate': False
-            },
-            'app.email.storage.cache': {
-                'handlers': ['console'],
-                'level': log_level,  # Use environment-specified level
-                'propagate': False
-            },
-            'app.email.core': {
-                'handlers': ['console'],
-                'level': log_level,  # Use environment-specified level
-                'propagate': False
-            },
-            'app.email.analyzers': {
-                'handlers': ['console'],
-                'level': log_level,  # Use environment-specified level
-                'propagate': False
-            },
-            'app.models': {
-                'handlers': ['console'],
-                'level': log_level,  # Use environment-specified level
-                'propagate': False
-            },
-            'app.email.core.gmail_client': {
-                'handlers': ['console'],
-                'level': log_level,  # Use environment-specified level
-                'propagate': False
-            }
-        }
-    })
-
-    # Patch the logger to add `shortname`
-    old_factory = logging.getLogRecordFactory()
-
-    def record_factory(*args, **kwargs):
-        record = old_factory(*args, **kwargs)
-        parts = record.name.split(".")
+    def get(self, key: str, default: Any = None) -> Any:
+        """Implement get method for compatibility with dict interface.
         
-        if len(parts) > 3:  # If the logger name is long
-            record.shortname = f"{'.'.join(parts[-2:])}"
-        else:
-            record.shortname = record.name  # Keep full name if short enough
-        return record
-
-    logging.setLogRecordFactory(record_factory)
-
-def format_log_message(msg: str, wrap_length: int = 100) -> str:
-    """Format a log message with proper wrapping"""
-    if len(msg) <= wrap_length:
-        return msg
-        
-    words = msg.split()
-    lines = []
-    current_line = []
-    current_length = 0
-    
-    for word in words:
-        if current_length + len(word) + 1 <= wrap_length:
-            current_line.append(word)
-            current_length += len(word) + 1
-        else:
-            if current_line:
-                lines.append(' '.join(current_line))
-            current_line = [word]
-            current_length = len(word)
+        Args:
+            key: The configuration key to retrieve
+            default: The default value to return if key doesn't exist
             
-    if current_line:
-        lines.append(' '.join(current_line))
-        
-    return '\n    '.join(lines)  # Indent continuation lines
+        Returns:
+            The value of the requested configuration item or default
+        """
+        return getattr(self, key, default)

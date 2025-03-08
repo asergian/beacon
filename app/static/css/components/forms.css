@@ -1,0 +1,368 @@
+/**
+ * @fileoverview Form element styles and components.
+ *
+ * This file contains styles for all form-related UI components, including:
+ * - Text inputs and textareas
+ * - Select dropdowns and custom selects
+ * - Toggle switches and checkboxes
+ * - Sliders and range inputs
+ * - Form layout and grouping elements
+ * - Validation states and error messages
+ *
+ * These form components maintain consistent styling across the application
+ * and implement proper accessibility practices and visual feedback.
+ *
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
+ */
+
+/* =========================================================================
+   Base Form Elements
+   ========================================================================= */
+
+/**
+ * Core form input styles.
+ * Applied to text inputs, selects, and textareas.
+ * Provides consistent styling across different form controls.
+ */
+.form-input,
+.form-select,
+.form-textarea {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--input-border);
+    border-radius: 0.375rem;
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+/**
+ * Hover state for form inputs.
+ * Provides visual feedback when the user hovers over an input.
+ */
+.form-input:hover,
+.form-select:hover,
+.form-textarea:hover {
+    border-color: #cbd5e1;
+}
+
+/**
+ * Focus state for form inputs.
+ * Creates a clear visual indication when an input has focus.
+ */
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/**
+ * Textarea specific styles.
+ * Configures size and resize behavior.
+ */
+.form-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* =========================================================================
+   Select Dropdown Elements
+   ========================================================================= */
+
+/**
+ * Container for custom select elements.
+ * Provides positioning context for the custom arrow.
+ */
+.select-container {
+    position: relative;
+    min-width: 200px;
+}
+
+/**
+ * Modern custom select element.
+ * Styled to match other form inputs while supporting custom appearance.
+ */
+.modern-select {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 100%;
+    padding: 0.625rem 0.9375rem;
+    font-size: 0.875rem;
+    border: 1px solid var(--input-border);
+    border-radius: 0.5rem;
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/**
+ * Hover state for custom select.
+ */
+.modern-select:hover {
+    border-color: #a0aec0;
+}
+
+/**
+ * Focus state for custom select.
+ */
+.modern-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/**
+ * Custom dropdown arrow for select elements.
+ * Positioned absolutely within the select container.
+ */
+.select-arrow {
+    position: absolute;
+    right: 0.9375rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--input-text);
+    opacity: 0.5;
+}
+
+/* =========================================================================
+   Toggle Switch Component
+   ========================================================================= */
+
+/**
+ * Toggle switch container.
+ * Contains the hidden checkbox input and visible toggle element.
+ */
+.toggle-container {
+    position: relative;
+    width: 50px;
+    height: 26px;
+    flex-shrink: 0;
+    cursor: pointer;
+    z-index: 5;
+}
+
+/**
+ * Hidden checkbox input for toggle switch.
+ * Remains accessible to screen readers while visually hidden.
+ */
+.toggle-container input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 20;
+    margin: 0;
+    padding: 0;
+    top: 0;
+    left: 0;
+    cursor: pointer;
+}
+
+/**
+ * Visual toggle switch element.
+ * Styled to look like a physical toggle switch with a track and handle.
+ */
+.toggle-switch {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--toggle-bg);
+    transition: .4s;
+    border-radius: 34px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/**
+ * Toggle switch handle/knob.
+ * Moves from left to right when toggled on.
+ */
+.toggle-switch:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    pointer-events: none;
+}
+
+/**
+ * Active (checked) state for toggle track.
+ * Changes background color when toggled on.
+ */
+input:checked + .toggle-switch {
+    background-color: var(--toggle-active);
+}
+
+/**
+ * Active (checked) state for toggle handle.
+ * Moves to the right when toggled on.
+ */
+input:checked + .toggle-switch:before {
+    transform: translateX(24px);
+}
+
+/* =========================================================================
+   Form Layout and Grouping
+   ========================================================================= */
+
+/**
+ * Container for form field groups.
+ * Groups a label, input, and optional hint or error message.
+ */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+/**
+ * Form field label.
+ * Provides visual and semantic connection to its input.
+ */
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/**
+ * Form field hint text.
+ * Provides additional guidance for form completion.
+ */
+.form-hint {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* =========================================================================
+   Range Slider Component
+   ========================================================================= */
+
+/**
+ * Container for range slider elements.
+ * Controls the maximum width of the slider component.
+ */
+.slider-container {
+    width: 100%;
+    max-width: 200px;
+}
+
+/**
+ * Base range slider element.
+ * Cross-browser styling for the slider track.
+ */
+.slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+    outline: none;
+    margin-bottom: 10px;
+}
+
+/**
+ * WebKit-specific slider thumb styling.
+ * Customizes the draggable handle for WebKit browsers.
+ */
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+}
+
+/**
+ * Firefox-specific slider thumb styling.
+ * Customizes the draggable handle for Firefox.
+ */
+.slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    cursor: pointer;
+    border: none;
+}
+
+/**
+ * Slider value display.
+ * Shows the current value of the slider.
+ */
+.slider-value {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* =========================================================================
+   Form Placeholders and Hints
+   ========================================================================= */
+
+/**
+ * Input placeholder styling.
+ * Consistent styling for placeholder text across inputs.
+ */
+.form-input::placeholder,
+.form-textarea::placeholder {
+    color: var(--description-color);
+    opacity: 0.7;
+}
+
+/**
+ * Focus state for input placeholders.
+ * Reduces opacity when input is focused for better contrast with entered text.
+ */
+.form-input:focus::placeholder,
+.form-textarea:focus::placeholder {
+    opacity: 0.5;
+}
+
+/* =========================================================================
+   Form Validation States
+   ========================================================================= */
+
+/**
+ * Invalid input state.
+ * Applied to inputs with validation errors.
+ */
+.is-invalid {
+    border-color: var(--danger-color) !important;
+}
+
+/**
+ * Valid input state.
+ * Applied to inputs that have been successfully validated.
+ */
+.is-valid {
+    border-color: var(--success-bg) !important;
+}
+
+/**
+ * Error message for invalid inputs.
+ * Displays validation error text below the input.
+ */
+.error-message {
+    color: var(--danger-color);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+} 

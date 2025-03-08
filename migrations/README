@@ -1,1 +1,27 @@
-Single-database configuration for Flask.
+# Database Migrations
+
+This directory contains database migration scripts managed by Alembic and Flask-Migrate.
+
+## Structure
+
+- `versions/`: Contains individual migration scripts
+- `env.py`: Configures the migration environment
+- `script.py.mako`: Template for generating new migration files
+- `alembic.ini`: Alembic configuration settings
+
+## Usage
+
+Migrations are typically managed using the Flask-Migrate CLI commands:
+
+```
+# Create a new migration
+flask db migrate -m "Description of changes"
+
+# Apply migrations to the database
+flask db upgrade
+
+# Revert the most recent migration
+flask db downgrade
+```
+
+For more information, see the [Flask-Migrate documentation](https://flask-migrate.readthedocs.io/).

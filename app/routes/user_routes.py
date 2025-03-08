@@ -1,12 +1,20 @@
-"""User settings and analytics routes."""
+"""User settings and analytics routes.
+
+This module provides routes for user settings management and analytics
+data collection and display. It includes endpoints for updating user preferences,
+viewing analytics dashboards, and retrieving analytics data.
+
+Typical usage example:
+    app.register_blueprint(user_bp, url_prefix='/user')
+"""
 
 from flask import Blueprint, jsonify, request, session, render_template
-from ..models import User, UserActivity, log_activity
+from app.models.user import User
+from app.models.activity import UserActivity, log_activity
 from ..auth.decorators import login_required, admin_required
 import logging
 from datetime import datetime
-from .. import db
-from zoneinfo import ZoneInfo, available_timezones
+from app.models import db
 
 user_bp = Blueprint('user', __name__)
 logger = logging.getLogger(__name__)
@@ -44,13 +52,30 @@ COMMON_TIMEZONES = [
 @user_bp.route('/analytics')
 @admin_required
 def analytics_dashboard():
-    """Display the analytics dashboard."""
+    """Display the analytics dashboard.
+    
+    Admin-only route for viewing application usage analytics.
+    
+    Returns:
+        Flask response: Rendered analytics dashboard template.
+    """
     return render_template('analytics.html')
 
 @user_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    """Handle settings page and updates."""
+    """Handle settings page and updates.
+    
+    GET requests render the settings page with current user settings.
+    POST requests update a single setting and return the updated value.
+    
+    Returns:
+        Flask response: For GET: rendered settings page with user preferences.
+                       For POST: JSON response with update status and values.
+        
+    Raises:
+        Exception: If there's an error processing the settings, returns a 500 error.
+    """
     try:
         user = User.query.get(session['user']['id'])
         if not user:
@@ -100,6 +125,7 @@ def settings():
                 # Return the updated settings group if it exists, otherwise just the updated value
                 response_data = {
                     "status": "success",
+                    "message": "Setting updated successfully",
                     "value": updated_value
                 }
                 
@@ -131,7 +157,18 @@ def settings():
 @user_bp.route('/api/analytics')
 @admin_required
 def get_analytics():
-    """Get user activity analytics."""
+    """Get user activity analytics data.
+    
+    Admin-only endpoint that retrieves and processes all user activities
+    to generate analytics about application usage, including LLM, email,
+    and NLP statistics.
+    
+    Returns:
+        JSON response: Processed analytics data for all system users.
+        
+    Raises:
+        Exception: If analytics processing fails, returns a 404 or 500 error.
+    """
     try:
         admin_user = User.query.get(session['user']['id'])
         if not admin_user:
@@ -362,7 +399,17 @@ def get_analytics():
 @user_bp.route('/api/debug/activities')
 @admin_required
 def debug_activities():
-    """Debug endpoint to inspect raw activities."""
+    """Debug endpoint to inspect raw activities.
+    
+    Admin-only endpoint for retrieving detailed information about the most
+    recent user activities for debugging purposes.
+    
+    Returns:
+        JSON response: The last 50 user activities with detailed metadata.
+        
+    Raises:
+        Exception: If there's an error fetching the activities, returns a 500 error.
+    """
     try:
         logger.info("Fetching debug activities")
         # Get last 50 activities
@@ -391,4 +438,95 @@ def debug_activities():
         
     except Exception as e:
         logger.error(f"Failed to get debug activities: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500 
+        return jsonify({"error": str(e)}), 500
+
+@user_bp.route('/api/settings', methods=['GET', 'POST'])
+@login_required
+def get_user_settings():
+    """Get or update user settings API endpoint.
+    
+    GET requests return all user settings.
+    POST requests update a single setting specified in the request body.
+    
+    Args:
+        For POST requests, requires JSON with 'setting' and 'value' keys.
+    
+    Returns:
+        JSON response: For GET: All user settings
+                      For POST: Updated setting value or group
+                      
+    Raises:
+        Exception: If there's an error processing the request, returns a 400, 404, or 500 error.
+    """
+    try:
+        user = User.query.get(session['user']['id'])
+        if not user:
+            return jsonify({
+                'status': 'error',
+                'message': 'User not found'
+            }), 404
+        
+        # Handle POST request to update settings
+        if request.method == 'POST':
+            data = request.get_json()
+            if not data or 'setting' not in data or 'value' not in data:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Missing required parameters'
+                }), 400
+            
+            setting = data['setting']
+            value = data['value']
+            
+            # Get current value for logging
+            current_value = user.get_setting(setting)
+            logger.info(f"API: Updating setting {setting} from {current_value} to: {value}")
+            
+            # Update the setting
+            user.set_setting(setting, value)
+            
+            # Get the updated value for verification
+            updated_value = user.get_setting(setting)
+            
+            # Get the group name for the setting (if any)
+            group = setting.split('.')[0] if '.' in setting else None
+            
+            # Log the activity
+            log_activity(
+                user_id=user.id,
+                activity_type='settings_update',
+                description=f"Updated setting: {setting}",
+                metadata={
+                    'key': setting,
+                    'old_value': current_value,
+                    'new_value': updated_value,
+                    'group': group,
+                    'source': 'api'
+                }
+            )
+            
+            # Prepare response
+            response_data = {
+                "status": "success",
+                "message": "Setting updated successfully",
+                "value": updated_value
+            }
+            
+            # Include the entire group if applicable
+            if group:
+                response_data["group"] = user.get_settings_group(group)
+            
+            return jsonify(response_data)
+        
+        # Handle GET request to retrieve settings
+        settings = user.get_all_settings()
+        return jsonify({
+            'status': 'success',
+            'settings': settings
+        })
+    except Exception as e:
+        logger.error(f"Failed to handle user settings: {e}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500 

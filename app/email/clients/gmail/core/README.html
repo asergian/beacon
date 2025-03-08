@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Gmail Core Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Gmail Core Module</h1>
+<p>The Gmail Core module provides the fundamental building blocks for interacting with the Gmail API.</p>
+<h2>Overview</h2>
+<p>This module serves as the foundation for Gmail API interactions, providing essential components for authentication, API service initialization, quota management, and error handling. It abstracts the complexities of the Gmail API into a clean, reusable interface that ensures efficient and reliable email operations.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">core</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">       </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">api</span><span class="o">.</span><span class="n">py</span><span class="w">            </span><span class="c1"># Gmail API service initialization</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">auth</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="c1"># Authentication utilities</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">email_utils</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="c1"># Email processing utilities</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">exceptions</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># Custom exception classes</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">quota</span><span class="o">.</span><span class="n">py</span><span class="w">          </span><span class="c1"># API quota management</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">         </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>API Service</h3>
+<p>Core implementation for initializing and configuring the Gmail API service, including request retries, timeouts, and optimized connection pooling.</p>
+<h3>Authentication</h3>
+<p>Handles OAuth2 authentication flow and token management for Gmail API access, supporting both user and service account authentication methods.</p>
+<h3>Email Utilities</h3>
+<p>Provides utility functions for common email operations such as encoding/decoding, MIME handling, and RFC compliance.</p>
+<h3>Exception Handling</h3>
+<p>Custom exception classes specifically designed for Gmail API error scenarios, providing detailed error information and recovery suggestions.</p>
+<h3>Quota Management</h3>
+<p>Implements rate limiting and quota tracking to prevent quota exhaustion and ensure compliance with Gmail API usage limits.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Initializing the Gmail API service</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.gmail.core.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_gmail_service</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.gmail.core.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_credentials</span>
+
+<span class="c1"># Get OAuth credentials</span>
+<span class="n">credentials</span> <span class="o">=</span> <span class="n">get_credentials</span><span class="p">(</span>
+    <span class="n">token_file</span><span class="o">=</span><span class="s2">&quot;token.json&quot;</span><span class="p">,</span>
+    <span class="n">credentials_file</span><span class="o">=</span><span class="s2">&quot;credentials.json&quot;</span><span class="p">,</span>
+    <span class="n">scopes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;https://www.googleapis.com/auth/gmail.readonly&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># Create the Gmail service</span>
+<span class="n">gmail_service</span> <span class="o">=</span> <span class="n">create_gmail_service</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span>
+
+<span class="c1"># Use the service to fetch profile information</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">gmail_service</span><span class="o">.</span><span class="n">users</span><span class="p">()</span><span class="o">.</span><span class="n">getProfile</span><span class="p">(</span><span class="n">userId</span><span class="o">=</span><span class="s2">&quot;me&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Email: </span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">&#39;emailAddress&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># Managing quotas</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.gmail.core.quota</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuotaManager</span>
+
+<span class="c1"># Create a quota manager</span>
+<span class="n">quota_manager</span> <span class="o">=</span> <span class="n">QuotaManager</span><span class="p">(</span>
+    <span class="n">max_requests_per_day</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span>
+    <span class="n">max_requests_per_100seconds</span><span class="o">=</span><span class="mi">250</span>
+<span class="p">)</span>
+
+<span class="c1"># Check if we can make a request</span>
+<span class="k">if</span> <span class="n">quota_manager</span><span class="o">.</span><span class="n">can_make_request</span><span class="p">():</span>
+    <span class="c1"># Make API request</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">gmail_service</span><span class="o">.</span><span class="n">users</span><span class="p">()</span><span class="o">.</span><span class="n">messages</span><span class="p">()</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">userId</span><span class="o">=</span><span class="s2">&quot;me&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+    <span class="c1"># Record the request</span>
+    <span class="n">quota_manager</span><span class="o">.</span><span class="n">record_request</span><span class="p">()</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">wait_time</span> <span class="o">=</span> <span class="n">quota_manager</span><span class="o">.</span><span class="n">get_wait_time</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rate limit reached. Wait </span><span class="si">{</span><span class="n">wait_time</span><span class="si">}</span><span class="s2"> seconds.&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># Handling exceptions</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.gmail.core.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">GmailAPIError</span><span class="p">,</span> <span class="n">GmailQuotaExceededError</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">gmail_service</span><span class="o">.</span><span class="n">users</span><span class="p">()</span><span class="o">.</span><span class="n">messages</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">userId</span><span class="o">=</span><span class="s2">&quot;me&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;12345&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+<span class="k">except</span> <span class="n">GmailQuotaExceededError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Quota exceeded: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">quota_limit</span><span class="si">}</span><span class="s2">. Retry after </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">retry_after</span><span class="si">}</span><span class="s2"> seconds.&quot;</span><span class="p">)</span>
+    <span class="c1"># Implement backoff strategy</span>
+<span class="k">except</span> <span class="n">GmailAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;API error: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">error_code</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Handle specific error codes</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The Gmail Core module follows these design principles:
+- Clean separation of concerns between authentication, API access, and error handling
+- Robust error handling with detailed contextual information
+- Efficient API response handling to minimize memory usage
+- Memory optimization for large API responses
+- Proper rate limiting to ensure quota compliance</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- None (core module with no internal dependencies)</p>
+<p>External:
+- <code>google-api-python-client</code>: For Gmail API access
+- <code>google-auth</code>: For Google authentication
+- <code>google-auth-oauthlib</code>: For OAuth flow
+- <code>google-auth-httplib2</code>: For HTTP client
+- <code>asyncio</code>: For asynchronous operations</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://developers.google.com/gmail/api">Gmail API Documentation</a></li>
+<li><a href="https://developers.google.com/identity/protocols/oauth2">Google Auth Library</a></li>
+<li><a href="../../../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

@@ -29,8 +29,8 @@ from datetime import date
 import socket
 
 # Updated imports to reflect new structure
-from app.email.core.email_connection import EmailConnection, IMAPConnectionError
-from app.email.core.email_parsing import EmailParser, EmailMetadata
+from app.email.clients.imap.client import EmailConnection, IMAPConnectionError
+from app.email.parsing.parser import EmailParser, EmailMetadata
 
 @pytest.mark.asyncio
 async def test_imap_client_initialization(imap_config):

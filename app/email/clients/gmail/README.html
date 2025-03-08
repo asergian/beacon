@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Gmail Client Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Gmail Client Module</h1>
+<p>The Gmail Client module provides integration with Gmail's API for email operations including fetching, sending, and managing emails.</p>
+<h2>Overview</h2>
+<p>This module implements client interfaces for Gmail, allowing the application to connect to Gmail accounts, retrieve emails, and perform other email operations. It offers both in-process and subprocess-based implementations to optimize memory usage and performance. The module handles OAuth authentication, API access, rate limiting, and error recovery.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">gmail</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">client</span><span class="o">.</span><span class="n">py</span><span class="w">                </span><span class="c1"># Main in-process Gmail client</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">client_subprocess</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># Subprocess-based Gmail client</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">core</span><span class="o">/</span><span class="w">                    </span><span class="c1"># Core API functionality</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">api</span><span class="o">.</span><span class="n">py</span><span class="w">               </span><span class="c1"># Gmail API operations</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">auth</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="c1"># Authentication utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">email_utils</span><span class="o">.</span><span class="n">py</span><span class="w">       </span><span class="c1"># Email-specific helpers</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">exceptions</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Gmail-specific errors</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">quota</span><span class="o">.</span><span class="n">py</span><span class="w">             </span><span class="c1"># Rate limiting and quotas</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">utils</span><span class="o">/</span><span class="w">                   </span><span class="c1"># Utility functions</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">date_utils</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Date handling utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">file_utils</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># File operations utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">subprocess_utils</span><span class="o">.</span><span class="n">py</span><span class="w">  </span><span class="c1"># Subprocess management</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">worker</span><span class="o">/</span><span class="w">                  </span><span class="c1"># Subprocess worker</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">api_client</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Worker API client</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">email_parser</span><span class="o">.</span><span class="n">py</span><span class="w">      </span><span class="c1"># Email parsing in worker</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">main</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="c1"># Worker entry point</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">utils</span><span class="o">/</span><span class="w">               </span><span class="c1"># Worker-specific utilities</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">                </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Gmail Client</h3>
+<p>The main client class that provides a high-level interface for Gmail operations. It handles authentication, connection management, and error handling, while providing methods for fetching and sending emails.</p>
+<h3>Subprocess Client</h3>
+<p>A client implementation that runs Gmail API operations in a separate process to isolate memory usage. This approach prevents memory leaks and improves stability in long-running applications.</p>
+<h3>Core Components</h3>
+<p>The building blocks for Gmail operations, including API access, authentication, quota management, and error handling. These components implement the low-level functionality used by the client classes.</p>
+<h3>Worker Implementation</h3>
+<p>A separate process implementation for Gmail operations that can be launched by the subprocess client. It includes its own API client, parser, and utilities to function independently.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using the standard in-process client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.gmail.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">GmailClient</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">GmailClient</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">user_email</span><span class="o">=</span><span class="s2">&quot;user@gmail.com&quot;</span><span class="p">)</span>
+<span class="n">emails</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">fetch_emails</span><span class="p">(</span><span class="n">days_back</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">email</span> <span class="ow">in</span> <span class="n">emails</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Email ID: </span><span class="si">{</span><span class="n">email</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Raw content length: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">email</span><span class="p">[</span><span class="s1">&#39;raw_message&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Using the subprocess-based client for better memory isolation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.gmail.client_subprocess</span><span class="w"> </span><span class="kn">import</span> <span class="n">GmailClientSubprocess</span>
+
+<span class="n">subprocess_client</span> <span class="o">=</span> <span class="n">GmailClientSubprocess</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">subprocess_client</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">user_email</span><span class="o">=</span><span class="s2">&quot;user@gmail.com&quot;</span><span class="p">)</span>
+<span class="n">emails</span> <span class="o">=</span> <span class="k">await</span> <span class="n">subprocess_client</span><span class="o">.</span><span class="n">fetch_emails</span><span class="p">(</span><span class="n">days_back</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># Sending an email</span>
+<span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send_email</span><span class="p">(</span>
+    <span class="n">to</span><span class="o">=</span><span class="s2">&quot;recipient@example.com&quot;</span><span class="p">,</span>
+    <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;Hello from Beacon&quot;</span><span class="p">,</span>
+    <span class="n">body</span><span class="o">=</span><span class="s2">&quot;This is a test email.&quot;</span><span class="p">,</span>
+    <span class="n">html_body</span><span class="o">=</span><span class="s2">&quot;&lt;p&gt;This is a &lt;b&gt;test&lt;/b&gt; email.&lt;/p&gt;&quot;</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The Gmail client module follows these design principles:
+- Clean separation between API access and client interfaces
+- Memory management via subprocess isolation
+- Progressive retry and error recovery
+- Quota and rate limit management
+- Comprehensive error handling</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.utils.memory_profiling</code>: For memory management
+- <code>app.utils.async_helpers</code>: For asynchronous operations
+- <code>app.email.models.exceptions</code>: For error handling</p>
+<p>External:
+- <code>google-api-python-client</code>: For Gmail API access
+- <code>google-auth</code>: For Google authentication
+- <code>google-auth-oauthlib</code>: For OAuth flow
+- <code>asyncio</code>: For asynchronous operations
+- <code>base64</code>: For MIME encoding/decoding</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://developers.google.com/gmail/api">Gmail API Documentation</a></li>
+<li><a href="https://googleapis.dev/python/google-auth/latest/index.html">Google Auth Library Documentation</a></li>
+<li><a href="../../../docs/email_processing.md">Email Processing Documentation</a></li>
+<li><a href="../../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

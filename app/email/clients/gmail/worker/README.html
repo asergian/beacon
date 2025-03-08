@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Gmail Worker Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Gmail Worker Module</h1>
+<p>The Gmail Worker module implements a separate process for Gmail API operations to isolate memory usage and improve stability.</p>
+<h2>Overview</h2>
+<p>This module provides a subprocess-based implementation for Gmail API operations. It's designed to run in a separate Python process to isolate memory usage, prevent leaks, and maintain stable performance in long-running applications. The worker receives commands from the main process, executes Gmail API operations, and returns results through interprocess communication.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">worker</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">api_client</span><span class="o">.</span><span class="n">py</span><span class="w">         </span><span class="c1"># Worker API client</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">email_parser</span><span class="o">.</span><span class="n">py</span><span class="w">       </span><span class="c1"># Email parsing functionality</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">main</span><span class="o">.</span><span class="n">py</span><span class="w">               </span><span class="c1"># Worker entry point script</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">utils</span><span class="o">/</span><span class="w">                </span><span class="c1"># Worker-specific utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">       </span><span class="c1"># Utility exports</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">date_utils</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># Date handling utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">file_utils</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># File operations utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">logging_utils</span><span class="o">.</span><span class="n">py</span><span class="w">  </span><span class="c1"># Logging configuration</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">memory_management</span><span class="o">.</span><span class="n">py</span><span class="w"> </span><span class="c1"># Memory optimization</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">process_utils</span><span class="o">.</span><span class="n">py</span><span class="w">  </span><span class="c1"># Process management</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">processing_utils</span><span class="o">.</span><span class="n">py</span><span class="w"> </span><span class="c1"># Data processing helpers</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">             </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Worker API Client</h3>
+<p>Implements a dedicated Gmail API client that runs entirely within the worker process. It provides email fetching and other Gmail operations isolated from the main application.</p>
+<h3>Email Parser</h3>
+<p>Implements email parsing functionality specific to the worker environment, optimized for memory usage in a separate process.</p>
+<h3>Worker Main</h3>
+<p>The entry point script that launches the worker process, parses command-line arguments, and coordinates operations between the main process and Gmail API.</p>
+<h3>Worker Utilities</h3>
+<p>Collection of helper functions specifically for the worker process, including memory management, logging, and process coordination.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using the worker directly (typically not used directly, but through client_subprocess.py)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+<span class="c1"># Prepare arguments for the worker process</span>
+<span class="n">worker_script</span> <span class="o">=</span> <span class="s2">&quot;app/email/clients/gmail/worker/main.py&quot;</span>
+<span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span>
+    <span class="n">worker_script</span><span class="p">,</span>
+    <span class="s2">&quot;--credentials&quot;</span><span class="p">,</span> <span class="s2">&quot;@/path/to/credentials.json&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;--user_email&quot;</span><span class="p">,</span> <span class="s2">&quot;user@gmail.com&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;--action&quot;</span><span class="p">,</span> <span class="s2">&quot;fetch_emails&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;--days_back&quot;</span><span class="p">,</span> <span class="s2">&quot;3&quot;</span>
+<span class="p">]</span>
+
+<span class="c1"># Launch worker process</span>
+<span class="n">process</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+    <span class="n">cmd</span><span class="p">,</span>
+    <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+    <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+<span class="p">)</span>
+
+<span class="c1"># Get output</span>
+<span class="n">stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">communicate</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">stdout</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+
+<span class="c1"># Process emails</span>
+<span class="k">for</span> <span class="n">email</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;emails&quot;</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Email ID: </span><span class="si">{</span><span class="n">email</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The Gmail worker module follows these design principles:
+- Complete isolation from the main process
+- Memory-efficient implementation of Gmail operations
+- Command-line based interface for interprocess communication
+- Standardized JSON-based data exchange
+- Comprehensive error reporting back to the main process</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- None (designed to run independently)</p>
+<p>External:
+- <code>google-api-python-client</code>: For Gmail API access
+- <code>google-auth</code>: For Google authentication
+- <code>google-auth-oauthlib</code>: For OAuth flow
+- <code>email</code>: Python's standard email package
+- <code>argparse</code>: For command-line argument parsing
+- <code>json</code>: For data serialization</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://docs.python.org/3/library/multiprocessing.html">Multiprocessing in Python</a></li>
+<li><a href="https://developers.google.com/gmail/api">Gmail API Documentation</a></li>
+<li><a href="../../../../../docs/memory_management.md">Memory Management Documentation</a></li>
+<li><a href="../../../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

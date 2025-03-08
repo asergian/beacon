@@ -1,0 +1,25 @@
+/**
+ * @fileoverview Main CSS entry point for Beacon application.
+ * 
+ * This file serves as the central import point for all CSS modules in their correct order.
+ * It follows a structured approach:
+ * 1. Base styles (variables, reset, layout)
+ * 2. Component styles (reusable UI elements)
+ * 3. Page-specific styles are imported directly in their respective templates
+ * 
+ * @author Beacon Team
+ * @license Copyright 2025 Beacon
+ */
+
+/* Base Styles - Core styling fundamentals */
+@import url('./base/variables.css');  /* Global variables and theme definitions */
+@import url('./base/reset.css');      /* CSS reset for consistent cross-browser styling */
+@import url('./base/layout.css');     /* Layout structures and grid systems */
+
+/* Component Styles - Reusable UI elements */
+@import url('./components/buttons.css');  /* Button styles and variations */
+@import url('./components/forms.css');    /* Form controls and input styling */
+@import url('./components/cards.css');    /* Card containers and variations */
+@import url('./components/toast.css');    /* Toast notification styling */
+
+/* Page Specific Styles are imported in their respective templates */ 

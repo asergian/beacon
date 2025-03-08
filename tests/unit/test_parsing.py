@@ -10,7 +10,7 @@ Typical usage example:
 
 import pytest
 from datetime import datetime
-from app.email.core.email_parsing import EmailParser, EmailMetadata
+from app.email.parsing.parser import EmailParser, EmailMetadata
 
 @pytest.fixture
 def parser():

@@ -1,8 +1,44 @@
+"""Email analysis settings model.
+
+This module contains the ProcessingConfig dataclass which defines settings and
+thresholds used in the email processing pipeline, particularly for scoring and
+prioritization of emails.
+"""
+
 from dataclasses import dataclass, field
 
 @dataclass
 class ProcessingConfig:
-    """Configuration for email processing."""
+    """Configuration for email processing and prioritization.
+    
+    This class defines constants and thresholds used during email analysis
+    to calculate priority scores, detect urgency, and classify emails.
+    
+    Attributes:
+        URGENCY_KEYWORDS: Set of keywords that indicate urgency in emails
+        BASE_PRIORITY_SCORE: Starting score for email priority calculation
+        
+        # Major scoring factors
+        VIP_SCORE_BOOST: Score increase for emails from VIP senders
+        URGENCY_SCORE_BOOST: Score increase for emails with urgency indicators
+        ACTION_SCORE_BOOST: Score increase for emails requiring action
+        
+        # Additional scoring factors
+        DEADLINE_BOOST: Score increase for emails with specific deadlines
+        DIRECT_EMAIL_BOOST: Score increase when user is primary recipient
+        THREAD_BOOST: Score increase for emails in active threads
+        SENTIMENT_BOOST: Score increase for emails with strong sentiment
+        QUESTION_BOOST: Score increase for emails containing questions
+        FOLLOWUP_BOOST: Score increase for follow-ups to user's emails
+        
+        # Penalties
+        BULK_PENALTY: Score decrease for mass emails/newsletters
+        AUTOMATED_PENALTY: Score decrease for automated system emails
+        
+        # Limits
+        MAX_PRIORITY: Maximum possible priority score
+        MIN_PRIORITY: Minimum possible priority score
+    """
     URGENCY_KEYWORDS: set = field(default_factory=lambda: {'urgent', 'asap', 'deadline', 'immediate', 'priority'})
     BASE_PRIORITY_SCORE: int = 30
     

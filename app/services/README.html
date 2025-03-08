@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Services Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Services Module</h1>
+<p>The Services module provides integrations with external services and databases, abstracting their implementation details from the rest of the application.</p>
+<h2>Overview</h2>
+<p>This module handles connections to external services like OpenAI, Redis, and the database. It provides clean interfaces to interact with these services, managing connection pools, authentication, and error handling. By centralizing these integrations, the module ensures consistent usage patterns and error handling throughout the application.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">db_service</span><span class="o">.</span><span class="n">py</span><span class="w">      </span><span class="c1"># Database service initialization</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">openai_service</span><span class="o">.</span><span class="n">py</span><span class="w">  </span><span class="c1"># OpenAI API integration</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">redis_service</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="c1"># Redis cache integration</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">          </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Database Service</h3>
+<p>Initializes and manages the database connection, providing transaction handling and connection pooling. Acts as a centralized place for database setup and configuration.</p>
+<h3>OpenAI Service</h3>
+<p>Handles integration with OpenAI's API, managing API keys, request formatting, and response handling. Provides methods for generating completions, embeddings, and other AI features.</p>
+<h3>Redis Service</h3>
+<p>Manages Redis connections for caching and message queuing, handling connection pooling, serialization, and error recovery.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using the OpenAI service</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.services.openai_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_openai_client</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">get_openai_client</span><span class="p">()</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">completions</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-3.5-turbo&quot;</span><span class="p">,</span>
+    <span class="n">messages</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello!&quot;</span><span class="p">}]</span>
+<span class="p">)</span>
+
+<span class="c1"># Using the Redis service</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.services.redis_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_redis_client</span>
+
+<span class="n">redis</span> <span class="o">=</span> <span class="n">get_redis_client</span><span class="p">()</span>
+<span class="n">redis</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>  <span class="c1"># With 1-hour expiration</span>
+<span class="n">value</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">)</span>
+
+<span class="c1"># Using the database service</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.services.db_service</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_db</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">db</span>
+
+<span class="c1"># Initialize the database with the Flask app</span>
+<span class="n">init_db</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+<span class="c1"># Now use the db instance from models</span>
+<span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_entity</span><span class="p">)</span>
+<span class="n">db</span><span class="o">.</span><span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The services module follows these design principles:
+- Singleton pattern for service clients
+- Lazy initialization to avoid unnecessary connections
+- Connection pooling for efficient resource usage
+- Consistent error handling and logging
+- Configuration via environment variables</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.utils.logging_setup</code>: For logging service operations
+- <code>app.config</code>: For service configuration</p>
+<p>External:
+- <code>openai</code>: For OpenAI API access
+- <code>redis</code>: For Redis client
+- <code>flask_sqlalchemy</code>: For database ORM
+- <code>os</code>: For environment variable access</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://platform.openai.com/docs/api-reference">OpenAI API Documentation</a></li>
+<li><a href="https://redis.io/docs/">Redis Documentation</a></li>
+<li><a href="https://docs.sqlalchemy.org/">SQLAlchemy Documentation</a></li>
+<li><a href="../../docs/sphinx/build/html/api.html#module-app.services">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

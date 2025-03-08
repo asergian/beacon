@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Semantic Analyzer Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Semantic Analyzer Module</h1>
+<p>The Semantic Analyzer module provides LLM-based analysis of emails for understanding context, generating summaries, and extracting action items.</p>
+<h2>Overview</h2>
+<p>This module leverages Large Language Models (LLMs) to provide deep semantic understanding of email content. It extracts insights, categorizes emails, identifies action items, and generates concise summaries. The module handles the complete workflow of preparing emails for LLM processing, generating appropriate prompts, parsing responses, and formatting results in a structured manner.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">semantic</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">analyzer</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="c1"># Main analyzer implementation</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">processors</span><span class="o">/</span><span class="w">              </span><span class="c1"># Processing components</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">          </span><span class="c1"># Processor exports</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">batch_processor</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="c1"># Batch processing logic</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">prompt_creator</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="c1"># LLM prompt generation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">response_parser</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="c1"># LLM response parsing</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">utilities</span><span class="o">/</span><span class="w">               </span><span class="c1"># Helper functions and classes</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">          </span><span class="c1"># Utility exports</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">cost_calculator</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="c1"># LLM cost tracking</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">email_validator</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="c1"># Email validation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">llm_client</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># OpenAI client wrapper</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">settings_util</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># User settings management</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">text_processor</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="c1"># Text preprocessing</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">token_handler</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># Token counting and limits</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">                </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Semantic Analyzer</h3>
+<p>The main analyzer class that orchestrates the entire semantic analysis process. It coordinates between different processors and utilities to deliver comprehensive email insights.</p>
+<h3>Processors</h3>
+<p>Components responsible for specific aspects of the analysis pipeline:
+- Prompt Creator: Generates structured prompts for LLM analysis
+- Response Parser: Interprets and structures LLM responses
+- Batch Processor: Handles processing of multiple emails efficiently</p>
+<h3>Utilities</h3>
+<p>Helper functions and classes for various tasks:
+- Token management and counting
+- Text preprocessing and sanitization
+- LLM client operations and error handling
+- Cost calculation and tracking
+- User settings management</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Basic usage with a single email</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.analyzers.semantic.analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">SemanticAnalyzer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.models.processed_email</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessedEmail</span>
+
+<span class="c1"># Initialize the analyzer</span>
+<span class="n">analyzer</span> <span class="o">=</span> <span class="n">SemanticAnalyzer</span><span class="p">()</span>
+
+<span class="c1"># Analyze a single email with NLP results from the content analyzer</span>
+<span class="n">email_metadata</span> <span class="o">=</span> <span class="n">ProcessedEmail</span><span class="p">(</span>
+    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;email_123&quot;</span><span class="p">,</span>
+    <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;Project Update Meeting&quot;</span><span class="p">,</span>
+    <span class="n">sender</span><span class="o">=</span><span class="s2">&quot;colleague@example.com&quot;</span><span class="p">,</span>
+    <span class="n">body</span><span class="o">=</span><span class="s2">&quot;Let&#39;s meet tomorrow to discuss the project progress. I need your input on the timeline.&quot;</span><span class="p">,</span>
+    <span class="c1"># other fields...</span>
+<span class="p">)</span>
+<span class="n">nlp_results</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">,</span> <span class="s2">&quot;timeline&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;keywords&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;meet&quot;</span><span class="p">,</span> <span class="s2">&quot;discuss&quot;</span><span class="p">,</span> <span class="s2">&quot;progress&quot;</span><span class="p">,</span> <span class="s2">&quot;input&quot;</span><span class="p">],</span>
+    <span class="c1"># other NLP results...</span>
+<span class="p">}</span>
+
+<span class="c1"># Perform semantic analysis</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">analyze</span><span class="p">(</span><span class="n">email_metadata</span><span class="p">,</span> <span class="n">nlp_results</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Category: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">category</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Priority: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">priority</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Summary: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">summary</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Action items: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">action_items</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Batch processing multiple emails</span>
+<span class="n">emails</span> <span class="o">=</span> <span class="p">[</span><span class="n">email1</span><span class="p">,</span> <span class="n">email2</span><span class="p">,</span> <span class="n">email3</span><span class="p">]</span>
+<span class="n">nlp_results_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">nlp_results1</span><span class="p">,</span> <span class="n">nlp_results2</span><span class="p">,</span> <span class="n">nlp_results3</span><span class="p">]</span>
+
+<span class="n">batch_results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">analyze_batch</span><span class="p">(</span>
+    <span class="n">emails</span><span class="o">=</span><span class="n">emails</span><span class="p">,</span>
+    <span class="n">nlp_results</span><span class="o">=</span><span class="n">nlp_results_list</span><span class="p">,</span>
+    <span class="n">max_batch_size</span><span class="o">=</span><span class="mi">5</span>
+<span class="p">)</span>
+
+<span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">batch_results</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Email </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">summary</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The semantic analyzer module follows these design principles:
+- Structured prompt engineering for consistent LLM responses
+- Proper token management to control costs
+- Robust error handling and fallback mechanisms
+- Asynchronous processing for concurrent requests
+- Response validation and normalization</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.services.openai_service</code>: For OpenAI client access
+- <code>app.models.user</code>: For user settings and preferences
+- <code>app.utils.async_helpers</code>: For asynchronous operations</p>
+<p>External:
+- <code>openai</code>: For LLM API access
+- <code>tiktoken</code>: For token counting
+- <code>asyncio</code>: For asynchronous processing
+- <code>json</code>: For structured data handling</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://platform.openai.com/docs/api-reference">OpenAI API Documentation</a></li>
+<li><a href="https://platform.openai.com/docs/guides/prompt-engineering">Prompt Engineering Guide</a></li>
+<li><a href="../../../docs/email_processing.md">Email Processing Documentation</a></li>
+<li><a href="../../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>
