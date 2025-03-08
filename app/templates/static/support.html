@@ -115,8 +115,11 @@
         <h2>Documentation and Resources</h2>
         <p>For detailed information about Beacon's features and how to use them, check out our documentation:</p>
         <ul>
-            <li><a href="#" target="_blank">Getting Started</a></li>
-            <li><a href="#" target="_blank">API Documentation</a> (for developers)</li>
+            <li><a href="{{ url_for('static_pages.serve_docs', path='introduction.html') }}" target="_blank">Getting Started</a></li>
+            <li><a href="{{ url_for('static_pages.serve_docs', path='api.html') }}" target="_blank">API Documentation</a> (for developers)</li>
+            <li><a href="{{ url_for('static_pages.serve_docs', path='technical_features.html') }}" target="_blank">Technical Features</a></li>
+            <li><a href="{{ url_for('static_pages.serve_docs', path='architecture.html') }}" target="_blank">System Architecture</a></li>
+            <li><a href="{{ url_for('static_pages.serve_docs', path='email_processing.html') }}" target="_blank">Email Processing Guide</a></li>
         </ul>
     </section>
 </div>
