@@ -208,7 +208,9 @@ class EmailParser:
         Returns:
             EmailMetadata: Structured email metadata object
         """
-        email_date = normalize_date(raw_email.get('parsed_date'))
+        # Look for date in multiple possible fields
+        date_value = raw_email.get('parsed_date') or raw_email.get('date')
+        email_date = normalize_date(date_value)
         body = get_best_body_content(raw_email)
         
         return EmailMetadata(
