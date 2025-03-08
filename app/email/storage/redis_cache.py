@@ -507,4 +507,38 @@ class RedisEmailCache(EmailCache):
                 total_size += size
             self.logger.info(f"Total Redis cache size: {total_size / 1024:.2f} KB")
         except Exception as e:
-            self.logger.error(f"Error logging cache size: {e}") 
+            self.logger.error(f"Error logging cache size: {e}")
+
+    async def delete_emails(self, user_email: str, email_ids: List[str]) -> Tuple[int, int]:
+        """Delete specific emails from the cache by their IDs.
+        
+        Args:
+            user_email: The user's email address
+            email_ids: List of email IDs to delete
+            
+        Returns:
+            Tuple of (deleted_count, failed_count)
+            
+        Raises:
+            ValueError: If user_email is invalid
+            Exception: If Redis operations fail
+        """
+        validate_user_email(user_email)
+        if not email_ids:
+            return 0, 0
+            
+        try:
+            redis = await self._ensure_redis_connection(user_email)
+            
+            # Create keys for the emails to delete
+            keys_to_delete = [f"{self._get_key_prefix(user_email)}{email_id}" for email_id in email_ids]
+            
+            # Delete keys directly
+            deleted_count, failed_count = await self._delete_keys(redis, keys_to_delete)
+            
+            self.logger.info(f"Deleted {deleted_count} emails from cache, Failed: {failed_count}")
+            return deleted_count, failed_count
+            
+        except Exception as e:
+            self.logger.error(f"Error deleting emails from cache: {e}")
+            raise 

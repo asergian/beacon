@@ -116,7 +116,7 @@ class EmailPipeline:
             
             # Filter cached emails using fetching helper
             cached_emails, cached_ids = filter_cached_emails(
-                cached_emails, gmail_email_ids, stats, self.logger
+                cached_emails, gmail_email_ids, stats, self.cache, user_email, self.logger
             )
             
             # Only process new emails if there are any
@@ -284,14 +284,22 @@ class EmailPipeline:
             
             # Filter cached emails using fetching helper
             cached_emails, cached_ids = filter_cached_emails(
-                cached_emails, gmail_email_ids, stats, self.logger
+                cached_emails, gmail_email_ids, stats, self.cache, user_email, self.logger
             )
             
             # If any emails were filtered out, resend the updated cached emails
             if original_cached_count != len(cached_emails):
                 yield {
                     'type': 'cached',
-                    'data': {'emails': [email.dict() for email in cached_emails]}
+                    'data': {
+                        'emails': [email.dict() for email in cached_emails],
+                        'replace_previous': True,  # Indicate this should replace previous cached emails
+                        'filtered_count': original_cached_count - len(cached_emails)
+                    }
+                }
+                yield {
+                    'type': 'status',
+                    'data': {'message': f'Removed {original_cached_count - len(cached_emails)} emails that were deleted from Gmail'}
                 }
             
             # If no new emails, just return with updated stats

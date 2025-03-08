@@ -7,6 +7,7 @@ the email cache, as well as filtering and processing the fetched emails.
 import logging
 from typing import List, Dict, Set, Tuple, Optional, AsyncGenerator, Union, Any
 from datetime import tzinfo
+import asyncio
 
 from app.email.models.processed_email import ProcessedEmail  
 from app.email.storage.base_cache import EmailCache
@@ -147,6 +148,8 @@ def filter_cached_emails(
     cached_emails: List[ProcessedEmail],
     gmail_email_ids: Set[str],
     stats: Dict,
+    cache: Optional[EmailCache] = None,
+    user_email: Optional[str] = None,
     logger: Optional[logging.Logger] = None
 ) -> Tuple[List[ProcessedEmail], Set[str]]:
     """Filter cached emails to keep only those still in Gmail.
@@ -155,6 +158,8 @@ def filter_cached_emails(
         cached_emails: List of cached emails
         gmail_email_ids: Set of email IDs currently in Gmail
         stats: Dictionary to track stats
+        cache: Optional cache implementation for removing deleted emails
+        user_email: User's email address, needed for cache operations
         logger: Optional logger for logging events
         
     Returns:
@@ -172,8 +177,29 @@ def filter_cached_emails(
     filtered_out_count = original_cached_count - len(filtered_cached_emails)
     filtered_cached_ids = {email.id for email in filtered_cached_emails}
     
+    # Find emails that were filtered out (deleted from Gmail)
+    filtered_out_emails = [email for email in cached_emails if email.id not in gmail_email_ids]
+    filtered_out_ids = {email.id for email in filtered_out_emails}
+    
     if filtered_out_count > 0:
         logger.info(f"Filtered out {filtered_out_count} cached emails that were deleted from Gmail")
         stats["deleted_emails_filtered"] = filtered_out_count
+        
+        # Delete filtered out emails from cache if cache is available
+        if cache and user_email and filtered_out_emails:
+            try:
+                # Check if the cache has the delete_emails method (RedisEmailCache does)
+                if hasattr(cache, 'delete_emails') and callable(getattr(cache, 'delete_emails')):
+                    # Use the cache's delete_emails method
+                    logger.info(f"Removing {filtered_out_count} deleted emails from cache for user {user_email}")
+                    asyncio.create_task(cache.delete_emails(user_email, list(filtered_out_ids)))
+                else:
+                    # Fallback for cache implementations without delete_emails method
+                    logger.info(f"Using fallback method to remove {filtered_out_count} deleted emails from cache")
+                    if filtered_cached_emails:
+                        # Re-store the filtered list (this will reset TTLs but is better than keeping deleted emails)
+                        asyncio.create_task(cache.store_many(filtered_cached_emails, user_email))
+            except Exception as e:
+                logger.error(f"Failed to update cache after filtering: {e}")
     
     return filtered_cached_emails, filtered_cached_ids

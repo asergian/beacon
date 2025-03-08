@@ -414,16 +414,31 @@ export const EmailEvents = {
                 emailsLoadedSuccessfully = true;
                 console.log('Emails loaded successfully from cache, emailsLoadedSuccessfully =', emailsLoadedSuccessfully);
                 
-                // Clear existing emails and add the cached ones
+                // Check if we should replace all emails (for filtered cache updates)
+                const shouldReplace = data.replace_previous === true;
+                
+                if (shouldReplace) {
+                    console.log('Replacing previous emails with filtered cached emails');
+                    // Clear all emails before adding the new filtered set
+                    EmailState.clearAll();
+                }
+                
+                // Add the cached emails to state
                 EmailState.addEmails(data.emails, true);
                 
                 // Show the email list and details
                 this._showEmailComponents();
                 
+                // Set appropriate completion message
+                let message = `✓ Loaded ${data.emails.length} cached emails`;
+                if (shouldReplace && data.filtered_count > 0) {
+                    message = `✓ Updated: removed ${data.filtered_count} deleted emails`;
+                }
+                
                 // Update loading indicators to show cache load complete and hide after delay
                 this._updateLoadingIndicators(
                     100, 
-                    `✓ Loaded ${data.emails.length} cached emails`,
+                    message,
                     true // Set to true to hide after delay
                 );
             }

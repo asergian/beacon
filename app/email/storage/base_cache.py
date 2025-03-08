@@ -13,7 +13,7 @@ Typical usage:
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, TypeVar
+from typing import List, Dict, Any, TypeVar, Tuple, Optional
 
 from ..models.processed_email import ProcessedEmail
 
@@ -24,15 +24,18 @@ class EmailCache(ABC):
     """Abstract base class for email caching.
     
     This class defines the interface for email caching implementations.
-    Implementations should provide methods for retrieving and storing emails.
+    Implementations should provide methods for retrieving, storing, and managing emails.
     """
     
     @abstractmethod
-    async def get_recent(self, days: int) -> List[ProcessedEmail]:
+    async def get_recent(self, days: int, days_back: int, user_email: str, user_timezone: str = 'US/Pacific') -> List[ProcessedEmail]:
         """Retrieve recent emails from the cache.
         
         Args:
-            days: Number of days to look back for emails.
+            days: Number of days for cache duration.
+            days_back: Number of days to look back for emails.
+            user_email: The user's email address.
+            user_timezone: The user's timezone. Defaults to 'US/Pacific'.
             
         Returns:
             List of ProcessedEmail objects.
@@ -40,11 +43,26 @@ class EmailCache(ABC):
         pass
 
     @abstractmethod
-    async def store_many(self, emails: List[ProcessedEmail]) -> None:
+    async def store_many(self, emails: List[ProcessedEmail], user_email: str, ttl_days: Optional[int] = None) -> None:
         """Store multiple emails in the cache.
         
         Args:
             emails: List of ProcessedEmail objects to store.
+            user_email: The user's email address.
+            ttl_days: Optional override for the TTL in days. Defaults to None.
+        """
+        pass
+        
+    @abstractmethod
+    async def delete_emails(self, user_email: str, email_ids: List[str]) -> Tuple[int, int]:
+        """Delete specific emails from the cache by their IDs.
+        
+        Args:
+            user_email: The user's email address.
+            email_ids: List of email IDs to delete.
+            
+        Returns:
+            Tuple of (deleted_count, failed_count).
         """
         pass
 
