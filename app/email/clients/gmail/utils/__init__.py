@@ -4,8 +4,11 @@ This package provides utility functions for the Gmail client module
 to handle subprocess operations, file management, and error handling.
 """
 
+# Import exceptions for backwards compatibility
+from ..core.exceptions import GmailAPIError
+
+# Import from other modules directly
 from .subprocess_utils import (
-    GmailAPIError,
     run_subprocess,
     parse_json_response,
     handle_subprocess_result,
@@ -14,6 +17,7 @@ from .subprocess_utils import (
 from .file_utils import TempFileManager
 from .date_utils import calculate_date_cutoff
 
+# Re-export our classes
 __all__ = [
     # Exceptions
     'GmailAPIError',

@@ -11,10 +11,7 @@ import os
 import sys
 from typing import Dict, List, Any, Optional, Tuple
 
-
-class GmailAPIError(Exception):
-    """Exception raised for Gmail API-related errors."""
-    pass
+from ..core.exceptions import GmailAPIError
 
 
 async def run_subprocess(command: list, logger: Optional[logging.Logger] = None, env: Dict = None) -> Tuple[bytes, List[bytes], int]:
