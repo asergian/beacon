@@ -118,6 +118,11 @@ def configure_logging() -> None:
                 'level': log_level,  # Use environment-specified level
                 'propagate': False
             },
+            'app.email.clients.gmail.worker': {
+                'handlers': ['console'],
+                'level': log_level,  # Use environment-specified level
+                'propagate': False
+            },
             'app.email.clients': {
                 'handlers': ['console'],
                 'level': log_level,  # Use environment-specified level
