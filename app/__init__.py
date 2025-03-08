@@ -9,155 +9,112 @@ Typical usage example:
     app = create_app()
 
 Attributes:
-    None
-
-Functions:
-    init_openai_client: Initializes the OpenAI client with API key configuration.
-    create_app: Factory function that creates and configures the Flask application.
+    application: ASGI application instance for production environments.
 """
 
-from flask import Flask, g, current_app, session, jsonify
+# Standard library imports
 import logging
-from openai import AsyncOpenAI
-from typing import Optional
 import os
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import Optional
+
+# Third-party imports
 from asgiref.wsgi import WsgiToAsgi
-import multiprocessing
-from datetime import datetime
+from flask import Flask, g, session, jsonify
 
-from .config import Config, configure_logging
-from .models import db, User
-from flask_migrate import Migrate
-from .email.core.email_processor import EmailProcessor
-from .email.core.email_connection import EmailConnection
-from .email.core.email_parsing import EmailParser
+# Local application imports
+from .config import Config
+from .utils.logging_setup import configure_logging
+from .models import db
+from .models.user import User
+
+# Email processing components
+from .email.processing.processor import EmailProcessor
+from .email.parsing.parser import EmailParser
 from .email.models.analysis_settings import ProcessingConfig
-from .email.analyzers.semantic_analyzer import SemanticAnalyzer
-from .email.analyzers.content_analyzer import ContentAnalyzer
-from .email.analyzers.content_analyzer_subprocess import ContentAnalyzerSubprocess
-from .email.utils.priority_scoring import PriorityScorer
-from .email.pipeline.pipeline import create_pipeline
-from .email.core.gmail_client import GmailClient
-from .email.core.gmail_client_subprocess import GmailClientSubprocess
-from .email.storage.cache import RedisEmailCache
-from .utils.memory_utils import MemoryProfilingMiddleware
+from .email.analyzers.semantic.analyzer import SemanticAnalyzer
+from .email.analyzers.content.core.nlp_subprocess_analyzer import ContentAnalyzerSubprocess
+from .email.utils.priority_scorer import PriorityScorer
+from .email.pipeline.orchestrator import create_pipeline
+from .email.clients.gmail.client_subprocess import GmailClientSubprocess
+from .email.storage.redis_cache import RedisEmailCache
 
+# Utility imports
+from .utils.memory_profiling import MemoryProfilingMiddleware
+
+# Service initialization
+from .services.openai_service import init_openai_client
+from .services.redis_service import init_redis_client
+from .services.db_service import init_db
+
+# Route initialization
 from .routes import init_routes
-from .email.utils.nlp_setup import create_nlp_model
-#from .utils.async_utils import async_manager
 
-# This will be our ASGI application instance
+# This must be defined at the module level for Hypercorn to find it
 application = None
 
-def init_openai_client(app):
-    """Initializes the AsyncOpenAI client with configuration from the Flask app.
 
-    Configures an AsyncOpenAI client instance with the API key from the application
-    configuration and stores it in Flask's global context (g). The client is used
-    for making asynchronous requests to OpenAI's API endpoints.
-
-    Args:
-        app: Flask application instance containing the configuration.
-
-    Raises:
-        ValueError: If the OpenAI API key is empty or invalid.
-        Exception: For other unexpected initialization errors.
-
-    Returns:
-        None
+class ASGIApp:
+    """ASGI wrapper for WSGI Flask application.
+    
+    This class wraps a Flask application to make it compatible with ASGI servers
+    like Hypercorn, while also handling lifespan events properly.
+    
+    Attributes:
+        app: The WSGI-to-ASGI wrapped Flask application.
     """
     
-    # Here you can set any other client-specific configurations
-    try:
-        # Initialize AsyncOpenAI client with API key from config
-        # Raises ValueError if API key is invalid/empty
-        if not app.config['OPENAI_API_KEY']:
-            raise ValueError("OpenAI API key cannot be empty")
-
-        # Create a fallback logger in case app logger isn't available
-        logger = getattr(current_app, 'logger', logging.getLogger(__name__))
+    def __init__(self, app):
+        """Initialize the ASGI wrapper.
         
-        # Test the OpenAI client to ensure it's working
-        test_client = AsyncOpenAI(api_key=app.config['OPENAI_API_KEY'])
+        Args:
+            app: The Flask application to wrap.
+        """
+        self.app = WsgiToAsgi(app)
+    
+    async def __call__(self, scope, receive, send):
+        """Handle ASGI protocol events.
         
-        # Create a function to get or create the OpenAI client
-        def get_openai_client():
-            if 'async_openai_client' not in g:
-                g.async_openai_client = AsyncOpenAI(
-                    api_key=app.config['OPENAI_API_KEY'],
-                    timeout=60.0  # Set a reasonable timeout
-                )
-            return g.async_openai_client
+        Processes lifespan events for startup and shutdown, and delegates other
+        requests to the wrapped Flask application.
         
-        # Register a function to clean up the client when the request ends
-        async def close_openai_client(e=None):
-            """
-            Asynchronously close the OpenAI client to properly release resources.
-            
-            This function is called when a request context ends and ensures that 
-            any open connections in the OpenAI client are properly closed. It uses
-            async/await to properly handle the asynchronous closing methods.
-            
-            Args:
-                e: Optional exception that caused the context to end
-                
-            Note:
-                This is particularly important for preventing resource leaks in 
-                long-running applications or when processing multiple requests.
-            """
-            client = g.pop('async_openai_client', None)
-            if client is not None:
-                # Close the underlying httpx client to properly clean up connections
-                try:
-                    # Close any open httpx connections
-                    if hasattr(client.http_client, 'aclose'):
-                        await client.http_client.aclose()
-                    elif hasattr(client, 'close'):
-                        await client.close()
-                except Exception as e:
-                    logger.warning(f"Error closing OpenAI client: {e}")
-                finally:
-                    # Ensure we clear the reference
-                    client = None
-        
-        # Modified teardown function to run the async cleanup
-        def teardown_openai_client(e=None):
-            """
-            Flask teardown function that handles the async cleanup of OpenAI client.
-            
-            This function is registered with Flask's teardown_appcontext to ensure
-            proper cleanup of OpenAI client resources when the application context ends.
-            
-            Args:
-                e: Optional exception that caused the context to end
-            """
-            client = g.pop('async_openai_client', None)
-            if client is not None:
-                # Add any cleanup if needed
-                pass
-        
-        # Register the teardown function
-        app.teardown_appcontext(teardown_openai_client)
-        
-        # Store the getter function in the app
-        app.get_openai_client = get_openai_client
-        
-        # Log initialization status based on process type
-        if multiprocessing.parent_process():
-            logger.debug(f"OpenAI client initialized successfully for worker process (PID: {os.getpid()})")
-        
-    except ValueError as e:
-        logger = getattr(current_app, 'logger', logging.getLogger(__name__))
-        logger.error(f"Failed to initialize OpenAI client: {str(e)}")
-        raise
-    except Exception as e:
-        logger = getattr(current_app, 'logger', logging.getLogger(__name__))
-        logger.error(f"Unexpected error initializing OpenAI client: {str(e)}")
-        raise
+        Args:
+            scope: ASGI scope dictionary containing request metadata.
+            receive: ASGI receive function for receiving messages.
+            send: ASGI send function for sending messages.
+        """
+        if scope["type"] == "lifespan":
+            while True:
+                message = await receive()
+                if message["type"] == "lifespan.startup":
+                    # Perform any startup tasks
+                    await send({"type": "lifespan.startup.complete"})
+                elif message["type"] == "lifespan.shutdown":
+                    # Perform any cleanup
+                    await self.app.close_openai_client()
+                    await self.app.close_redis_client()
+                    await send({"type": "lifespan.shutdown.complete"})
+                    return
+        else:
+            await self.app(scope, receive, send)
 
 def create_app(config_class: Optional[object] = Config) -> Flask:
-    """Create and configure the Flask application."""
+    """Create and configure the Flask application.
+    
+    This factory function initializes and configures a Flask application with all
+    necessary services, middleware, and route registrations. It sets up database
+    connections, email processing components, and security settings.
+    
+    Args:
+        config_class: Configuration class or object to use. Defaults to Config.
+            If a class is provided, it will be instantiated.
+            
+    Returns:
+        Flask: A configured Flask application instance.
+        
+    Raises:
+        Exception: If initialization of any component fails.
+    """
     # Configure logging first
     configure_logging()
     logger = logging.getLogger(__name__)
@@ -189,25 +146,23 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
             x_prefix=1
         )
     
-    # Initialize extensions (no logging needed)
-    db.init_app(flask_app)
-    Migrate(flask_app, db)
-    
-    # Log database connection info
-    logger.info(f"Initializing database connection to: {flask_app.config['SQLALCHEMY_DATABASE_URI'].split('@')[1] if '@' in flask_app.config['SQLALCHEMY_DATABASE_URI'] else 'localhost'}")
-    
+    # Initialize services
     try:
         os.makedirs(flask_app.instance_path)
     except OSError:
         pass
     
     try:
-        # Initialize components
+        # Initialize database
+        init_db(flask_app)
+        
+        # Initialize core services
         with flask_app.app_context():
+            # Initialize OpenAI client
             init_openai_client(flask_app)
             
-        # Initialize NLP model
-        nlp_model = create_nlp_model()
+            # Initialize Redis (if needed)
+            init_redis_client(flask_app)
         
         # Initialize analyzers
         text_analyzer = ContentAnalyzerSubprocess()
@@ -234,86 +189,8 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
             parser=parser
         )
         
-        # Redis setup
-        redis_url = flask_app.config.get('REDIS_URL')
-        if not redis_url:
-            if os.environ.get('RENDER'):
-                raise ValueError("REDIS_URL environment variable is required in production")
-            redis_url = 'redis://localhost:6379'
-            logger.warning("No REDIS_URL configured, using default: %s", redis_url)
-
-        try:
-            if os.environ.get('RENDER'):
-                # Upstash Redis in production
-                from upstash_redis.asyncio import Redis as UpstashRedis
-                # Extract token from URL if present, otherwise use separate env var
-                upstash_token = flask_app.config.get('REDIS_TOKEN')
-                if not upstash_token:
-                    raise ValueError("REDIS_TOKEN environment variable is required for Upstash Redis")
-                
-                redis_client = UpstashRedis(url=redis_url, token=upstash_token)
-                
-                # Test the connection using async_manager
-                async def init_redis():
-                    async def test_redis_connection():
-                        try:
-                            await redis_client.set("_test_key", "test_value", ex=10)
-                            test_result = await redis_client.get("_test_key")
-                            if test_result != "test_value":
-                                raise ValueError("Redis connection test failed")
-                            return True
-                        except Exception as e:
-                            logger.error(f"Redis test failed: {e}")
-                            raise
-
-                    # Run the test using async_manager's run_in_loop method
-                    test_redis_connection()
-                    return True
-
-                # Execute the initialization
-                init_redis()
-                logger.info("Upstash Redis connection initialized successfully")
-                flask_app.config['REDIS_CLIENT'] = redis_client
-            else:
-                # Standard Redis for development
-                from redis.asyncio import ConnectionPool, Redis
-                pool = ConnectionPool.from_url(
-                    redis_url,
-                    max_connections=10,
-                    decode_responses=True
-                )
-                flask_app.config['REDIS_POOL'] = pool
-                logger.info("Local Redis connection pool initialized successfully")
-
-        except Exception as e:
-            logger.error("Failed to initialize Redis: %s", str(e))
-            if os.environ.get('RENDER'):
-                raise  # Re-raise in production
-            # In development, we'll continue without Redis
-            logger.warning("Continuing without Redis in development mode")
-        
-        # Create Redis client getter
-        def get_redis_client():
-            if 'redis_client' not in g:
-                if os.environ.get('RENDER'):
-                    # In production, use the Upstash client directly
-                    g.redis_client = flask_app.config['REDIS_CLIENT']
-                else:
-                    g.redis_client = Redis.from_url(
-                        url=flask_app.config.get('REDIS_URL'),
-                        decode_responses=True
-                    )
-            return g.redis_client
-        
-        def close_redis_client(e=None):
-            if 'redis_client' in g:
-                del g.redis_client
-        
-        flask_app.teardown_appcontext(close_redis_client)
-        flask_app.get_redis_client = get_redis_client
-        
         # Create cache with function to get Redis client
-        cache = RedisEmailCache(get_redis_client)
+        cache = RedisEmailCache(flask_app.get_redis_client)
         
         # Create and store pipeline
         flask_app.pipeline = create_pipeline(
@@ -323,83 +200,112 @@ def create_app(config_class: Optional[object] = Config) -> Flask:
             cache=cache
         )
         
-        # Register blueprints
+        # User authentication and session management
+        @flask_app.before_request
+        def load_user():
+            """Load user from session before each request.
+            
+            Populates g.user with User object if a valid user session exists,
+            otherwise sets g.user to None.
+            """
+            # Use the original nested structure to avoid breaking existing code
+            if 'user' in session and isinstance(session['user'], dict):
+                user_id = session['user'].get('id')
+                if user_id:
+                    g.user = User.query.get(user_id)
+                else:
+                    g.user = None
+            else:
+                g.user = None
+        
+        # Health check endpoint
+        @flask_app.route('/health')
+        def health_check():
+            """Health check endpoint for monitoring.
+            
+            Returns:
+                dict: JSON response with status and current timestamp.
+            """
+            return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()})
+        
+        # Global error handler
+        @flask_app.errorhandler(Exception)
+        def handle_exception(e):
+            """Global exception handler for all routes.
+            
+            Logs exceptions and returns appropriate JSON responses based on
+            the application's debug setting.
+            
+            Args:
+                e: The exception that was raised.
+                
+            Returns:
+                tuple: JSON error response and HTTP status code.
+            """
+            # Log the error
+            logger.exception("Unhandled exception: %s", str(e))
+            
+            # Return JSON response for API endpoints
+            if flask_app.config.get('DEBUG'):
+                # Include traceback in debug mode
+                import traceback
+                return jsonify(error=str(e), traceback=traceback.format_exc()), 500
+            else:
+                # Generic error in production
+                return jsonify(error="Server error"), 500
+        
+        # Register routes
         init_routes(flask_app)
         
-        # Log initialization status based on process type
-        if multiprocessing.parent_process():
+        # Log initialization status based on environment
+        if is_worker:
             logger.info(f"Worker process initialized (PID: {os.getpid()})")
         else:
-            logger.info("Main application initialized")
-            
-    except Exception as e:
-        logger.error(f"Failed to initialize application: {e}")
-        raise
+            logger.info("Main application initialized\n")
         
-    @flask_app.before_request
-    def load_user():
-        g.user = None
-        if 'user' in session:
-            g.user = User.query.get(session['user']['id'])
-    
-    @flask_app.route('/health')
-    def health_check():
-        """Health check endpoint for Render."""
-        return {'status': 'healthy'}, 200
-
-    @flask_app.errorhandler(Exception)
-    def handle_exception(e):
-        # Log the error
-        flask_app.logger.error(f"Unhandled exception: {e}")
-        return jsonify({'success': False, 'message': 'An internal error occurred.'}), 500
-
-    # Create and store the ASGI application globally
-    global application
-    application = WsgiToAsgi(flask_app)
-    
-    # Add memory profiling middleware
-    if os.environ.get('PROFILE_MEMORY'):
-        flask_app.wsgi_app = MemoryProfilingMiddleware(flask_app.wsgi_app)
-        logger.info("Memory profiling enabled\n")
-    
-    return flask_app
-
-# Initialize the application
-if os.environ.get('RENDER'):
-    try:
-        # Only initialize if we're on Render
-        flask_app = create_app()
+        # Add memory profiling in development
+        if flask_app.config.get('PROFILE_MEMORY', False):
+            flask_app.wsgi_app = MemoryProfilingMiddleware(flask_app.wsgi_app)
+            logger.info("Memory profiling enabled")
         
-        # Create ASGI application with lifespan support
-        class ASGIApp:
-            def __init__(self, app):
-                self.app = WsgiToAsgi(app)
-            
-            async def __call__(self, scope, receive, send):
-                if scope["type"] == "lifespan":
-                    while True:
-                        message = await receive()
-                        if message["type"] == "lifespan.startup":
-                            # Perform any startup tasks
-                            await send({"type": "lifespan.startup.complete"})
-                        elif message["type"] == "lifespan.shutdown":
-                            # Perform any cleanup
-                            await send({"type": "lifespan.shutdown.complete"})
-                            return
-                else:
-                    await self.app(scope, receive, send)
-        
+        # Set the global application variable for ASGI servers
+        global application
         application = ASGIApp(flask_app)
         
+        return flask_app
+        
+    except Exception as e:
+        logger.exception("Error creating app: %s", str(e))
+        raise
+
+
+def initialize_render_app():
+    """Initialize the application for Render deployment environment.
+    
+    This function is automatically called when running on the Render platform.
+    It configures the application for production deployment, setting up port
+    binding and worker configuration. The global application variable is set
+    for ASGI servers to use.
+    
+    Returns:
+        None
+    
+    Raises:
+        Exception: If initialization fails, the error is logged and re-raised.
+    """
+    try:
         # Log deployment environment and port binding
         logger = logging.getLogger(__name__)
         port = int(os.environ.get('PORT', 10000))
         
         # Explicitly bind to port to help Render detect it
-        from hypercorn.config import Config
-        config = Config()
+        from hypercorn.config import Config as HypercornConfig
+        config = HypercornConfig()
         config.bind = [f"0.0.0.0:{port}"]
         
+        global application
+        application = ASGIApp(create_app())
+            
         logger.info(
             "Initializing application for Render:\n"
             f"    Environment: {os.environ.get('FLASK_ENV', 'production')}\n"
@@ -407,13 +313,17 @@ if os.environ.get('RENDER'):
             f"    Workers: {os.environ.get('HYPERCORN_WORKERS', '1')}\n"
             f"    Worker Class: {os.environ.get('HYPERCORN_WORKER_CLASS', 'asyncio')}"
         )
+        
     except Exception as e:
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to initialize application on Render: {e}")
         raise
-else:
-    # Just declare the variable for local dev
-    application = None
+
+
+# Initialize the application for production
+if os.environ.get('RENDER'):
+    initialize_render_app()
+
 
 # Export for ASGI servers
 __all__ = ['application', 'create_app']

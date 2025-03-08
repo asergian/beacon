@@ -4,6 +4,8 @@ Revision ID: initial_schema
 Revises: 
 Create Date: 2024-02-19 22:25:00.000000
 
+This migration creates the initial database schema for the application,
+including the users, user_activities, and user_settings tables.
 """
 from alembic import op
 import sqlalchemy as sa
@@ -17,6 +19,15 @@ depends_on = None
 
 
 def upgrade():
+    """Create the initial database schema.
+    
+    This function creates three main tables:
+    - users: Stores user account information
+    - user_activities: Tracks user actions and events
+    - user_settings: Stores user-specific settings and preferences
+    
+    It also creates necessary indexes and constraints.
+    """
     # Create users table
     op.create_table(
         'users',
@@ -65,6 +76,11 @@ def upgrade():
 
 
 def downgrade():
+    """Revert the initial schema creation.
+    
+    This function drops all tables and indexes created in the upgrade function,
+    in the correct order to handle foreign key dependencies.
+    """
     op.drop_index('idx_user_settings_user_key')
     op.drop_table('user_settings')
     op.drop_table('user_activities')

@@ -1,0 +1,157 @@
+/**
+ * Custom Sphinx Theme CSS for Beacon Documentation
+ * This file contains custom styling for the Furo theme
+ */
+
+/* Base font improvements */
+:root {
+  --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 
+                'Helvetica Neue', Arial, sans-serif;
+  --font-stack-monospace: 'SFMono-Regular', Menlo, Monaco, Consolas, 
+                          'Liberation Mono', 'Courier New', monospace;
+}
+
+body {
+  font-family: var(--font-stack);
+  text-rendering: optimizeLegibility;
+}
+
+pre, code {
+  font-family: var(--font-stack-monospace);
+  font-size: 0.9em;
+}
+
+/* Code blocks */
+div[class*="highlight-"] {
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.05);
+}
+
+/* Header improvements */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+h1 {
+  font-size: 2.25rem;
+  border-bottom: 1px solid var(--color-background-border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.75rem;
+}
+
+h3 {
+  font-size: 1.4rem;
+}
+
+/* Better spacing between sections */
+section {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Table styling */
+table.docutils {
+  border-radius: 0.25rem;
+  overflow: hidden;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.05);
+  margin: 2rem 0;
+}
+
+table.docutils th {
+  background-color: var(--color-brand-primary);
+  color: white;
+}
+
+table.docutils tr:nth-child(even) {
+  background-color: var(--color-background-secondary);
+}
+
+/* Method/function signatures */
+dl.py.method, dl.py.function {
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-left: 3px solid var(--color-brand-primary);
+  background-color: var(--color-background-secondary);
+  border-radius: 0 0.3rem 0.3rem 0;
+}
+
+/* Class styling */
+dl.py.class {
+  margin: 2rem 0;
+  padding: 1rem;
+  border: 1px solid var(--color-background-border);
+  border-radius: 0.5rem;
+}
+
+dl.py.class > dt {
+  background-color: var(--color-background-secondary);
+  padding: 0.5rem;
+  border-radius: 0.3rem;
+  margin-bottom: 1rem;
+  border-left: 3px solid var(--color-brand-primary);
+}
+
+/* Parameter lists */
+dl.field-list {
+  margin: 1rem 0;
+}
+
+dl.field-list dt {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Admonitions (notes, warnings, etc.) */
+.admonition {
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  margin: 1.5rem 0;
+}
+
+.admonition-title {
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+/* API documentation specific */
+.sig-name {
+  font-weight: 600;
+}
+
+.sig-param {
+  margin-right: 0.3rem;
+}
+
+.viewcode-link {
+  font-size: 0.8rem;
+  padding: 0.2rem 0.4rem;
+  margin-left: 0.5rem;
+  background-color: var(--color-background-secondary);
+  border-radius: 0.3rem;
+  text-decoration: none;
+}
+
+/* Mobile improvements */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.8rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  h3 {
+    font-size: 1.2rem;
+  }
+  
+  dl.py.method, dl.py.function, dl.py.class {
+    padding: 0.5rem;
+  }
+} 

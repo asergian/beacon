@@ -1,0 +1,543 @@
+/**
+ * @fileoverview Login Page Styles
+ * Comprehensive styles for the application login page, landing page, and marketing materials.
+ *
+ * This stylesheet includes styles for:
+ * 1. Login page layout and structure
+ * 2. Navigation components
+ * 3. Hero section with call-to-action elements
+ * 4. Feature showcase section
+ * 5. Screenshots and visual demonstration components
+ * 6. About section
+ * 7. Footer elements
+ * 8. Responsive behavior for different screen sizes
+ *
+ * @author Beacon Team
+ */
+
+/* ----------------------------------------------------------------------------
+ * BASE PAGE STRUCTURE
+ * Core layout for the login/landing page
+ * ----------------------------------------------------------------------------
+ */
+body.login-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+}
+
+/* ----------------------------------------------------------------------------
+ * NAVIGATION BAR
+ * Top navigation with logo and links
+ * ----------------------------------------------------------------------------
+ */
+.landing-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent dark background */
+    width: 100%;
+}
+
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.nav-logo {
+    display: flex;
+    align-items: center;
+}
+
+.nav-logo img {
+    filter: brightness(0) invert(1); /* Make logo white */
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3); /* Less aggressive shadow */
+}
+
+.nav-links a:hover {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+/* ----------------------------------------------------------------------------
+ * AUTHENTICATION COMPONENTS
+ * Google sign-in button and related elements
+ * ----------------------------------------------------------------------------
+ */
+.login-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: white;
+    color: #444 !important;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); /* Lighter shadow */
+    text-shadow: none; /* Remove text shadow */
+}
+
+.login-button:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
+}
+
+.google-icon {
+    margin-right: 0.5rem;
+}
+
+/* ----------------------------------------------------------------------------
+ * HERO SECTION
+ * Main landing page hero with background and primary messaging
+ * ----------------------------------------------------------------------------
+ */
+.hero {
+    text-align: center;
+    padding: 140px 20px 80px;
+    background: linear-gradient(135deg, #006F6A 0%, #00524E 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+    margin-top: -1px;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("../../images/pattern.svg") center/cover;
+    opacity: 0.05;
+    pointer-events: none;
+}
+
+.hero-content {
+    max-width: 700px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+
+.hero p {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 auto 2rem;
+    line-height: 1.5;
+    max-width: 600px;
+}
+
+/* ----------------------------------------------------------------------------
+ * CALL-TO-ACTION COMPONENTS
+ * Buttons and interactive elements for user conversion
+ * ----------------------------------------------------------------------------
+ */
+.cta-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 2.5rem;
+}
+
+.cta-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    gap: 12px;
+}
+
+.cta-button.primary {
+    background: white;
+    color: #006F6A;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cta-button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: #f8f9fa;
+}
+
+.cta-button.secondary {
+    background: transparent;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cta-button.secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.demo-icon {
+    width: 24px;
+    height: 24px;
+}
+
+/* ----------------------------------------------------------------------------
+ * MESSAGING COMPONENTS
+ * Error and notification display
+ * ----------------------------------------------------------------------------
+ */
+.error-message {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: rgb(239, 68, 68);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* ----------------------------------------------------------------------------
+ * FEATURES SHOWCASE
+ * Product feature presentation with cards
+ * ----------------------------------------------------------------------------
+ */
+.features {
+    padding: 4rem 2rem;
+    background-color: #f8f9fa;
+}
+
+.features h2 {
+    text-align: center;
+    color: #006F6A;
+    margin-bottom: 3rem;
+    font-size: 2.5rem;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.feature-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+}
+
+.feature-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.feature-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 111, 106, 0.1);
+    border-radius: 12px;
+    margin-right: 1rem;
+}
+
+.feature-card h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #006F6A;
+}
+
+.feature-card p {
+    margin: 0;
+    color: #4B5563;
+    line-height: 1.5;
+}
+
+/* Screenshots Section */
+/* ----------------------------------------------------------------------------
+ * SCREENSHOT SHOWCASE
+ * Product screenshots and visual demonstrations
+ * ----------------------------------------------------------------------------
+ */
+.screenshots {
+    padding: 4rem 2rem;
+    background-color: white;
+}
+
+.screenshots h2 {
+    text-align: center;
+    color: #006F6A;
+    margin-bottom: 3rem;
+    font-size: 2.5rem;
+}
+
+.screenshots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.screenshot-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.screenshot-card:hover {
+    transform: translateY(-5px);
+}
+
+.screenshot-img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    object-position: top left;
+}
+
+.screenshot-caption {
+    padding: 1.5rem;
+}
+
+.screenshot-caption h3 {
+    color: #006F6A;
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.screenshot-caption p {
+    color: #4B5563;
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* About Section */
+/* ----------------------------------------------------------------------------
+ * ABOUT SECTION
+ * Company information and statistics
+ * ----------------------------------------------------------------------------
+ */
+.about {
+    padding: 4rem 2rem;
+    background-color: #006F6A;
+    color: white;
+}
+
+.about-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.about h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.about p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 3rem;
+    opacity: 0.9;
+}
+
+.about-stats {
+    display: flex;
+    justify-content: space-around;
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat h3 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat p {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin: 0;
+}
+
+/* Footer */
+/* ----------------------------------------------------------------------------
+ * FOOTER COMPONENTS
+ * Page footer with links and copyright information
+ * ----------------------------------------------------------------------------
+ */
+footer {
+    background-color: #00423E;
+    color: white;
+    padding: 2rem 0;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-left p {
+    margin: 0;
+    opacity: 0.8;
+}
+
+.footer-right ul {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-right a {
+    color: white;
+    text-decoration: none;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.footer-right a:hover {
+    opacity: 1;
+}
+
+/* Developer Links */
+.dev-link {
+    position: relative;
+    padding-left: 20px;
+}
+
+.dev-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='14' height='14' stroke='%230366d6' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='16 18 22 12 16 6'%3E%3C/polyline%3E%3Cpolyline points='8 6 2 12 8 18'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+    .hero h1 {
+        font-size: 3rem;
+    }
+    
+    .about-stats {
+        flex-direction: column;
+        gap: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .landing-nav {
+        padding: 1rem;
+    }
+    
+    .nav-links a:not(.login-button) {
+        display: none;
+    }
+    
+    .hero {
+        padding: 100px 20px 60px;
+    }
+    
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero p {
+        font-size: 1.1rem;
+    }
+    
+    .cta-buttons {
+        flex-direction: column;
+    }
+    
+    .footer-container {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+    }
+    
+    .footer-right ul {
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .features-grid, 
+    .screenshots-grid {
+        grid-template-columns: 1fr;
+    }
+} 

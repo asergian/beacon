@@ -6,8 +6,8 @@ This document explains the design of the email processing pipeline in Beacon, pa
 
 The email processing pipeline consists of these main components:
 
-1. **Gmail Client Subprocess (`gmail_client_subprocess.py`)**: Orchestrates communication with the Gmail API subprocess
-2. **Gmail Subprocess (`gmail_subprocess.py`)**: Runs in isolation to fetch and parse emails
+1. **Gmail Client Subprocess (`client_subprocess.py`)**: Orchestrates communication with the Gmail API subprocess
+2. **Gmail Subprocess (`subprocess.py`)**: Runs in isolation to fetch and parse emails
 3. **Email Parser (`email_parsing.py`)**: Extracts metadata from emails
 4. **Analysis Pipeline**: Performs NLP/LLM analysis on email content
 

@@ -1,0 +1,16 @@
+repos:
+-   repo: local
+    hooks:
+    -   id: docstring-check
+        name: Check docstrings
+        entry: python scripts/check_docstrings.py app --min-coverage 95.0
+        language: system
+        pass_filenames: false
+        types: [python]
+        
+    -   id: readme-check
+        name: Check READMEs
+        entry: cd docs && make check-readme
+        language: system
+        pass_filenames: false
+        files: 'README\.md$'

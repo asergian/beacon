@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Clients Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Email Clients Module</h1>
+<p>The Email Clients module provides interfaces to connect to and interact with various email service providers.</p>
+<h2>Overview</h2>
+<p>This module implements client connections to different email service providers, such as Gmail and standard IMAP servers. It handles authentication, connection management, email fetching, and sending operations. The clients abstract away the complexities of different email protocols and provider-specific APIs.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="nx">clients</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="nx">Client</span><span class="w"> </span><span class="nx">factory</span><span class="w"> </span><span class="nx">functions</span>
+<span class="err">├──</span><span class="w"> </span><span class="kd">base</span><span class="p">.</span><span class="nx">py</span><span class="w">               </span><span class="err">#</span><span class="w"> </span><span class="nx">Base</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="nx">interfaces</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">gmail</span><span class="o">/</span><span class="w">                </span><span class="err">#</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">API</span><span class="w"> </span><span class="nx">integration</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">py</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="nx">Main</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">client</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">client_subprocess</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Subprocess</span><span class="o">-</span><span class="nx">based</span><span class="w"> </span><span class="nx">client</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">core</span><span class="o">/</span><span class="w">             </span><span class="err">#</span><span class="w"> </span><span class="nx">Core</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">functionality</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">utils</span><span class="o">/</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">worker</span><span class="o">/</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="nx">Subprocess</span><span class="w"> </span><span class="nx">worker</span><span class="w"> </span><span class="nx">implementation</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">imap</span><span class="o">/</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">IMAP</span><span class="w"> </span><span class="nx">protocol</span><span class="w"> </span><span class="nx">integration</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">py</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="nx">IMAP</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="nx">implementation</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span><span class="w">             </span><span class="err">#</span><span class="w"> </span><span class="nx">This</span><span class="w"> </span><span class="nx">documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Base Client</h3>
+<p>Defines the common interface for all email client implementations, ensuring consistent behavior regardless of the underlying email provider.</p>
+<h3>Gmail Client</h3>
+<p>Implements email operations using the Gmail API, including OAuth authentication, fetching, and sending capabilities. Provides both in-process and subprocess-based implementations for improved memory management.</p>
+<h3>IMAP Client</h3>
+<p>Implements email operations using the standard IMAP protocol for compatibility with a wide range of email providers. Handles connection management, authentication, and email operations.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using the Gmail client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.gmail.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">GmailClient</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">GmailClient</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">user_email</span><span class="o">=</span><span class="s2">&quot;user@gmail.com&quot;</span><span class="p">)</span>
+<span class="n">emails</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">fetch_emails</span><span class="p">(</span><span class="n">days_back</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># Using the IMAP client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.imap.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailConnection</span>
+
+<span class="n">imap_client</span> <span class="o">=</span> <span class="n">EmailConnection</span><span class="p">(</span>
+    <span class="n">server</span><span class="o">=</span><span class="s2">&quot;imap.example.com&quot;</span><span class="p">,</span>
+    <span class="n">email</span><span class="o">=</span><span class="s2">&quot;user@example.com&quot;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="mi">993</span><span class="p">,</span>
+    <span class="n">use_ssl</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+<span class="n">emails</span> <span class="o">=</span> <span class="k">await</span> <span class="n">imap_client</span><span class="o">.</span><span class="n">fetch_emails</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># Using the client factory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_client</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">create_client</span><span class="p">(</span><span class="s2">&quot;gmail&quot;</span><span class="p">,</span> <span class="n">credentials</span><span class="o">=</span><span class="n">credentials</span><span class="p">)</span>
+<span class="c1"># or</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">create_client</span><span class="p">(</span><span class="s2">&quot;imap&quot;</span><span class="p">,</span> <span class="n">server</span><span class="o">=</span><span class="s2">&quot;imap.example.com&quot;</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="s2">&quot;user@example.com&quot;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s2">&quot;password&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The clients module follows these design principles:
+- Provider-agnostic interfaces with consistent behavior
+- Memory management for resource-intensive operations
+- Proper connection pooling and reuse
+- Robust error handling and retry logic
+- Rate limiting and quota management</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.utils.memory_profiling</code>: For memory management
+- <code>app.utils.async_helpers</code>: For asynchronous operations</p>
+<p>External:
+- <code>google-api-python-client</code>: For Gmail API access
+- <code>google-auth</code>: For Google authentication
+- <code>google-auth-oauthlib</code>: For OAuth flow
+- <code>imapclient</code>: For IMAP protocol support
+- <code>email</code>: For email parsing and construction</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="../../../docs/email_processing.md">Email Processing Documentation</a></li>
+<li><a href="https://developers.google.com/gmail/api">Gmail API Documentation</a></li>
+<li><a href="https://datatracker.ietf.org/doc/html/rfc3501">IMAP Protocol Documentation</a></li>
+<li><a href="../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

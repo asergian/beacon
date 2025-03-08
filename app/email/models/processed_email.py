@@ -1,10 +1,41 @@
+"""Processed email model for representing analyzed emails.
+
+This module contains the ProcessedEmail dataclass which represents a fully processed
+email with all extracted information and analysis results.
+"""
+
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 
 @dataclass
 class ProcessedEmail:
-    """Represents a fully processed email with all extracted information."""
+    """Represents a fully processed email with all extracted information.
+    
+    This class stores both raw email data and the results of various analyses
+    performed on the email, including NLP analysis, LLM processing, and
+    priority scoring.
+    
+    Attributes:
+        id: Unique identifier for the email
+        subject: Email subject line
+        sender: Email sender address
+        body: Email body content
+        date: Timestamp when the email was sent
+        urgency: Flag indicating if email contains urgency markers
+        entities: Dictionary of named entities extracted from email
+        key_phrases: List of key phrases extracted from email
+        sentence_count: Number of sentences in the email
+        sentiment_indicators: Dictionary of sentiment indicators by type
+        structural_elements: Dictionary of structural elements identified in email
+        needs_action: Flag indicating if email requires action
+        category: Primary email category classification
+        action_items: List of action items extracted from email
+        summary: Brief summary of email content
+        custom_categories: Custom categorization tags applied to email
+        priority: Numeric priority score (0-100)
+        priority_level: Text representation of priority (Low/Medium/High)
+    """
     # Basic email metadata
     id: str
     subject: str
@@ -32,7 +63,13 @@ class ProcessedEmail:
     priority_level: Optional[str] = "Medium"
 
     def __post_init__(self):
-        """Initialize default values for optional fields."""
+        """Initialize default values for optional fields and normalize date.
+        
+        Performs the following operations:
+        - Initializes empty collections for None values
+        - Ensures date is a proper datetime with timezone information
+        - Normalizes date to UTC timezone if needed
+        """
         if self.entities is None:
             self.entities = {}
         if self.key_phrases is None:
@@ -68,7 +105,12 @@ class ProcessedEmail:
                 self.date = self.date.astimezone(timezone.utc)
 
     def dict(self) -> Dict:
-        """Convert the ProcessedEmail to a dictionary."""
+        """Convert the ProcessedEmail to a dictionary.
+        
+        Returns:
+            Dict: A dictionary representation of the ProcessedEmail object with the date
+                 converted to an ISO format string with timezone information.
+        """
         data = asdict(self)
         # Convert datetime to ISO format string with timezone
         if isinstance(data['date'], datetime):

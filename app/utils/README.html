@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Utilities Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Utilities Module</h1>
+<p>The Utilities module provides shared helper functions and tools used throughout the Beacon application.</p>
+<h2>Overview</h2>
+<p>This module contains common utilities, helper functions, and tool classes that are used across multiple parts of the application. It provides functionality for tasks like logging, memory management, and asynchronous operations, ensuring consistent implementation and reducing code duplication.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">utils</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">async_helpers</span><span class="o">.</span><span class="n">py</span><span class="w">         </span><span class="c1"># Asynchronous utilities</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">logging_setup</span><span class="o">.</span><span class="n">py</span><span class="w">         </span><span class="c1"># Logging configuration</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">memory_profiling</span><span class="o">.</span><span class="n">py</span><span class="w">      </span><span class="c1"># Memory monitoring and optimization</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">                </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Async Helpers</h3>
+<p>Provides utilities for working with asynchronous code in Flask, including event loop management, context preservation, and task management. Simplifies the integration of async code with Flask's synchronous request handling.</p>
+<h3>Logging Setup</h3>
+<p>Configures application-wide logging with structured log formats, log rotation, and appropriate log levels. Provides consistent logging interfaces across the application.</p>
+<h3>Memory Profiling</h3>
+<p>Implements tools for monitoring and optimizing memory usage, including memory tracking, leak detection, and automatic garbage collection. Critical for maintaining stable performance in memory-intensive operations.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using async helpers</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.utils.async_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">async_manager</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/data&#39;</span><span class="p">)</span>
+<span class="nd">@async_manager</span><span class="o">.</span><span class="n">run_async</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_data</span><span class="p">():</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_data_from_api</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+<span class="c1"># Using logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.utils.logging_setup</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Operation completed&quot;</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;operation_id&quot;</span><span class="p">:</span> <span class="n">op_id</span><span class="p">})</span>
+
+<span class="c1"># Using memory profiling</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.utils.memory_profiling</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_memory_usage</span><span class="p">,</span> <span class="n">log_memory_cleanup</span>
+
+<span class="n">log_memory_usage</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="s2">&quot;Before processing&quot;</span><span class="p">)</span>
+<span class="n">process_large_dataset</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">log_memory_cleanup</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="s2">&quot;After processing&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The utilities module follows these design principles:
+- Small, focused functions with single responsibilities
+- Consistent interfaces for similar functionality
+- Proper error handling and logging
+- Performance optimization
+- Compatibility with Flask's execution model</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- None (utilities are a foundational module)</p>
+<p>External:
+- <code>flask</code>: For request context access
+- <code>logging</code>: For logging functionality
+- <code>asyncio</code>: For asynchronous operations
+- <code>psutil</code>: For memory profiling
+- <code>gc</code>: For garbage collection control</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://docs.python.org/3/library/asyncio.html">Asyncio Documentation</a></li>
+<li><a href="https://docs.python.org/3/library/logging.html">Python Logging Documentation</a></li>
+<li><a href="../../docs/memory_management.md">Memory Management Guide</a></li>
+<li><a href="../../docs/sphinx/build/html/api.html#module-app.utils">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

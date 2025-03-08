@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Content Analyzer Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Content Analyzer Module</h1>
+<p>The Content Analyzer module provides NLP-based analysis of email text to extract entities, keywords, and patterns.</p>
+<h2>Overview</h2>
+<p>This module implements natural language processing (NLP) analysis capabilities using spaCy to extract information from email content. It identifies entities, keywords, patterns, and linguistic structures to provide insights about the email content. The module is designed for efficiency and low memory consumption, with options for in-process or subprocess-based execution.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">content</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">                </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">core</span><span class="o">/</span><span class="w">                      </span><span class="c1"># Core analysis functionality</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">            </span><span class="c1"># Core component exports</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">nlp_analyzer</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Main in-process analyzer</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">nlp_subprocess_analyzer</span><span class="o">.</span><span class="n">py</span><span class="w"> </span><span class="c1"># Subprocess-based analyzer</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">processing</span><span class="o">/</span><span class="w">                </span><span class="c1"># Processing infrastructure</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">            </span><span class="c1"># Processing component exports</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">nlp_worker</span><span class="o">.</span><span class="n">py</span><span class="w">          </span><span class="c1"># Worker implementation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">subprocess_manager</span><span class="o">.</span><span class="n">py</span><span class="w">  </span><span class="c1"># Subprocess coordination</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">utils</span><span class="o">/</span><span class="w">                     </span><span class="c1"># Analysis utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">            </span><span class="c1"># Utility exports</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">pattern_matchers</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="c1"># Pattern recognition</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">result_formatter</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="c1"># Output formatting</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">spacy_utils</span><span class="o">.</span><span class="n">py</span><span class="w">         </span><span class="c1"># spaCy helpers</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">                  </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Core Analyzers</h3>
+<p>Implements the main analysis functionality with both in-process and subprocess-based options:
+- <code>ContentAnalyzer</code>: Standard in-process implementation
+- <code>ContentAnalyzerSubprocess</code>: Memory-isolated subprocess implementation</p>
+<h3>Processing Infrastructure</h3>
+<p>Provides the infrastructure for subprocess-based analysis, including worker management, interprocess communication, and task coordination.</p>
+<h3>Analysis Utilities</h3>
+<p>Collection of helper functions and tools for pattern matching, result formatting, and spaCy integration.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using the in-process analyzer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.analyzers.content.core.nlp_analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContentAnalyzer</span>
+
+<span class="n">analyzer</span> <span class="o">=</span> <span class="n">ContentAnalyzer</span><span class="p">()</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">analyze</span><span class="p">(</span><span class="s2">&quot;Please review the quarterly report by Friday. Contact John Smith for questions.&quot;</span><span class="p">)</span>
+
+<span class="c1"># Access analysis results</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Entities: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">entities</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Keywords: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">keywords</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dates: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">dates</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Urgency: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">urgency_score</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Using the subprocess-based analyzer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.analyzers.content.core.nlp_subprocess_analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContentAnalyzerSubprocess</span>
+
+<span class="n">subprocess_analyzer</span> <span class="o">=</span> <span class="n">ContentAnalyzerSubprocess</span><span class="p">()</span>
+<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">subprocess_analyzer</span><span class="o">.</span><span class="n">analyze_async</span><span class="p">(</span>
+    <span class="s2">&quot;Please review the quarterly report by Friday. Contact John Smith for questions.&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Access the same result structure</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Entities: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">entities</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Keywords: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">keywords</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The content analyzer module follows these design principles:
+- Efficient NLP processing with optimized models
+- Memory management via subprocess isolation
+- Extensible pattern recognition
+- Consistent result structure
+- Configurable analysis depth</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.utils.memory_profiling</code>: For memory monitoring
+- <code>app.utils.async_helpers</code>: For asynchronous operations</p>
+<p>External:
+- <code>spacy</code>: For NLP processing
+- <code>numpy</code>: For numeric operations
+- <code>asyncio</code>: For asynchronous operations
+- <code>multiprocessing</code>: For subprocess management</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://spacy.io/api/doc">spaCy Documentation</a></li>
+<li><a href="https://spacy.io/usage/linguistic-features">NLP Concepts Overview</a></li>
+<li><a href="../../../../docs/memory_management.md">Memory Management Documentation</a></li>
+<li><a href="../../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

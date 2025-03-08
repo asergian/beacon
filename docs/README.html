@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Beacon Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Beacon Documentation</h1>
+<p>This directory contains comprehensive documentation for the Beacon email processing application, designed to help users, developers, and recruiters understand the application's capabilities and architecture.</p>
+<h2>Core Documentation</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="ARCHITECTURE.md"><strong>Architecture Guide</strong></a></td>
+<td>Overview of the system design, components, and code organization</td>
+</tr>
+<tr>
+<td><a href="TECHNICAL_FEATURES.md"><strong>Technical Features</strong></a></td>
+<td>Detailed explanation of key technical features and implementation highlights</td>
+</tr>
+<tr>
+<td><a href="email_processing.md"><strong>Email Processing Pipeline</strong></a></td>
+<td>In-depth explanation of the email processing pipeline</td>
+</tr>
+<tr>
+<td><a href="memory_management.md"><strong>Memory Management</strong></a></td>
+<td>Strategies implemented for optimizing memory usage</td>
+</tr>
+</tbody>
+</table>
+<h2>API Documentation</h2>
+<p>The API documentation is automatically generated from docstrings using Sphinx:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>sphinx
+make<span class="w"> </span>html
+</code></pre></div>
+
+<p>After building, access the HTML documentation at <a href="sphinx/build/html/index.html">sphinx/build/html/index.html</a>.</p>
+<h2>For Developers</h2>
+<p>Each module within the application includes its own README.md file with specific implementation details, usage examples, and design choices. These module-level READMEs follow a standardized format to ensure consistency across the codebase.</p>
+<h2>Key Technical Highlights</h2>
+<p>Beacon demonstrates several advanced software engineering practices:</p>
+<ol>
+<li><strong>AI Integration</strong>: Uses both traditional NLP (spaCy) and LLMs (OpenAI) for email analysis</li>
+<li><strong>Memory Optimization</strong>: Implements subprocess isolation for memory-intensive operations</li>
+<li><strong>Modular Architecture</strong>: Cleanly separates concerns with a well-organized module structure</li>
+<li><strong>Error Handling</strong>: Implements comprehensive error handling and graceful degradation</li>
+<li><strong>Documentation</strong>: Features extensive documentation at multiple levels (application, module, function)</li>
+</ol>
+<h2>Repository Organization</h2>
+<div class="codehilite"><pre><span></span><code><span class="nx">beacon</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">app</span><span class="o">/</span><span class="w">                  </span><span class="err">#</span><span class="w"> </span><span class="nx">Main</span><span class="w"> </span><span class="nx">application</span><span class="w"> </span><span class="kn">package</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">email</span><span class="o">/</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="nx">modules</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">analyzers</span><span class="o">/</span><span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="nx">Content</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">semantic</span><span class="w"> </span><span class="nx">analysis</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">clients</span><span class="o">/</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">service</span><span class="w"> </span><span class="nx">clients</span><span class="w"> </span><span class="p">(</span><span class="nx">Gmail</span><span class="p">,</span><span class="w"> </span><span class="nx">IMAP</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">models</span><span class="o">/</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">data</span><span class="w"> </span><span class="nx">models</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">pipeline</span><span class="o">/</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="nx">Processing</span><span class="w"> </span><span class="nx">pipeline</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">routes</span><span class="o">/</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="nx">Flask</span><span class="w"> </span><span class="nx">routes</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">views</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">services</span><span class="o">/</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="nx">Application</span><span class="w"> </span><span class="nx">services</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">models</span><span class="o">/</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="nx">Database</span><span class="w"> </span><span class="nx">models</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">utils</span><span class="o">/</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">Utility</span><span class="w"> </span><span class="nx">functions</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="o">...</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">docs</span><span class="o">/</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">Documentation</span><span class="w"> </span><span class="p">(</span><span class="nx">you</span><span class="w"> </span><span class="nx">are</span><span class="w"> </span><span class="nx">here</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">tests</span><span class="o">/</span><span class="w">                </span><span class="err">#</span><span class="w"> </span><span class="nx">Test</span><span class="w"> </span><span class="nx">suite</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">scripts</span><span class="o">/</span><span class="w">              </span><span class="err">#</span><span class="w"> </span><span class="nx">Utility</span><span class="w"> </span><span class="nx">scripts</span>
+</code></pre></div>
+
+<h2>Future Plans</h2>
+<p>The application roadmap includes:
+- Enhanced AI capabilities for better email categorization
+- Implementation of a plugin system for custom email processors
+- Expansion of supported email providers beyond Gmail and IMAP</p>
+<h2>Contributing</h2>
+<p>Contributions to both code and documentation are welcome. Please see <a href="../CONTRIBUTING.md">CONTRIBUTING.md</a> for guidelines.</p>
+    </div>
+</body>
+</html>

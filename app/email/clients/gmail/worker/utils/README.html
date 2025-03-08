@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Utils Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Utils Module</h1>
+<p>The Utils Module provides functionality for utils operations.</p>
+<h2>Overview</h2>
+<p>This module implements functionality related to utils. The module is organized into 6 main components, including <code>Memory Management</code>, <code>Date Utils</code>, <code>Processing Utils</code>, and others. The implementation follows a modular approach, enabling flexibility and maintainability while providing a cohesive interface to the rest of the application. This module serves as a key component in the application's utils processing pipeline. Through a well-defined API, other modules can leverage the utils functionality without needing to understand the implementation details. This encapsulation ensures that changes to the utils implementation won't impact dependent code as long as the interface contract is maintained.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Utilities</span><span class="w"> </span><span class="kn">package</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">worker</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">date_utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Date</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">time</span><span class="w"> </span><span class="nx">utility</span><span class="w"> </span><span class="nx">functions</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">worker</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">file_utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">File</span><span class="w"> </span><span class="nx">utility</span><span class="w"> </span><span class="nx">functions</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">worker</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">logging_utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Logging</span><span class="w"> </span><span class="nx">utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">worker</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">memory_management</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Memory</span><span class="w"> </span><span class="nx">management</span><span class="w"> </span><span class="nx">utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">worker</span><span class="w"> </span><span class="nx">process</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">process_utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Process</span><span class="w"> </span><span class="nx">utility</span><span class="w"> </span><span class="nx">functions</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">worker</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">processing_utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Processing</span><span class="w"> </span><span class="nx">utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">worker</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Memory Management</h3>
+<p>Memory management utilities for Gmail worker process.</p>
+<h3>Date Utils</h3>
+<p>Date and time utility functions for the Gmail worker module.</p>
+<h3>Processing Utils</h3>
+<p>Processing utilities for the Gmail worker module.</p>
+<h3>File Utils</h3>
+<p>File utility functions for the Gmail worker module.</p>
+<h3>Process Utils</h3>
+<p>Process utility functions for the Gmail worker module.</p>
+<h3>Logging Utils</h3>
+<p>Logging utilities for the Gmail worker module.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Example usage of the utils module</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.gmail.worker.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SomeClass</span>  <span class="c1"># Replace with actual class</span>
+
+<span class="c1"># Initialize the component</span>
+<span class="n">component</span> <span class="o">=</span> <span class="n">SomeClass</span><span class="p">(</span><span class="n">param1</span><span class="o">=</span><span class="s2">&quot;value1&quot;</span><span class="p">,</span> <span class="n">param2</span><span class="o">=</span><span class="s2">&quot;value2&quot;</span><span class="p">)</span>
+
+<span class="c1"># Use the component&#39;s functionality</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">component</span><span class="o">.</span><span class="n">do_something</span><span class="p">(</span><span class="n">input_data</span><span class="o">=</span><span class="s2">&quot;example&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Additional operations</span>
+<span class="n">component</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">option</span><span class="o">=</span><span class="s2">&quot;value&quot;</span><span class="p">)</span>
+<span class="n">final_result</span> <span class="o">=</span> <span class="n">component</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
+
+<span class="c1"># Cleanup resources when done</span>
+<span class="n">component</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The utils module follows these design principles:
+- Modular architecture with separation of concerns
+- Clean interfaces with proper documentation
+- Comprehensive error handling and recovery
+- Efficient resource utilization
+- Testable and maintainable code structure</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- None (standalone module with no dependencies)</p>
+<p>External:
+- <code>argparse</code>: For argparse functionality
+- <code>date_utils</code>: For date_utils functionality
+- <code>datetime</code>: For date and time handling
+- <code>file_utils</code>: For file_utils functionality
+- <code>gc</code>: For gc functionality
+- <code>httplib2</code>: For httplib2 functionality
+- <code>json</code>: For JSON serialization and deserialization
+- <code>logging</code>: For logging and debugging
+- <code>logging_utils</code>: For logging_utils functionality
+- <code>memory_management</code>: For memory_management functionality
+- <code>os</code>: For operating system interactions
+- <code>process_utils</code>: For process_utils functionality
+- <code>processing_utils</code>: For processing_utils functionality
+- <code>signal</code>: For signal functionality
+- <code>socket</code>: For socket functionality
+- <code>sys</code>: For system-specific functionality
+- <code>typing</code>: For type annotations
+- <code>utils</code>: For utils functionality
+- <code>zoneinfo</code>: For zoneinfo functionality</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="../../../../../../docs/sphinx/build/html/api.html">API Reference</a></li>
+<li><a href="../../../../../../docs/dev/utils.md">Module Development Guide</a></li>
+<li><a href="../../../../../../docs/architecture.md">Related Components</a></li>
+</ul>
+    </div>
+</body>
+</html>

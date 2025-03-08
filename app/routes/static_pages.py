@@ -1,4 +1,12 @@
-"""Routes for static pages like Privacy Policy, Terms of Service, and Support."""
+"""Routes for static pages like Privacy Policy, Terms of Service, and Support.
+
+This module provides routes for serving static content pages and handling
+support form submissions. It includes form validation, email notification,
+and request logging functionality.
+
+Typical usage example:
+    app.register_blueprint(static_pages_bp, url_prefix='/pages')
+"""
 
 from flask import Blueprint, render_template, request, jsonify, current_app
 from flask_limiter import Limiter
@@ -10,6 +18,7 @@ import os
 import logging
 from datetime import datetime
 import re
+from flask import send_from_directory
 
 static_pages_bp = Blueprint('static_pages', __name__)
 
@@ -19,19 +28,53 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
+# Add a route for documentation
+@static_pages_bp.route('/docs/')
+@static_pages_bp.route('/docs/<path:path>')
+def serve_docs(path='index.html'):
+    """Serve the Sphinx documentation."""
+    # Use the absolute path to the project root and then add the docs path
+    project_root = os.path.abspath(os.path.join(current_app.root_path, '..'))
+    docs_dir = os.path.join(project_root, 'docs', 'sphinx', 'build', 'html')
+    current_app.logger.debug(f"Serving docs from: {docs_dir}, requested path: {path}")
+    
+    # Check if the directory exists and log the result
+    if not os.path.exists(docs_dir):
+        current_app.logger.error(f"Documentation directory does not exist: {docs_dir}")
+        return jsonify({"error": "Documentation not found"}), 404
+        
+    # Check if the requested file exists
+    full_path = os.path.join(docs_dir, path)
+    if not os.path.exists(full_path) and not os.path.exists(os.path.join(docs_dir, path, 'index.html')):
+        current_app.logger.error(f"Requested documentation file not found: {full_path}")
+        
+    return send_from_directory(docs_dir, path) 
+
 @static_pages_bp.route('/privacy-policy')
 def privacy_policy():
-    """Render the Privacy Policy page."""
+    """Render the Privacy Policy page.
+    
+    Returns:
+        Flask response: Rendered HTML template for the privacy policy page.
+    """
     return render_template('static/privacy_policy.html')
 
 @static_pages_bp.route('/terms-of-service')
 def terms_of_service():
-    """Render the Terms of Service page."""
+    """Render the Terms of Service page.
+    
+    Returns:
+        Flask response: Rendered HTML template for the terms of service page.
+    """
     return render_template('static/terms_of_service.html')
 
 @static_pages_bp.route('/support')
 def support():
-    """Render the Support page."""
+    """Render the Support page.
+    
+    Returns:
+        Flask response: Rendered HTML template for the support page with contact form.
+    """
     return render_template('static/support.html')
 
 @static_pages_bp.route('/api/support-message', methods=['POST'])
@@ -39,8 +82,14 @@ def support():
 def submit_support_message():
     """Handle support form submissions.
     
+    Processes the incoming support form data, validates it, logs the request,
+    and sends an email notification to the support team.
+    
     Returns:
-        JSON response with success/error message
+        tuple: JSON response with success/error message and HTTP status code
+        
+    Raises:
+        Exception: If there's an error processing the request, returns a 500 error
     """
     try:
         # Get form data from request
@@ -89,10 +138,13 @@ def submit_support_message():
 def validate_support_form(name, email, message):
     """Validate support form fields.
     
+    Performs server-side validation on support form submissions to ensure
+    data integrity and quality.
+    
     Args:
         name (str): User's name
-        email (str): User's email
-        message (str): Support message
+        email (str): User's email address
+        message (str): Support message content
         
     Returns:
         list: List of error messages, empty if validation passed
@@ -124,11 +176,17 @@ def validate_support_form(name, email, message):
 def log_support_request(name, email, subject, message):
     """Log support request to file for record keeping.
     
+    Creates a JSON log entry for each support request and appends it to a log file.
+    Creates the log directory if it doesn't exist.
+    
     Args:
         name (str): User's name
-        email (str): User's email
+        email (str): User's email address
         subject (str): Message subject
-        message (str): Support message
+        message (str): Support message content
+        
+    Raises:
+        Exception: If logging fails, the error is logged to the application logger
     """
     try:
         # Create logs directory if it doesn't exist
@@ -159,11 +217,17 @@ def log_support_request(name, email, subject, message):
 def send_support_email(name, email, subject, message):
     """Send support email notification to administrators.
     
+    Sends an email to the support team with the details of the support request.
+    Uses SMTP settings from environment variables or application config.
+    
     Args:
         name (str): User's name
-        email (str): User's email
+        email (str): User's email address
         subject (str): Message subject
-        message (str): Support message
+        message (str): Support message content
+        
+    Raises:
+        Exception: If sending email fails, the error is logged to the application logger
     """
     try:
         # Get email settings from config or environment variables

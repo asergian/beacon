@@ -2,13 +2,13 @@ import pytest
 from datetime import datetime
 from unittest.mock import Mock, AsyncMock
 
-from app.email.core.email_processor import (
+from app.email.processing.processor import (
     EmailProcessor, 
     EmailProcessingError,
     LLMProcessingError,
     NLPProcessingError
 )
-from app.email.core.email_parsing import EmailMetadata
+from app.email.parsing.parser import EmailMetadata
 from app.email.models.processed_email import ProcessedEmail
 
 @pytest.fixture

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Processing Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Email Processing Module</h1>
+<p>The Email Processing module handles the analysis and transformation of parsed emails, applying NLP and LLM techniques to extract insights.</p>
+<h2>Overview</h2>
+<p>This module is responsible for processing parsed emails to extract insights, categorize content, identify action items, and determine priorities. It serves as a high-level coordinator, utilizing both NLP and LLM analyzers to provide comprehensive email analysis. The processor manages the complete workflow from accepting parsed emails to delivering enriched, analyzed results.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">proc</span><span class="nv">essing</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nf">__init__.py</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="nv">Package</span><span class="w"> </span><span class="nv">exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="k">proc</span><span class="nv">essor.py</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nv">Main</span><span class="w"> </span><span class="nv">processor</span><span class="w"> </span><span class="nv">implementation</span>
+<span class="err">├──</span><span class="w"> </span><span class="nf">sender.py</span><span class="w">             </span><span class="err">#</span><span class="w"> </span><span class="nv">Email</span><span class="w"> </span><span class="nv">sending</span><span class="w"> </span><span class="nv">functionality</span>
+<span class="err">└──</span><span class="w"> </span><span class="nf">README.md</span><span class="w">             </span><span class="err">#</span><span class="w"> </span><span class="nv">This</span><span class="w"> </span><span class="nv">documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Email Processor</h3>
+<p>The main component that orchestrates the email analysis workflow. It combines NLP and LLM analyzers to extract insights from emails, handling both individual and batch processing with appropriate error handling and statistics tracking.</p>
+<h3>Email Sender</h3>
+<p>Provides functionality for sending emails, including composing messages, managing templates, and interfacing with SMTP servers. Enables response capabilities for the application.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Processing emails with the Email Processor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.processing.processor</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailProcessor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.analyzers.content.core.nlp_analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContentAnalyzer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.analyzers.semantic.analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">SemanticAnalyzer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.parsing.parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailParser</span>
+
+<span class="c1"># Initialize analyzers</span>
+<span class="n">content_analyzer</span> <span class="o">=</span> <span class="n">ContentAnalyzer</span><span class="p">()</span>
+<span class="n">semantic_analyzer</span> <span class="o">=</span> <span class="n">SemanticAnalyzer</span><span class="p">()</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">EmailParser</span><span class="p">()</span>
+
+<span class="c1"># Create processor</span>
+<span class="n">processor</span> <span class="o">=</span> <span class="n">EmailProcessor</span><span class="p">(</span>
+    <span class="n">email_client</span><span class="o">=</span><span class="n">email_client</span><span class="p">,</span>
+    <span class="n">text_analyzer</span><span class="o">=</span><span class="n">content_analyzer</span><span class="p">,</span>
+    <span class="n">llm_analyzer</span><span class="o">=</span><span class="n">semantic_analyzer</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">parser</span>
+<span class="p">)</span>
+
+<span class="c1"># Process a single email</span>
+<span class="n">processed_email</span> <span class="o">=</span> <span class="k">await</span> <span class="n">processor</span><span class="o">.</span><span class="n">process_email</span><span class="p">(</span><span class="n">raw_email</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subject: </span><span class="si">{</span><span class="n">processed_email</span><span class="o">.</span><span class="n">subject</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Priority: </span><span class="si">{</span><span class="n">processed_email</span><span class="o">.</span><span class="n">priority</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Category: </span><span class="si">{</span><span class="n">processed_email</span><span class="o">.</span><span class="n">category</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Action items: </span><span class="si">{</span><span class="n">processed_email</span><span class="o">.</span><span class="n">action_items</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Process a batch of emails</span>
+<span class="n">processed_emails</span> <span class="o">=</span> <span class="k">await</span> <span class="n">processor</span><span class="o">.</span><span class="n">process_emails</span><span class="p">(</span><span class="n">raw_emails</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Sending an email</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.processing.sender</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailSender</span>
+
+<span class="n">sender</span> <span class="o">=</span> <span class="n">EmailSender</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">sender</span><span class="o">.</span><span class="n">send_email</span><span class="p">(</span>
+    <span class="n">to_address</span><span class="o">=</span><span class="s2">&quot;recipient@example.com&quot;</span><span class="p">,</span>
+    <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;Hello from Beacon&quot;</span><span class="p">,</span>
+    <span class="n">body</span><span class="o">=</span><span class="s2">&quot;This is a test email from Beacon.&quot;</span><span class="p">,</span>
+    <span class="n">reply_to</span><span class="o">=</span><span class="s2">&quot;sender@example.com&quot;</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The processing module follows these design principles:
+- Orchestration of different analysis techniques
+- Asynchronous processing for I/O-bound operations
+- Batch processing for efficiency
+- Comprehensive error handling
+- Detailed statistics and performance tracking</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.email.analyzers</code>: For content and semantic analysis
+- <code>app.email.parsing</code>: For email parsing
+- <code>app.utils.memory_profiling</code>: For memory management
+- <code>app.utils.logging_setup</code>: For logging operations</p>
+<p>External:
+- <code>asyncio</code>: For asynchronous processing
+- <code>email</code>: For email construction
+- <code>smtplib</code>: For SMTP operations
+- <code>jinja2</code>: For email templates</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="../../../docs/email_processing.md">Email Processing Documentation</a></li>
+<li><a href="../../../docs/memory_management.md">Memory Management Documentation</a></li>
+<li><a href="../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

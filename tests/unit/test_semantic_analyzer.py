@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock, patch
 import json
 from flask import g, Flask
 
-from app.email.analyzers.semantic_analyzer import SemanticAnalyzer
+from app.email.analyzers.semantic.analyzer import SemanticAnalyzer
 from app.email.models.exceptions import LLMProcessingError
 from app.email.models.processed_email import ProcessedEmail
 

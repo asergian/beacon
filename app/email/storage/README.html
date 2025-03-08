@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Storage Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Email Storage Module</h1>
+<p>The Email Storage module provides caching and persistence mechanisms for email data and processing results.</p>
+<h2>Overview</h2>
+<p>This module handles the storage and retrieval of processed emails and their analysis results. It implements various caching strategies to optimize performance and reduce redundant processing. The primary implementation uses Redis for fast, distributed caching with flexible expiration policies.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">storage</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">base_cache</span><span class="o">.</span><span class="n">py</span><span class="w">         </span><span class="c1"># Abstract cache interface</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">cache_utils</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Cache utility functions</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">redis_cache</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Redis implementation</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">             </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Email Cache Interface</h3>
+<p>Defines the common interface for all cache implementations, ensuring consistent behavior across different storage backends.</p>
+<h3>Redis Email Cache</h3>
+<p>Implements the cache interface using Redis as the storage backend. Provides fast, distributed caching with TTL-based expiration and serialization/deserialization of complex objects.</p>
+<h3>Cache Utilities</h3>
+<p>Helper functions for cache operations like serialization, compression, and key generation. These utilities help manage the storage and retrieval of complex objects like processed emails.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using the Redis cache implementation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.storage.redis_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisEmailCache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.models.processed_email</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessedEmail</span>
+
+<span class="c1"># Create a cache instance</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">RedisEmailCache</span><span class="p">()</span>
+
+<span class="c1"># Store a processed email</span>
+<span class="n">email</span> <span class="o">=</span> <span class="n">ProcessedEmail</span><span class="p">(</span>
+    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;email_123&quot;</span><span class="p">,</span>
+    <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;Meeting tomorrow&quot;</span><span class="p">,</span>
+    <span class="c1"># ... other fields</span>
+<span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">store_email</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user_456&quot;</span><span class="p">,</span> <span class="n">ttl_days</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+
+<span class="c1"># Retrieve cached emails</span>
+<span class="n">emails</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_emails_for_user</span><span class="p">(</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user_456&quot;</span><span class="p">,</span> 
+    <span class="n">days_back</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">max_count</span><span class="o">=</span><span class="mi">100</span>
+<span class="p">)</span>
+
+<span class="c1"># Check if an email exists in cache</span>
+<span class="n">exists</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">has_email</span><span class="p">(</span><span class="s2">&quot;email_123&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user_456&quot;</span><span class="p">)</span>
+
+<span class="c1"># Delete an email from cache</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">delete_email</span><span class="p">(</span><span class="s2">&quot;email_123&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user_456&quot;</span><span class="p">)</span>
+
+<span class="c1"># Clear user&#39;s cache</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">clear_user_cache</span><span class="p">(</span><span class="s2">&quot;user_456&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The storage module follows these design principles:
+- Clean abstraction with interface-based design
+- Efficient serialization and deserialization
+- Proper expiration and TTL management
+- Namespace isolation between users
+- Compression for large objects</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.services.redis_service</code>: For Redis client access
+- <code>app.utils.logging_setup</code>: For logging storage operations</p>
+<p>External:
+- <code>redis</code>: For Redis connection
+- <code>msgpack</code>: For efficient serialization
+- <code>zlib</code>: For compression
+- <code>json</code>: For JSON serialization fallback</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://redis.io/docs/manual/">Redis Documentation</a></li>
+<li><a href="https://redis-py.readthedocs.io/">Python Redis Client Documentation</a></li>
+<li><a href="../../../docs/email_processing.md">Email Processing Documentation</a></li>
+<li><a href="../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

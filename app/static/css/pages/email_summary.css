@@ -1,0 +1,934 @@
+/**
+ * @fileoverview Email Summary Page Styles
+ * Provides styling for the email summary/inbox interface with email list and detail views.
+ *
+ * This stylesheet follows a modular organization:
+ * 1. Base layout and structure
+ * 2. Email list column components
+ * 3. Email details column components 
+ * 4. Tag styling
+ * 5. Action items and summary components
+ * 6. Empty states
+ * 7. Responsive behavior
+ * 8. Dark mode adjustments
+ *
+ * @author Beacon Team
+ */
+
+/* ----------------------------------------------------------------------------
+ * BASE STRUCTURE
+ * Base HTML and Body styles to ensure proper page layout and scrolling
+ * ----------------------------------------------------------------------------
+ */
+html, body {
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow: hidden; /* Prevent body scrollbar */
+}
+
+/* ----------------------------------------------------------------------------
+ * LOADING INDICATORS
+ * Progress indicators for loading states
+ * ----------------------------------------------------------------------------
+ */
+.loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background-color: var(--primary-color);
+  z-index: 9999;
+  width: 0;
+  transition: width 0.3s ease;
+}
+
+.loading-text {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-color);
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 9999;
+  pointer-events: none;
+  text-align: center;
+  padding: 5px 10px;
+  border-radius: 4px;
+  background-color: var(--card-bg);
+  box-shadow: var(--card-shadow);
+}
+
+/* ----------------------------------------------------------------------------
+ * MAIN LAYOUT STRUCTURE
+ * Core page layout components and containers
+ * ----------------------------------------------------------------------------
+ */
+.main-content {
+  overflow: hidden !important; /* Prevent page-level scrollbar */
+  padding: 0;
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ----------------------------------------------------------------------------
+ * CONTENT COLUMNS
+ * Two-column layout for email list and detail views
+ * ----------------------------------------------------------------------------
+ */
+.content-columns {
+  display: flex;
+  height: calc(100vh - var(--header-height) - var(--filters-height) - var(--footer-height));
+  overflow: hidden;
+  flex: 1;
+  width: 100%; /* Ensure full width */
+  margin: 0; /* Remove any margin */
+}
+
+/* ----------------------------------------------------------------------------
+ * FILTER COMPONENTS
+ * Email filtering interface elements
+ * ----------------------------------------------------------------------------
+ */
+.filters-row {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+  height: var(--filters-height);
+  gap: 1.5rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.filter-group select {
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  min-width: 130px;
+  font-size: 0.9rem;
+}
+
+/* ----------------------------------------------------------------------------
+ * EMAIL LIST COLUMN
+ * Left sidebar with email list and previews
+ * ----------------------------------------------------------------------------
+ */
+.email-list-column {
+  width: 30%;
+  border-right: 1px solid var(--border-color);
+  height: 100%;
+  overflow-y: auto !important; /* Use auto instead of scroll to only show when needed */
+  flex-shrink: 0; /* Prevent shrinking */
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-color);
+  scrollbar-width: thin;
+}
+
+.email-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: visible; /* Don't add another scrollbar */
+  height: auto; /* Let content determine height */
+  flex: 1; /* Take up available space */
+}
+
+/* ----------------------------------------------------------------------------
+ * EMAIL LIST ITEMS
+ * Individual email preview items in the list
+ * ----------------------------------------------------------------------------
+ */
+.email-item {
+  padding: 15px;
+  border-bottom: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  background-color: var(--email-item-bg);
+  position: relative;
+}
+
+.email-item:hover {
+  background-color: var(--email-item-hover);
+}
+
+.email-item.active {
+  background-color: var(--email-item-active);
+}
+
+.email-item .email-header {
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.email-item .subject-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.email-item .email-subject {
+  display: block;
+  font-weight: 600;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 1.05rem;
+  flex: 1;
+}
+
+.email-item .date {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.email-item .date::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-right: 4px;
+  opacity: 0.7;
+}
+
+.email-item .sender-name {
+  display: block;
+  font-weight: 500;
+  color: var(--text-color);
+  margin: 5px 0;
+  font-size: 1rem;
+}
+
+.email-item .email-summary-preview {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+/* ----------------------------------------------------------------------------
+ * EMAIL LIST TAGS
+ * Tag display in the email list with truncation
+ * ----------------------------------------------------------------------------
+ */
+.email-list-column .tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0;
+}
+
+.email-list-column .tags-container:has(> .tag:nth-child(5))::after {
+  content: "" !important; /* Empty content */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 24px !important;
+  height: 20px !important;
+  background-color: var(--border-color) !important;
+  border-radius: 4px !important;
+  margin-left: 4px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='20' viewBox='0 0 24 20'%3E%3Cg fill='%23666'%3E%3Ccircle cx='6' cy='10' r='2'/%3E%3Ccircle cx='12' cy='10' r='2'/%3E%3Ccircle cx='18' cy='10' r='2'/%3E%3C/g%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+}
+
+.email-list-column .tags-container .tag:nth-child(n+5) {
+  display: none;
+}
+
+/* Email Details Column */
+.email-details-column {
+  width: 70%;
+  height: 100%;
+  overflow-y: auto !important; /* Use auto instead of scroll to only show when needed */
+  flex-grow: 1; /* Grow to fill space */
+  padding: 15px 0px 15px 15px;
+  position: relative;
+  background-color: var(--bg-color);
+  scrollbar-width: thin;
+}
+
+.email-details-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.email-details-column h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--text-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.email-date {
+  font-size: 0.85rem;
+  color: var(--secondary-text);
+  white-space: nowrap;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
+.email-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: var(--card-shadow);
+}
+
+.email-sender {
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--text-color);
+}
+
+.email-recipients {
+  font-size: 0.85rem;
+  color: var(--secondary-text);
+  margin-bottom: 15px;
+}
+
+/* ----------------------------------------------------------------------------
+ * EMAIL BODY COMPONENTS
+ * Content display for the selected email
+ * ----------------------------------------------------------------------------
+ */
+.email-body {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-color);
+  position: relative;
+  min-height: 20px; /* Smaller min-height */
+}
+
+.email-body iframe {
+  display: block;
+  width: 100%;
+  border: none;
+}
+
+.email-loading {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  background-color: var(--card-bg);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Tags */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+/* Email details column tags container */
+.email-details-column .tags-container {
+  margin: 15px 0;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: white;
+  background-color: var(--primary-color);
+  white-space: nowrap;
+  margin-right: 5px;
+  min-width: 60px;
+  text-align: center;
+  line-height: 1.2;
+  height: 22px;
+}
+
+.tag-icon {
+  margin-right: 5px;
+  font-size: 0.8rem;
+}
+
+.tag.priority-high {
+  background-color: #E53E3E; /* Red for high priority */
+}
+
+.tag.priority-medium {
+  background-color: #DD6B20; /* Orange for medium priority */
+}
+
+.tag.priority-low {
+  background-color: #38A169; /* Green for low priority */
+}
+
+.tag.category {
+  background-color: #3182CE; /* Blue for category tag */
+}
+
+.tag.action-required {
+  background-color: #805AD5; /* Purple for action required */
+}
+
+.tag.custom-category {
+  /* Custom categories will use their defined colors */
+  min-width: 60px;
+}
+
+/* No Emails State */
+/* ----------------------------------------------------------------------------
+ * EMPTY STATE
+ * Visual display when no emails are available
+ * ----------------------------------------------------------------------------
+ */
+.no-emails {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+  color: var(--secondary-text);
+  height: 100%;
+}
+
+.no-emails svg {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 20px;
+  color: var(--border-color);
+}
+
+.no-emails h3 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  color: var(--text-color);
+}
+
+.no-emails p {
+  font-size: 0.9rem;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+/* Responsive */
+/* ----------------------------------------------------------------------------
+ * RESPONSIVE LAYOUT
+ * Mobile-friendly adjustments for different screen sizes
+ * ----------------------------------------------------------------------------
+ */
+@media (max-width: 768px) {
+  .content-columns {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  .email-list-column {
+    width: 100%;
+    height: 300px; /* Fixed height for mobile */
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .email-details-column {
+    width: 100%;
+    height: calc(100vh - var(--header-height) - var(--filters-height) - 300px - var(--footer-height));
+    padding: 10px;
+  }
+}
+
+/* Dark mode styling for email content */
+/* ----------------------------------------------------------------------------
+ * DARK MODE THEMING
+ * Dark mode specific overrides
+ * ----------------------------------------------------------------------------
+ */
+[data-theme="dark"] .email-details-column h2 {
+    color: var(--text-color);
+}
+
+/* Streamlined summary and actions styling */
+/* ----------------------------------------------------------------------------
+ * SUMMARY COMPONENTS
+ * Email summary and key information display
+ * ----------------------------------------------------------------------------
+ */
+.summary-actions-box {
+  width: 100%;
+  padding: 10px 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.summary-section {
+  padding: 0;
+  margin: 15px 0px 0px 0px;
+  background: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.summary-section h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-color);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 5px;
+}
+
+.summary-section p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-color);
+  margin-bottom: 12px;
+}
+
+/* Action items now part of summary section */
+/* ----------------------------------------------------------------------------
+ * ACTION ITEMS
+ * Actionable items extracted from emails
+ * ----------------------------------------------------------------------------
+ */
+.action-items-list {
+  list-style-type: disc;
+  padding-left: 20px;
+  margin: 10px 0 0 0;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 10px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.action-item {
+  padding: 2px 0;
+  margin-bottom: 6px;
+  color: var(--text-color);
+}
+
+.action-item-header {
+  display: inline; /* Make it flow more like natural text */
+}
+
+.action-item-title {
+  font-size: 0.95rem;
+  color: var(--text-color);
+}
+
+.action-item-due {
+  color: var(--primary-color);
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin-left: 6px;
+  white-space: nowrap;
+  display: inline;
+}
+
+.action-item-due::before {
+  content: "·";
+  margin: 0 4px;
+  color: var(--text-muted);
+  display: inline;
+}
+
+/* Email body container - still needs its own box */
+/* ----------------------------------------------------------------------------
+ * EMAIL BODY CONTAINER
+ * Styling for the email body and response sections
+ * ----------------------------------------------------------------------------
+ */
+.email-body-container,
+.email-response-section {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: auto;
+}
+
+.email-body-container {
+    padding-bottom: 30px; /* Extra padding at bottom to prevent content cut-off */
+}
+
+.sender-date {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.sender {
+  font-weight: 600;
+}
+
+.date {
+  color: var(--text-muted);
+}
+
+/* ----------------------------------------------------------------------------
+ * EMAIL COMPOSITION COMPONENTS
+ * Form elements for composing email responses
+ * ----------------------------------------------------------------------------
+ */
+.email-compose-header {
+  margin-bottom: 15px;
+}
+
+.email-compose-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 10px 0;
+}
+
+.compose-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.compose-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compose-field label {
+  width: 70px;
+  color: var(--text-muted);
+  font-weight: 500;
+  padding-right: 15px; /* Add padding between label and input */
+}
+
+.compose-field input,
+.compose-field select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+}
+
+/* Email Details Section */
+/* ----------------------------------------------------------------------------
+ * EMAIL DETAILS SECTION
+ * Components for the detailed email view
+ * ----------------------------------------------------------------------------
+ */
+#email-details {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 15px;
+}
+
+/* Update email body styles */
+#details-body {
+  margin-bottom: 1.5rem;
+}
+
+/* Email details section tag styling */
+#details-priority.tag,
+#details-category.tag,
+#details-action-required.tag,
+#details-custom-categories .tag {
+  min-width: 80px;
+  height: 24px;
+  font-size: 0.85rem;
+  text-align: center;
+  margin: 0 5px 5px 0;
+}
+
+#details-custom-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+#key-dates-list {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+#key-dates-list li {
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+#key-dates-list li.important {
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .filters-row {
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+    padding: 10px;
+  }
+  
+  .filter-group {
+    width: 100%;
+  }
+  
+  .filter-group select {
+    width: 100%;
+  }
+  
+  .content-columns {
+    flex-direction: column;
+  }
+  
+  .email-list-column {
+    width: 100%;
+    height: 300px;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .email-details-column {
+    width: 100%;
+    padding: 10px;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+ * COMPOSITION ACTIONS
+ * Buttons for email composition actions
+ * ----------------------------------------------------------------------------
+ */
+.email-compose-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+  justify-content: flex-start;
+}
+
+/* ----------------------------------------------------------------------------
+ * BUTTON COMPONENTS
+ * Action buttons for various interactions
+ * ----------------------------------------------------------------------------
+ */
+.primary-button, .clear-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  border: none;
+}
+
+.primary-button {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.primary-button:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.clear-button {
+  background-color: var(--button-secondary-bg);
+  color: var(--button-secondary-text);
+}
+
+.clear-button:hover {
+  background-color: var(--button-secondary-hover);
+  transform: translateY(-1px);
+}
+
+.button-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* ----------------------------------------------------------------------------
+ * EMAIL EDITOR
+ * Rich text editor for email composition
+ * ----------------------------------------------------------------------------
+ */
+.email-compose-body {
+  margin-top: 15px;
+}
+
+.ck-editor__editable {
+  min-height: 150px;
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+}
+
+/* Proper CSS styling for tables in the editor */
+.ck-content figure.table {
+  margin: 1em 0 !important;
+  float: left !important;
+  max-width: 100%;
+}
+
+.ck.ck-editor {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+/* Navigation FAB buttons */
+/* ----------------------------------------------------------------------------
+ * NAVIGATION COMPONENTS
+ * Floating action buttons for page navigation
+ * ----------------------------------------------------------------------------
+ */
+.nav-fab {
+  position: fixed;
+  bottom: 80px; /* Position higher above footer */
+  right: 25px;
+  width: 48px; /* Slightly larger */
+  height: 48px; /* Slightly larger */
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3); /* Stronger shadow for better visibility */
+  z-index: 1000;
+  cursor: pointer;
+  opacity: 1; 
+  transform: scale(1);
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  border: none;
+}
+
+/* Button hover effect */
+.nav-fab:hover {
+  background-color: var(--primary-hover);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* Button active effect */
+.nav-fab:active {
+  transform: scale(0.95);
+}
+
+.nav-fab svg {
+  width: 24px; /* Larger icon */
+  height: 24px; /* Larger icon */
+}
+
+.nav-fab.top-fab {
+  bottom: 138px; /* Adjusted for larger button size */
+}
+
+/* For mobile devices, adjust position */
+/* ----------------------------------------------------------------------------
+ * MOBILE NAVIGATION
+ * Adjustments for navigation elements on mobile devices
+ * ----------------------------------------------------------------------------
+ */
+@media (max-width: 768px) {
+  .nav-fab {
+    right: 20px;
+    bottom: 25px;
+  }
+  
+  .nav-fab.top-fab {
+    bottom: 83px;
+  }
+}
+
+/* Additional style for plain text emails in dark mode - only for email body, not response box */
+/* ----------------------------------------------------------------------------
+ * DARK MODE EMAIL COMPONENTS
+ * Dark mode adjustments for email content display
+ * ----------------------------------------------------------------------------
+ */
+[data-theme="dark"] .email-item .email-summary-preview {
+  color: var(--secondary-text);
+}
+
+[data-theme="dark"] .email-item.active .email-summary-preview {
+  color: var(--secondary-text);
+}
+
+[data-theme="dark"] .email-body iframe {
+  color-scheme: dark;
+}
+
+/* Dark mode styles for email body container only */
+[data-theme="dark"] .email-body-container {
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid #2d2d3d;
+}
+
+/* Ensure response box keeps its original styling in dark mode */
+[data-theme="dark"] .email-response-section {
+  background-color: var(--card-bg);
+  box-shadow: var(--card-shadow);
+}

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>App Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>App Module</h1>
+<p>The App Module provides functionality for app operations.</p>
+<h2>Overview</h2>
+<p>This module implements functionality related to app. The module is organized into 11 main components, including <code>demo</code>, <code>auth</code>, <code>utils</code>, and others. The implementation follows a modular approach, enabling flexibility and maintainability while providing a cohesive interface to the rest of the application. This module serves as a key component in the application's app processing pipeline. Through a well-defined API, other modules can leverage the app functionality without needing to understand the implementation details. This encapsulation ensures that changes to the app implementation won't impact dependent code as long as the interface contract is maintained. The app module integrates with the broader application architecture by providing specialized functionality while adhering to application-wide conventions for error handling, logging, configuration management, and resource utilization. It implements appropriate design patterns to solve complex app challenges in a maintainable and efficient manner.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Flask</span><span class="w"> </span><span class="nx">application</span><span class="w"> </span><span class="nx">factory</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="nx">setup</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">auth</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Authentication</span><span class="w"> </span><span class="nx">module</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Beacon</span><span class="w"> </span><span class="nx">application</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">decorators</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Authentication</span><span class="w"> </span><span class="nx">decorators</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">route</span><span class="w"> </span><span class="nx">protection</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">oauth</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">OAuth</span><span class="w"> </span><span class="nx">authentication</span><span class="w"> </span><span class="nx">handling</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">routes</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Authentication</span><span class="w"> </span><span class="nx">routes</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Beacon</span><span class="w"> </span><span class="nx">application</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Authentication</span><span class="w"> </span><span class="nx">utility</span><span class="w"> </span><span class="nx">functions</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">config</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Application</span><span class="w"> </span><span class="nx">configuration</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">demo</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Demo</span><span class="w"> </span><span class="nx">mode</span><span class="w"> </span><span class="nx">functionality</span><span class="w"> </span><span class="kn">package</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">analysis</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Demo</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">analysis</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">analysis_cache</span><span class="p">.</span><span class="nx">json</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">auth</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Demo</span><span class="w"> </span><span class="nx">authentication</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">data</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Demo</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">data</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">routes</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Demo</span><span class="w"> </span><span class="nx">routes</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Beacon</span><span class="w"> </span><span class="nx">application</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">email</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">analyzers</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">analyzers</span><span class="w"> </span><span class="kn">package</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="kd">base</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Base</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">analyzer</span><span class="w"> </span><span class="kd">interface</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">content</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Content</span><span class="w"> </span><span class="nx">analysis</span><span class="w"> </span><span class="nx">module</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">processing</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">core</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">processing</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">utils</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">semantic</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Semantic</span><span class="w"> </span><span class="nx">analysis</span><span class="w"> </span><span class="kn">package</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">processing</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">analyzer</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Semantic</span><span class="w"> </span><span class="nx">Analyzer</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">content</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">processors</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">utilities</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">clients</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="kd">base</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Base</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">clients</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">gmail</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="kn">package</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">API</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">fetching</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">managing</span><span class="w"> </span><span class="nx">emails</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">client_subprocess</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="nx">that</span><span class="w"> </span><span class="nx">uses</span><span class="w"> </span><span class="nx">a</span><span class="w"> </span><span class="nx">subprocess</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">memory</span><span class="w"> </span><span class="nx">isolation</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">core</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">utils</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">worker</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">imap</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">IMAP</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="kn">package</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Module</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">managing</span><span class="w"> </span><span class="nx">IMAP</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">connections</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">fetching</span><span class="w"> </span><span class="nx">emails</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">models</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">module</span><span class="w"> </span><span class="nx">models</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">analysis_command</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Analysis</span><span class="w"> </span><span class="nx">command</span><span class="w"> </span><span class="nx">model</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">processing</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">analysis_settings</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">analysis</span><span class="w"> </span><span class="nx">settings</span><span class="w"> </span><span class="nx">model</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">exceptions</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Exception</span><span class="w"> </span><span class="nx">classes</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">processing</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">processed_email</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Processed</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">model</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">representing</span><span class="w"> </span><span class="nx">analyzed</span><span class="w"> </span><span class="nx">emails</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">parsing</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">parsing</span><span class="w"> </span><span class="kn">package</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">extracting</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">content</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">parser</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Module</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">parsing</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">extracting</span><span class="w"> </span><span class="nx">metadata</span><span class="w"> </span><span class="nx">from</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">messages</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">utils</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">parsing</span><span class="w"> </span><span class="nx">utilities</span><span class="w"> </span><span class="kn">package</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">body_extractor</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">extracting</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">message</span><span class="w"> </span><span class="nx">bodies</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">date_utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">handling</span><span class="w"> </span><span class="nx">date</span><span class="w"> </span><span class="nx">parsing</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">normalization</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">messages</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">header_utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">handling</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">headers</span><span class="p">,</span><span class="w"> </span><span class="nx">including</span><span class="w"> </span><span class="nx">decoding</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">sanitization</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">html_utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="nx">HTML</span><span class="w"> </span><span class="nx">content</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">messages</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">pipeline</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">helpers</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">pipeline</span><span class="w"> </span><span class="nx">helper</span><span class="w"> </span><span class="nx">functions</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">User</span><span class="w"> </span><span class="nx">context</span><span class="w"> </span><span class="nx">setup</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">validation</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">fetching</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">fetching</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">cache</span><span class="w"> </span><span class="nx">handling</span><span class="w"> </span><span class="nx">utilities</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">processing</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">filtering</span><span class="w"> </span><span class="nx">utilities</span><span class="p">.</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">stats</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Statistics</span><span class="w"> </span><span class="nx">tracking</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">activity</span><span class="w"> </span><span class="nx">logging</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">orchestrator</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="nx">pipeline</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">processing</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="kn">package</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">analyzing</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="nx">emails</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">processor</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="nx">module</span><span class="w"> </span><span class="nx">with</span><span class="w"> </span><span class="nx">analytics</span><span class="w"> </span><span class="nx">tracking</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">sender</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">sending</span><span class="w"> </span><span class="nx">module</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">SMTP</span><span class="o">-</span><span class="nx">based</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">delivery</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">storage</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">storage</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">caching</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">base_cache</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">caching</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">cache_utils</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Utility</span><span class="w"> </span><span class="nx">functions</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">email</span><span class="w"> </span><span class="nx">caching</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">redis_cache</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Redis</span><span class="w"> </span><span class="nx">implementation</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">EmailCache</span><span class="w"> </span><span class="kd">interface</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">utils</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">Utilities</span><span class="w"> </span><span class="nx">Package</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">message_id_cleaner</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">Message</span><span class="o">-</span><span class="nx">ID</span><span class="w"> </span><span class="nx">cleaning</span><span class="w"> </span><span class="nx">utility</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">pipeline_stats</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="nx">metrics</span><span class="w"> </span><span class="nx">collection</span><span class="w"> </span><span class="nx">utilities</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">priority_scorer</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">priority</span><span class="w"> </span><span class="nx">scoring</span><span class="w"> </span><span class="nx">utilities</span><span class="p">.</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">rate_limiter</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Rate</span><span class="w"> </span><span class="nx">limiting</span><span class="w"> </span><span class="nx">utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">API</span><span class="w"> </span><span class="nx">request</span><span class="w"> </span><span class="nx">management</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">logs</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">gmail_worker</span><span class="p">.</span><span class="nx">log</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">support_requests</span><span class="p">.</span><span class="nx">log</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">models</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Database</span><span class="w"> </span><span class="nx">models</span><span class="w"> </span><span class="kn">package</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">user</span><span class="w"> </span><span class="nx">management</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">settings</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">activity</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">User</span><span class="w"> </span><span class="nx">activity</span><span class="w"> </span><span class="nx">tracking</span><span class="w"> </span><span class="nx">models</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">functions</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">settings</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">User</span><span class="w"> </span><span class="nx">settings</span><span class="w"> </span><span class="nx">model</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">storing</span><span class="w"> </span><span class="nx">user</span><span class="w"> </span><span class="nx">preferences</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">user</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">User</span><span class="w"> </span><span class="nx">account</span><span class="w"> </span><span class="nx">model</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">authentication</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">user</span><span class="w"> </span><span class="nx">management</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">routes</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Routes</span><span class="w"> </span><span class="nx">initialization</span><span class="w"> </span><span class="nx">module</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Flask</span><span class="w"> </span><span class="nx">application</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">email_routes</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Email</span><span class="w"> </span><span class="nx">processing</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">viewing</span><span class="w"> </span><span class="nx">routes</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">static_pages</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Routes</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">static</span><span class="w"> </span><span class="nx">pages</span><span class="w"> </span><span class="k">like</span><span class="w"> </span><span class="nx">Privacy</span><span class="w"> </span><span class="nx">Policy</span><span class="p">,</span><span class="w"> </span><span class="nx">Terms</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">Service</span><span class="p">,</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">Support</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">test_routes</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Test</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">development</span><span class="w"> </span><span class="nx">routes</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">Beacon</span><span class="w"> </span><span class="nx">application</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">user_routes</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">User</span><span class="w"> </span><span class="nx">settings</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">analytics</span><span class="w"> </span><span class="nx">routes</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">services</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">__init__</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Services</span><span class="w"> </span><span class="kn">package</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">application</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">db_service</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Database</span><span class="w"> </span><span class="nx">service</span><span class="w"> </span><span class="nx">module</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">openai_service</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">OpenAI</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="nx">service</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">redis_service</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Redis</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="nx">service</span><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">static</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">css</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="kd">base</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">layout</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">reset</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">variables</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">components</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">buttons</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">cards</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">forms</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">toast</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">main</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">pages</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">analytics</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">email_summary</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">login</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">policy</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">settings</span><span class="p">.</span><span class="nx">css</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">images</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">beacon</span><span class="o">-</span><span class="nx">logo</span><span class="o">-</span><span class="nx">hero</span><span class="p">.</span><span class="nx">svg</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">beacon</span><span class="o">-</span><span class="nx">logo</span><span class="p">.</span><span class="nx">svg</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">favicon</span><span class="p">.</span><span class="nx">svg</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">logo_120</span><span class="p">.</span><span class="nx">png</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">logo_512</span><span class="p">.</span><span class="nx">png</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">pattern</span><span class="p">.</span><span class="nx">svg</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">png</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">screenshots</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">categories</span><span class="p">.</span><span class="nx">png</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">custom</span><span class="o">-</span><span class="nx">category</span><span class="p">.</span><span class="nx">png</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">dashboard</span><span class="p">.</span><span class="nx">png</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">email</span><span class="o">-</span><span class="nx">analysis</span><span class="p">.</span><span class="nx">png</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">response</span><span class="p">.</span><span class="nx">png</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">settings</span><span class="p">.</span><span class="nx">png</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">js</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">components</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">editor</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">logout</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">core</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">app</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">modules</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">EmailEvents</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">EmailService</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">EmailState</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">EmailUI</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">EmailUtils</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">emailController</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">pages</span><span class="o">/</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">analytics</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">email_summary</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">settings</span><span class="p">.</span><span class="nx">js</span>
+<span class="w">      </span><span class="err">├──</span><span class="w"> </span><span class="nx">support</span><span class="p">.</span><span class="nx">js</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">templates</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">analytics</span><span class="p">.</span><span class="nx">html</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="kd">base</span><span class="p">.</span><span class="nx">html</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">email_summary</span><span class="p">.</span><span class="nx">html</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">login</span><span class="p">.</span><span class="nx">html</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">settings</span><span class="p">.</span><span class="nx">html</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">static</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">privacy_policy</span><span class="p">.</span><span class="nx">html</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">support</span><span class="p">.</span><span class="nx">html</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">terms_of_service</span><span class="p">.</span><span class="nx">html</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">utils</span><span class="o">/</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">async_helpers</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">handling</span><span class="w"> </span><span class="nx">async</span><span class="w"> </span><span class="nx">operations</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">Flask</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">logging_setup</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Logging</span><span class="w"> </span><span class="nx">utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">application</span><span class="p">.</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="nx">memory_profiling</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Memory</span><span class="w"> </span><span class="nx">profiling</span><span class="w"> </span><span class="nx">utilities</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">monitoring</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="nx">logging</span><span class="w"> </span><span class="nx">application</span><span class="w"> </span><span class="nx">memory</span><span class="w"> </span><span class="nx">usage</span><span class="p">.</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Demo</h3>
+<p>Demo mode functionality package. It contains 5 Python module(s) that work together to provide this functionality. Key components include <code>DemoAnalysis</code>, <code>DemoAnalysis</code>, <code>DemoAnalysis</code>. and 2 other classes.</p>
+<h3>Auth</h3>
+<p>Authentication module for the Beacon application. It contains 5 Python module(s) that work together to provide this functionality.</p>
+<h3>Utils</h3>
+<p>Provides Utils functionality for the module. This component encapsulates related operations and services to maintain separation of concerns and code organization.</p>
+<h3>Models</h3>
+<p>Database models package for user management and settings. It contains 4 Python module(s) that work together to provide this functionality. Key components include <code>User</code>, <code>User</code>, <code>User</code>. and 10 other classes.</p>
+<h3>Logs</h3>
+<p>Provides Logs functionality for the module. This component encapsulates related operations and services to maintain separation of concerns and code organization.</p>
+<h3>Static</h3>
+<p>Provides Static functionality for the module. This component encapsulates related operations and services to maintain separation of concerns and code organization.</p>
+<h3>Templates</h3>
+<p>Provides Templates functionality for the module. This component encapsulates related operations and services to maintain separation of concerns and code organization.</p>
+<h3>Routes</h3>
+<p>Routes initialization module for the Flask application. It contains 5 Python module(s) that work together to provide this functionality.</p>
+<h3>Email</h3>
+<p>Provides Email functionality for the module. This component encapsulates related operations and services to maintain separation of concerns and code organization.</p>
+<h3>Services</h3>
+<p>Services package for the application. It contains 4 Python module(s) that work together to provide this functionality.</p>
+<h3>Config</h3>
+<p>Application configuration module. Implements <code>Config</code> .</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using the app module</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
+
+<span class="c1"># Initialize Config</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">config_file</span><span class="o">=</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>
+
+<span class="c1"># Perform operations with Config</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Configure additional options</span>
+<span class="n">config</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">option</span><span class="o">=</span><span class="s2">&quot;new_value&quot;</span><span class="p">)</span>
+
+<span class="c1"># Finalize processing</span>
+<span class="n">final_result</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final result: </span><span class="si">{</span><span class="n">final_result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># Initialize Config</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="n">config_file</span><span class="o">=</span><span class="s2">&quot;config.json&quot;</span><span class="p">)</span>
+
+<span class="c1"># Perform operations with Config</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Configure additional options</span>
+<span class="n">config</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">option</span><span class="o">=</span><span class="s2">&quot;new_value&quot;</span><span class="p">)</span>
+
+<span class="c1"># Finalize processing</span>
+<span class="n">final_result</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">finalize</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final result: </span><span class="si">{</span><span class="n">final_result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The app module follows these design principles:
+- Modular design with clear separation of concerns
+- Clean, well-documented interfaces for all public components
+- Comprehensive error handling with meaningful error messages
+- Efficient resource management and memory usage
+- Testable components with dependency injection where appropriate
+- Type safety through proper annotations and validations
+- Secure implementation following best practices
+- Performance optimization for critical paths</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.auth.decorators</code>: For decorators functionality
+- <code>app.demo.auth</code>: For auth functionality
+- <code>app.email.clients.gmail.client</code>: For client functionality
+- <code>app.email.clients.gmail.client_subprocess</code>: For client_subprocess functionality
+- <code>app.email.clients.imap.client</code>: For client functionality
+- <code>app.email.models.processed_email</code>: For processed_email functionality
+- <code>app.email.parsing.parser</code>: For parser functionality
+- <code>app.email.pipeline.helpers.context</code>: For context functionality
+- <code>app.email.pipeline.helpers.fetching</code>: For fetching functionality
+- <code>app.email.pipeline.helpers.processing</code>: For processing functionality
+- <code>app.email.pipeline.helpers.stats</code>: For stats functionality
+- <code>app.email.pipeline.orchestrator</code>: For orchestrator functionality
+- <code>app.email.processing.processor</code>: For processor functionality
+- <code>app.email.processing.sender</code>: For sender functionality
+- <code>app.email.storage.base_cache</code>: For base_cache functionality
+- <code>app.models</code>: For data models and schemas
+- <code>app.models.activity</code>: For activity functionality
+- <code>app.models.user</code>: For user functionality
+- <code>app.utils.memory_profiling</code>: For memory_profiling functionality</p>
+<p>External:
+- <code>abc</code>: For abc functionality
+- <code>activity</code>: For activity functionality
+- <code>analysis</code>: For analysis functionality
+- <code>analysis_command</code>: For analysis_command functionality
+- <code>analysis_settings</code>: For analysis_settings functionality
+- <code>analyzer</code>: For analyzer functionality
+- <code>analyzers</code>: For analyzers functionality
+- <code>api</code>: For api functionality
+- <code>api_client</code>: For api_client functionality
+- <code>argparse</code>: For argparse functionality
+- <code>asgiref</code>: For asgiref functionality
+- <code>asyncio</code>: For asynchronous operations
+- <code>auth</code>: For auth functionality
+- <code>base</code>: For base functionality
+- <code>base64</code>: For base64 functionality
+- <code>base_cache</code>: For base_cache functionality
+- <code>batch_processor</code>: For batch_processor functionality
+- <code>body_extractor</code>: For body_extractor functionality
+- <code>cache_utils</code>: For cache_utils functionality
+- <code>client</code>: For client functionality
+- <code>client_subprocess</code>: For client_subprocess functionality
+- <code>clients</code>: For clients functionality
+- <code>concurrent</code>: For concurrent functionality
+- <code>config</code>: For config functionality
+- <code>content</code>: For content functionality
+- <code>contextvars</code>: For contextvars functionality
+- <code>core</code>: For core functionality
+- <code>cost_calculator</code>: For cost_calculator functionality
+- <code>data</code>: For data functionality
+- <code>dataclasses</code>: For dataclasses functionality
+- <code>date_utils</code>: For date_utils functionality
+- <code>datetime</code>: For date and time handling
+- <code>db_service</code>: For db_service functionality
+- <code>decorators</code>: For decorators functionality
+- <code>demo</code>: For demo functionality
+- <code>dotenv</code>: For dotenv functionality
+- <code>email</code>: For email functionality
+- <code>email_parser</code>: For email_parser functionality
+- <code>email_routes</code>: For email_routes functionality
+- <code>email_utils</code>: For email_utils functionality
+- <code>email_validator</code>: For email_validator functionality
+- <code>exceptions</code>: For exceptions functionality
+- <code>file_utils</code>: For file_utils functionality
+- <code>flask</code>: For flask functionality
+- <code>flask_limiter</code>: For flask_limiter functionality
+- <code>flask_migrate</code>: For flask_migrate functionality
+- <code>flask_sqlalchemy</code>: For flask_sqlalchemy functionality
+- <code>functools</code>: For higher-order functions and operations on callable objects
+- <code>gc</code>: For gc functionality
+- <code>gmail</code>: For gmail functionality
+- <code>google</code>: For google functionality
+- <code>google_auth_oauthlib</code>: For google_auth_oauthlib functionality
+- <code>googleapiclient</code>: For googleapiclient functionality
+- <code>hashlib</code>: For hashlib functionality
+- <code>header_utils</code>: For header_utils functionality
+- <code>helpers</code>: For helpers functionality
+- <code>html</code>: For html functionality
+- <code>html_utils</code>: For html_utils functionality
+- <code>httplib2</code>: For httplib2 functionality
+- <code>hypercorn</code>: For hypercorn functionality
+- <code>imap</code>: For imap functionality
+- <code>imapclient</code>: For imapclient functionality
+- <code>json</code>: For JSON serialization and deserialization
+- <code>llm_client</code>: For llm_client functionality
+- <code>logging</code>: For logging and debugging
+- <code>logging_utils</code>: For logging_utils functionality
+- <code>memory_management</code>: For memory_management functionality
+- <code>message_id_cleaner</code>: For message_id_cleaner functionality
+- <code>models</code>: For models functionality
+- <code>multiprocessing</code>: For multiprocessing functionality
+- <code>nlp_analyzer</code>: For nlp_analyzer functionality
+- <code>nlp_subprocess_analyzer</code>: For nlp_subprocess_analyzer functionality
+- <code>oauth</code>: For oauth functionality
+- <code>openai</code>: For openai functionality
+- <code>openai_service</code>: For openai_service functionality
+- <code>os</code>: For operating system interactions
+- <code>parser</code>: For parser functionality
+- <code>parsing</code>: For parsing functionality
+- <code>pathlib</code>: For filesystem path operations
+- <code>pattern_matchers</code>: For pattern_matchers functionality
+- <code>pipeline_stats</code>: For pipeline_stats functionality
+- <code>platform</code>: For platform functionality
+- <code>priority_scorer</code>: For priority_scorer functionality
+- <code>process_utils</code>: For process_utils functionality
+- <code>processed_email</code>: For processed_email functionality
+- <code>processing</code>: For processing functionality
+- <code>processing_utils</code>: For processing_utils functionality
+- <code>processors</code>: For processors functionality
+- <code>prompt_creator</code>: For prompt_creator functionality
+- <code>psutil</code>: For psutil functionality
+- <code>quopri</code>: For quopri functionality
+- <code>quota</code>: For quota functionality
+- <code>random</code>: For random functionality
+- <code>rate_limiter</code>: For rate_limiter functionality
+- <code>re</code>: For regular expression operations
+- <code>redis</code>: For redis functionality
+- <code>redis_cache</code>: For redis_cache functionality
+- <code>redis_service</code>: For redis_service functionality
+- <code>response_parser</code>: For response_parser functionality
+- <code>routes</code>: For routes functionality
+- <code>semantic</code>: For semantic functionality
+- <code>services</code>: For services functionality
+- <code>settings</code>: For settings functionality
+- <code>settings_util</code>: For settings_util functionality
+- <code>signal</code>: For signal functionality
+- <code>smtplib</code>: For smtplib functionality
+- <code>socket</code>: For socket functionality
+- <code>spacy</code>: For spacy functionality
+- <code>spacy_utils</code>: For spacy_utils functionality
+- <code>sqlalchemy</code>: For sqlalchemy functionality
+- <code>static_pages</code>: For static_pages functionality
+- <code>storage</code>: For storage functionality
+- <code>subprocess_manager</code>: For subprocess_manager functionality
+- <code>subprocess_utils</code>: For subprocess_utils functionality
+- <code>sys</code>: For system-specific functionality
+- <code>tempfile</code>: For tempfile functionality
+- <code>test_routes</code>: For test_routes functionality
+- <code>text_processor</code>: For text_processor functionality
+- <code>tiktoken</code>: For tiktoken functionality
+- <code>time</code>: For time functionality
+- <code>token_handler</code>: For token_handler functionality
+- <code>traceback</code>: For traceback functionality
+- <code>typing</code>: For type annotations
+- <code>upstash_redis</code>: For upstash_redis functionality
+- <code>user</code>: For user functionality
+- <code>user_routes</code>: For user_routes functionality
+- <code>utilities</code>: For utilities functionality
+- <code>utils</code>: For utils functionality
+- <code>werkzeug</code>: For werkzeug functionality
+- <code>zoneinfo</code>: For zoneinfo functionality</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="../docs/sphinx/build/html/api.html">API Reference</a></li>
+<li><a href="../docs/dev/app.md">Module Development Guide</a></li>
+<li><a href="../docs/architecture.md">Related Components</a></li>
+</ul>
+    </div>
+</body>
+</html>

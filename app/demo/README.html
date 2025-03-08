@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Demo Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Demo Module</h1>
+<p>The Demo module provides demonstration and sample functionality for the Beacon application.</p>
+<h2>Overview</h2>
+<p>This module contains demonstration features, sample data generators, and testing routes to showcase the application's capabilities. It provides example implementations and simplified workflows that help users understand how to use the application's features.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">demo</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">analysis</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Demo email analysis features</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">auth</span><span class="o">.</span><span class="n">py</span><span class="w">            </span><span class="c1"># Authentication demos</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">data</span><span class="o">.</span><span class="n">py</span><span class="w">            </span><span class="c1"># Sample data generation</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">routes</span><span class="o">.</span><span class="n">py</span><span class="w">          </span><span class="c1"># Demo routes and endpoints</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">          </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Demo Analysis</h3>
+<p>Provides sample email analysis functionality with pre-configured settings and example responses. Demonstrates how the email analysis pipeline works with simplified inputs and outputs.</p>
+<h3>Demo Authentication</h3>
+<p>Implements simplified authentication flows for demonstration purposes, allowing easy testing without complex setup. Includes sample login flows and authorization examples.</p>
+<h3>Demo Data</h3>
+<p>Generates realistic sample data for testing and demonstration, including email content, user accounts, and analysis results. Useful for development, testing, and showcases.</p>
+<h3>Demo Routes</h3>
+<p>Exposes endpoints specifically for demonstration purposes, allowing users to interact with and test the application's features through a simplified interface.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Generating sample data</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.demo.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_sample_emails</span>
+
+<span class="n">sample_emails</span> <span class="o">=</span> <span class="n">generate_sample_emails</span><span class="p">(</span><span class="n">count</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+<span class="c1"># Running demo analysis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.demo.analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">analyze_demo_email</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">analyze_demo_email</span><span class="p">(</span><span class="n">email_content</span><span class="o">=</span><span class="s2">&quot;Sample email content&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis Result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Using demo authentication</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.demo.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_demo_user</span>
+
+<span class="n">demo_user</span> <span class="o">=</span> <span class="n">get_demo_user</span><span class="p">()</span>
+<span class="c1"># Log in as the demo user</span>
+<span class="n">login_user</span><span class="p">(</span><span class="n">demo_user</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The demo module follows these design principles:
+- Simplified implementations of core functionality
+- Clear examples of proper usage patterns
+- Consistent interface with actual application features
+- Limited dependencies on external services
+- Focus on educational and illustrative value</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.email</code>: For email processing functionality
+- <code>app.auth</code>: For authentication functionality
+- <code>app.models</code>: For data models</p>
+<p>External:
+- <code>flask</code>: For route definitions
+- <code>faker</code>: For generating realistic test data
+- <code>random</code>: For randomizing demo data</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://flask.palletsprojects.com/">Flask Documentation</a></li>
+<li><a href="https://faker.readthedocs.io/">Faker Documentation</a></li>
+<li><a href="../../docs/sphinx/build/html/api.html">API Reference</a></li>
+<li><a href="../../docs/email_processing.md">Email Processing Documentation</a> </li>
+</ul>
+    </div>
+</body>
+</html>

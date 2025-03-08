@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Parsing Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Email Parsing Module</h1>
+<p>The Email Parsing module extracts structured data from raw email content, converting complex email formats into usable metadata.</p>
+<h2>Overview</h2>
+<p>This module handles the parsing and extraction of information from raw email data. It converts complex, multi-part email formats into structured metadata objects that can be easily processed by other components. The parser handles various email components including headers, body text (in different formats), attachments, and threading information.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">parsing</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">parser</span><span class="o">.</span><span class="n">py</span><span class="w">             </span><span class="c1"># Main parser implementation</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">utils</span><span class="o">/</span><span class="w">                </span><span class="c1"># Parsing utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">       </span><span class="c1"># Utility exports</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">body_extractor</span><span class="o">.</span><span class="n">py</span><span class="w"> </span><span class="c1"># Email body extraction</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">date_utils</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># Date parsing utilities</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">header_utils</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="c1"># Header parsing functions</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">html_utils</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># HTML processing utilities</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">             </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Email Parser</h3>
+<p>The main parser class that extracts structured metadata from raw email content. Handles conversion from raw email data to a standardized EmailMetadata object with normalized fields.</p>
+<h3>Parsing Utilities</h3>
+<p>Specialized utilities for handling specific aspects of email parsing, including body text extraction, date normalization, header processing, and HTML content handling.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Parsing a raw email</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.parsing.parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailParser</span>
+
+<span class="n">parser</span> <span class="o">=</span> <span class="n">EmailParser</span><span class="p">()</span>
+<span class="n">raw_email</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;email_123&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;raw_message&quot;</span><span class="p">:</span> <span class="sa">b</span><span class="s2">&quot;MIME-Version: 1.0</span><span class="se">\r\n</span><span class="s2">From: sender@example.com</span><span class="se">\r\n</span><span class="s2">...&quot;</span>
+<span class="p">}</span>
+<span class="n">email_metadata</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">extract_metadata</span><span class="p">(</span><span class="n">raw_email</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;From: </span><span class="si">{</span><span class="n">email_metadata</span><span class="o">.</span><span class="n">sender</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Subject: </span><span class="si">{</span><span class="n">email_metadata</span><span class="o">.</span><span class="n">subject</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Date: </span><span class="si">{</span><span class="n">email_metadata</span><span class="o">.</span><span class="n">date</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Body: </span><span class="si">{</span><span class="n">email_metadata</span><span class="o">.</span><span class="n">body</span><span class="p">[:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+
+<span class="c1"># Using specific utilities</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.parsing.utils.html_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_text_from_html</span>
+
+<span class="n">html_content</span> <span class="o">=</span> <span class="s2">&quot;&lt;html&gt;&lt;body&gt;&lt;p&gt;Hello world!&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;&quot;</span>
+<span class="n">plain_text</span> <span class="o">=</span> <span class="n">extract_text_from_html</span><span class="p">(</span><span class="n">html_content</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">plain_text</span><span class="p">)</span>  <span class="c1"># &quot;Hello world!&quot;</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The parsing module follows these design principles:
+- Robust handling of various email formats
+- Proper decoding of character sets and encodings
+- Graceful fallback for malformed emails
+- Consistent extraction of essential metadata
+- Efficient processing of large emails</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.utils.logging_setup</code>: For logging parsing events</p>
+<p>External:
+- <code>email</code>: Python's standard email parsing library
+- <code>dateutil.parser</code>: For flexible date parsing
+- <code>beautifulsoup4</code>: For HTML parsing and cleaning
+- <code>chardet</code>: For character encoding detection</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://tools.ietf.org/html/rfc2045">Email MIME Structure Reference</a></li>
+<li><a href="https://docs.python.org/3/library/email.html">Python email Package Documentation</a></li>
+<li><a href="https://www.crummy.com/software/BeautifulSoup/bs4/doc/">BeautifulSoup Documentation</a></li>
+<li><a href="../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>
