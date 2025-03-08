@@ -38,8 +38,34 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'furo'
 html_static_path = ['_static']
+
+# Custom CSS
+html_css_files = [
+    'custom.css',
+]
+
+# Furo theme options
+html_theme_options = {
+    "sidebar_hide_name": False,
+    "navigation_with_keys": True,
+    "announcement": "This is the new modern documentation for Beacon.",
+    "light_css_variables": {
+        "color-brand-primary": "#0366d6",
+        "color-brand-content": "#0366d6",
+        "color-admonition-background": "#f5f7fa",
+    },
+    "dark_css_variables": {
+        "color-brand-primary": "#58a6ff",
+        "color-brand-content": "#58a6ff",
+        "color-admonition-background": "#2d333b",
+    },
+}
+
+# Pygments syntax highlight style
+pygments_style = "friendly"
+pygments_dark_style = "monokai"
 
 # -- Autodoc configuration ----------------------------------------------------
 autodoc_typehints = 'description'
@@ -95,7 +121,7 @@ def setup_build_environment(_):
     # 1. Install required packages
     packages = [
         'myst-parser',
-        'sphinx-rtd-theme',
+        'furo',
         'pillow',
     ]
     

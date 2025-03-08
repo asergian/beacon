@@ -121,7 +121,7 @@ psutil==5.9.8
 # Documentation tools
 
 Sphinx>=8.2.0
-sphinx-rtd-theme>=2.0.0
+furo>=2024.8.0
 interrogate>=1.5.0
 myst-parser>=4.0.0
 
