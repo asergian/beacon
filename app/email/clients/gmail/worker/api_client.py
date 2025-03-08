@@ -36,14 +36,19 @@ httplib2.RETRIES = 1
 def load_credentials(credentials_json: str) -> Dict[str, Any]:
     """Load credentials from JSON string or file.
     
+    Parses OAuth credentials from either a JSON string or a file path prefixed
+    with '@'. Used for initializing the Gmail API client.
+    
     Args:
-        credentials_json: OAuth credentials JSON string or file path (prefixed with '@')
+        credentials_json: str: OAuth credentials JSON string or file path 
+            (prefixed with '@', e.g., '@/path/to/creds.json')
         
     Returns:
-        Dictionary containing credential data
+        Dict[str, Any]: Dictionary containing credential data with keys like
+            'token', 'refresh_token', 'client_id', 'client_secret', etc.
         
     Raises:
-        ValueError: If credentials cannot be loaded
+        ValueError: If credentials cannot be loaded or parsed as valid JSON
     """
     logger = get_logger()
     try:
@@ -64,27 +69,39 @@ class MemoryCache(Cache):
     """In-memory cache for Gmail API discovery document.
     
     This cache is process-local and helps avoid repeated network requests
-    for the API discovery document.
+    for the API discovery document. Uses a class-level dictionary to store
+    cache entries, ensuring they persist for the duration of the process
+    but do not consume memory between process executions.
+    
+    Attributes:
+        _CACHE: dict: Class-level dictionary to store cached content by URL
     """
     _CACHE = {}  # Process-local cache
 
     def get(self, url: str) -> Optional[bytes]:
         """Get cached content for a URL.
         
+        Retrieves content from the in-memory cache if it exists.
+        
         Args:
-            url: The URL to retrieve from cache
+            url: str: The URL to retrieve from cache
             
         Returns:
-            Cached content or None if not in cache
+            Optional[bytes]: Cached content as bytes if found, None otherwise
         """
         return self._CACHE.get(url)
 
     def set(self, url: str, content: bytes) -> None:
         """Set cached content for a URL.
         
+        Stores content in the in-memory cache for later retrieval.
+        
         Args:
-            url: The URL to cache
-            content: The content to cache
+            url: str: The URL to use as cache key
+            content: bytes: The content to cache
+            
+        Returns:
+            None
         """
         self._CACHE[url] = content
 
@@ -92,15 +109,20 @@ class MemoryCache(Cache):
 async def create_gmail_service(creds_data: Dict[str, Any], logger: Optional[logging.Logger] = None) -> Any:
     """Create a Gmail API service client.
     
+    Initializes and returns a Gmail API service object using the provided
+    OAuth credentials. Handles token refresh and API client construction.
+    
     Args:
-        creds_data: OAuth credentials dictionary
-        logger: Optional logger for output
+        creds_data: Dict[str, Any]: OAuth credentials dictionary containing
+            token, refresh_token, client_id, client_secret, and other required fields
+        logger: Optional[logging.Logger]: Logger instance for output messages
+            and debugging. If None, a default logger will be obtained.
         
     Returns:
-        Gmail API service object
+        Any: Gmail API service object from googleapiclient.discovery
         
     Raises:
-        ValueError: If credentials are invalid
+        ValueError: If credentials are invalid or service creation fails
     """
     if logger is None:
         logger = get_logger()
@@ -154,15 +176,29 @@ class GmailService:
     """Gmail API service wrapper for the worker process.
     
     This class encapsulates Gmail API interactions and provides a consistent
-    interface for fetching and sending emails.
+    interface for fetching and sending emails. It handles authentication,
+    API initialization, and provides methods for common Gmail operations with
+    proper memory management and error handling.
+    
+    Attributes:
+        logger: Optional[logging.Logger]: Logger for output messages
+        credentials_json: str: OAuth credentials JSON string or file path
+        service: Any: Gmail API service object from googleapiclient.discovery
+        user_email: Optional[str]: Email address of the authenticated user
+        credentials_data: Optional[Dict[str, Any]]: Parsed credentials dictionary
     """
     
     def __init__(self, credentials_json: str, logger: Optional[logging.Logger] = None):
         """Initialize the Gmail service with credentials.
         
+        Sets up the initial state of the Gmail service object. Note that this
+        does not actually create the API client - that happens in initialize().
+        
         Args:
-            credentials_json: OAuth credentials JSON string or path
-            logger: Optional logger for output
+            credentials_json: str: OAuth credentials JSON string or file path 
+                (prefixed with '@' for file paths)
+            logger: Optional[logging.Logger]: Logger for output. If None, a default
+                logger will be obtained using get_logger().
         """
         self.logger = logger or get_logger()
         self.credentials_json = credentials_json
@@ -174,7 +210,14 @@ class GmailService:
         """Initialize the service.
         
         This method loads credentials and creates the service object.
-        It must be called before using any other methods.
+        It must be called before using any other methods of this class.
+        If the service is already initialized, this method returns early.
+        
+        Returns:
+            None
+            
+        Raises:
+            ValueError: If credentials cannot be loaded or service creation fails
         """
         if self.service is not None:
             return
@@ -189,15 +232,19 @@ class GmailService:
     async def get_message(self, msg_id: str) -> Dict[str, Any]:
         """Fetch a single message by ID.
         
+        Retrieves a single email message from Gmail by its ID, processes
+        it into a structured format, and tracks memory usage.
+        
         Args:
-            msg_id: Message ID to fetch
+            msg_id: str: Message ID to fetch from Gmail
             
         Returns:
-            Processed message data
+            Dict[str, Any]: Processed message data with standardized fields
+                including headers, body content, and metadata
             
         Raises:
             ValueError: If the service is not initialized
-            Exception: If message fetch fails
+            Exception: If message fetch fails due to API errors
         """
         if self.service is None:
             await self.initialize()
@@ -224,13 +271,26 @@ class GmailService:
     def create_batch_callback(self, responses: Dict[str, Any]) -> Any:
         """Create a callback function for batch requests.
         
+        Creates a callback function to process responses from batch requests.
+        The callback populates the responses dictionary with results or logs
+        errors for failed requests.
+        
         Args:
-            responses: Dictionary to store responses
+            responses: Dict[str, Any]: Dictionary to store responses, keyed by 
+                request_id (usually the message ID)
             
         Returns:
-            Callback function
+            function: Callback function that takes (request_id, response, exception)
+                parameters and updates the responses dictionary
         """
         def callback(request_id, response, exception):
+            """Process a single response in a batch request.
+            
+            Args:
+                request_id: str: ID of the request (usually message ID)
+                response: Any: Response data if successful
+                exception: Exception: Exception if request failed
+            """
             if exception:
                 self.logger.error(f"Error fetching message {request_id}: {exception}")
             else:
@@ -241,11 +301,16 @@ class GmailService:
     async def get_messages_batch(self, message_ids: List[str]) -> List[Dict[str, Any]]:
         """Fetch multiple messages by ID.
         
+        Retrieves multiple email messages in batches for efficiency. This method
+        uses the Gmail API batch request functionality to reduce the number of
+        HTTP requests and improve performance.
+        
         Args:
-            message_ids: List of message IDs to fetch
+            message_ids: List[str]: List of message IDs to fetch
             
         Returns:
-            List of processed messages
+            List[Dict[str, Any]]: List of processed messages, each containing
+                standardized fields like headers, body content, and metadata
             
         Raises:
             ValueError: If the service is not initialized
@@ -311,15 +376,21 @@ class GmailService:
     async def list_message_ids(self, query: str, max_results: Optional[int] = None) -> List[str]:
         """List message IDs matching a query.
         
+        Queries the Gmail API to find messages matching the specified search query
+        and returns their IDs. This method handles pagination automatically if
+        there are more results than can be returned in a single request.
+        
         Args:
-            query: Gmail search query
-            max_results: Maximum number of results to return
+            query: str: Gmail search query in the same format as the Gmail search box
+            max_results: Optional[int]: Maximum number of results to return.
+                If None, returns all matching messages.
             
         Returns:
-            List of message IDs
+            List[str]: List of message IDs matching the query
             
         Raises:
             ValueError: If the service is not initialized
+            Exception: If the listing operation fails due to API errors
         """
         if self.service is None:
             await self.initialize()
@@ -376,17 +447,25 @@ class GmailService:
                          max_results: int = 100) -> List[Dict[str, Any]]:
         """Fetch and process emails matching the query.
         
+        This is the main method for retrieving emails. It combines list_message_ids
+        and get_messages_batch to efficiently fetch and process emails in batches,
+        with optional filtering by date and folder location.
+        
         Args:
-            query: Gmail search query
-            include_spam_trash: Whether to include spam and trash folders
-            cutoff_time: Cutoff time for filtering emails
-            max_results: Maximum number of results to return
+            query: str: Gmail search query in the same format as the Gmail search box
+            include_spam_trash: bool: Whether to include emails from spam and trash folders.
+                Defaults to False.
+            cutoff_time: Optional[datetime]: Cutoff time for filtering emails.
+                Only emails after this time will be included. Defaults to None (no filtering).
+            max_results: int: Maximum number of results to return. Defaults to 100.
             
         Returns:
-            List of processed emails
+            List[Dict[str, Any]]: List of processed email dictionaries with standardized
+                fields including headers, body content, and metadata
             
         Raises:
             ValueError: If the service is not initialized
+            Exception: If fetching or processing fails
         """
         if self.service is None:
             await self.initialize()
@@ -440,21 +519,29 @@ class GmailService:
                        html_content: Optional[str] = None, max_retries: int = 3) -> Dict[str, Any]:
         """Send an email.
         
+        Composes and sends an email with both plain text and optional HTML content.
+        Handles retries with exponential backoff in case of transient failures.
+        
         Args:
-            to: Recipient email address(es)
-            subject: Email subject
-            content: Plain text content
-            cc: CC recipients
-            bcc: BCC recipients
-            html_content: HTML content
-            max_retries: Maximum number of retry attempts
+            to: str: Recipient email address(es), can be comma-separated
+            subject: str: Email subject line
+            content: str: Plain text email content
+            cc: Optional[List[str]]: List of CC recipient email addresses
+            bcc: Optional[List[str]]: List of BCC recipient email addresses
+            html_content: Optional[str]: HTML version of the email content
+            max_retries: int: Maximum number of retry attempts in case of failure.
+                Defaults to 3.
             
         Returns:
-            Dictionary with send result
+            Dict[str, Any]: Dictionary with send result containing:
+                - success: bool: Whether the send operation succeeded
+                - message_id: str: ID of the sent message (if successful)
+                - thread_id: str: ID of the thread (if successful)
+                - user_email: str: Sender email address (if successful)
+                - error: str: Error message (if failed)
             
         Raises:
             ValueError: If the service is not initialized
-            Exception: If sending fails after retries
         """
         if self.service is None:
             await self.initialize()

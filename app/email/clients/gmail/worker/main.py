@@ -48,17 +48,27 @@ async def main(credentials_json: str, user_email: str, query: str,
               max_results: int = 100, user_timezone: str = 'US/Pacific') -> Dict[str, Any]:
     """Main function to run Gmail API operations.
     
+    Handles the primary email fetching workflow by initializing the Gmail service,
+    calculating date cutoffs based on the days_back parameter, fetching emails
+    that match the query, and returning the results.
+    
     Args:
-        credentials_json: OAuth credentials JSON string or path
-        user_email: User's email address
-        query: Gmail search query
-        include_spam_trash: Whether to include spam and trash folders
-        days_back: Number of days back to fetch emails
-        max_results: Maximum number of results to return
-        user_timezone: User's timezone
+        credentials_json: str: OAuth credentials JSON string or path to credentials file
+        user_email: str: User's email address for which to fetch emails
+        query: str: Gmail search query (same format as Gmail search box)
+        include_spam_trash: bool: Whether to include emails from spam and trash folders
+        days_back: int: Number of days back to fetch emails (1 = today only)
+        max_results: int: Maximum number of results to return. Defaults to 100.
+        user_timezone: str: User's timezone string (e.g., 'US/Pacific'). Defaults to 'US/Pacific'.
         
     Returns:
-        Dictionary with results
+        Dict[str, Any]: Dictionary with the following keys:
+            - emails: List of processed email dictionaries
+            - count: Number of emails returned
+            - query: The query that was used
+            - user_email: The user email that was queried
+            - days_back: Number of days back that were queried
+            - error: Error message if an error occurred (only present on error)
     """
     try:
         # Initialize the Gmail service
@@ -100,18 +110,27 @@ async def send_email_task(credentials_json: str, user_email: str, to: str,
                          bcc: Optional[str] = None, html_content: Optional[str] = None) -> Dict[str, Any]:
     """Task for sending an email.
     
+    Handles the email sending workflow by initializing the Gmail service,
+    processing recipient lists, and sending the email with both plain text
+    and optional HTML content.
+    
     Args:
-        credentials_json: OAuth credentials JSON string or path
-        user_email: User's email address
-        to: Recipient email address(es)
-        subject: Email subject
-        content: Plain text content
-        cc: CC recipients
-        bcc: BCC recipients
-        html_content: HTML content
+        credentials_json: str: OAuth credentials JSON string or path to credentials file
+        user_email: str: User's email address from which to send the email
+        to: str: Recipient email address(es), comma-separated for multiple recipients
+        subject: str: Email subject line
+        content: str: Plain text email content
+        cc: Optional[str]: CC recipients, comma-separated for multiple recipients
+        bcc: Optional[str]: BCC recipients, comma-separated for multiple recipients
+        html_content: Optional[str]: HTML version of the email content
         
     Returns:
-        Dictionary with send result
+        Dict[str, Any]: Dictionary with the following keys:
+            - success: bool: Whether the email was sent successfully
+            - message_id: str: ID of the sent message (if successful)
+            - thread_id: str: ID of the thread the message belongs to (if successful)
+            - user_email: str: The email address that sent the message (if successful)
+            - error: str: Error message (only present on error)
     """
     try:
         # Initialize the Gmail service
@@ -140,9 +159,29 @@ async def send_email_task(credentials_json: str, user_email: str, to: str,
 
 
 def setup_signal_handlers() -> None:
-    """Set up signal handlers for timeout and interrupts."""
+    """Set up signal handlers for timeout and interrupts.
+    
+    Configures signal handlers to handle timeouts gracefully, preventing
+    the worker process from hanging indefinitely. This is important for
+    maintaining reliability in production environments.
+    
+    Returns:
+        None
+    """
     # Set up signal handler for timeout
     def handle_timeout(signum, frame):
+        """Handle SIGALRM signal for process timeout.
+        
+        Logs the timeout event and outputs a structured JSON error response
+        before exiting the process.
+        
+        Args:
+            signum: int: Signal number (SIGALRM)
+            frame: frame: Current stack frame
+            
+        Note:
+            This function does not return as it calls sys.exit(1)
+        """
         logger.error("Timeout reached while processing request")
         # Output JSON response based on the action
         if len(sys.argv) > 2 and '--action' in sys.argv and 'send_email' in sys.argv:
@@ -163,7 +202,15 @@ def setup_signal_handlers() -> None:
 
 
 def optimize_process() -> None:
-    """Optimize the process for better performance."""
+    """Optimize the process for better performance.
+    
+    Configures operating system level optimizations like process priority
+    to improve performance. This is particularly important for memory-intensive
+    operations like email processing.
+    
+    Returns:
+        None
+    """
     # Set process priority higher on Unix systems
     if sys.platform != 'win32':
         try:
@@ -176,8 +223,25 @@ def optimize_process() -> None:
 def parse_arguments():
     """Parse command line arguments.
     
+    Configures and processes command line arguments for the Gmail worker.
+    Handles arguments for both fetch_emails and send_email actions.
+    
     Returns:
-        Parsed arguments
+        argparse.Namespace: Parsed arguments object with the following attributes:
+            - credentials: str: OAuth credentials JSON or file path
+            - user_email: str: User's email address
+            - action: str: Action to perform ('fetch_emails' or 'send_email')
+            - query: str: Gmail search query (for fetch_emails)
+            - include_spam_trash: bool: Whether to include spam/trash (for fetch_emails)
+            - days_back: int: Number of days back to fetch (for fetch_emails)
+            - max_results: int: Maximum results to return (for fetch_emails)
+            - user_timezone: str: User's timezone (for fetch_emails)
+            - to: str: Recipients (for send_email)
+            - subject: str: Email subject (for send_email)
+            - content: str: Email content (for send_email)
+            - html_content: str: HTML content (for send_email)
+            - cc: str: CC recipients (for send_email)
+            - bcc: str: BCC recipients (for send_email)
     """
     parser = argparse.ArgumentParser(description="Gmail API Worker Process")
     parser.add_argument("--credentials", required=True, help="OAuth2 credentials JSON string or @file containing credentials")

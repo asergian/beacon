@@ -15,12 +15,25 @@ logger = logging.getLogger('gmail_worker')
 def calculate_cutoff_time(days_back: int, user_timezone: str = 'US/Pacific') -> Tuple[datetime, datetime]:
     """Calculate the cutoff time for email filtering.
     
+    Calculates a cutoff datetime for filtering emails based on the number of
+    days to look back from the current time. Handles timezone conversion and
+    ensures consistent date boundaries.
+    
     Args:
-        days_back: Number of days back to calculate cutoff 
-        user_timezone: User's timezone string (e.g., 'US/Pacific')
+        days_back: int: Number of days back to calculate cutoff. A value of 1
+            means today only, 7 means the last week, etc.
+        user_timezone: str: User's timezone string (e.g., 'US/Pacific').
+            Defaults to 'US/Pacific' if not specified or if specified timezone
+            is not available.
         
     Returns:
-        Tuple containing (user_now, cutoff_time) both in user's timezone
+        Tuple[datetime, datetime]: A tuple containing:
+            - user_now: Current datetime in the user's timezone
+            - cutoff_time: Start of day N days ago in the user's timezone,
+              where N is days_back-1 (minimum 0)
+    
+    Raises:
+        None: Falls back to US/Pacific or UTC if timezone is invalid
     """
     # Adjust days_back to match cache logic (days_back=1 means today only)
     adjusted_days = max(0, days_back - 1)

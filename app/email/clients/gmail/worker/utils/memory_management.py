@@ -7,11 +7,10 @@ in the Gmail worker process.
 import gc
 import logging
 import os
-import sys
 import socket
-from typing import Optional, Union
+from typing import Optional
 
-from utils.logging_utils import get_logger
+from .logging_utils import get_logger
 
 # Configure garbage collection for better memory management
 gc.set_threshold(700, 10, 5)  # More aggressive than default (700, 10, 10)
@@ -110,8 +109,15 @@ def track_email_processing(email_size: int) -> None:
 def get_processing_stats() -> dict:
     """Get the current email processing statistics.
     
+    Retrieves statistics about email processing including total bytes processed,
+    number of emails processed, maximum email size, and current memory usage.
+    
     Returns:
-        Dictionary with processing statistics
+        dict: Dictionary with processing statistics containing the following keys:
+            - total_bytes: Total bytes processed
+            - emails_processed: Number of emails processed
+            - max_email_size: Size of the largest email processed
+            - current_memory: Current memory usage in MB
     """
     return {
         "total_bytes": TOTAL_PROCESSED_BYTES,

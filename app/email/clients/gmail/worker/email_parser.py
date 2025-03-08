@@ -26,12 +26,19 @@ logger = get_logger('gmail_parser')
 def decode_bytes_with_encoding(part: bytes, encoding: Optional[str] = None) -> str:
     """Decode bytes using the specified encoding or fallback to utf-8.
     
+    Attempts to decode bytes using the specified encoding, falling back to
+    UTF-8 if the specified encoding fails or is not provided. This function
+    handles various error cases gracefully to ensure it always returns a string.
+    
     Args:
-        part: Bytes to decode
-        encoding: Character encoding to use
+        part: bytes: The bytes data to decode
+        encoding: Optional[str]: Character encoding to use for decoding.
+            If None, UTF-8 will be used as the default.
         
     Returns:
-        Decoded string
+        str: Decoded string. If decoding fails, the function will attempt to
+            use UTF-8 with error replacement or as a last resort, convert
+            the bytes to a string representation.
     """
     if not isinstance(part, bytes):
         return part
@@ -53,13 +60,16 @@ def decode_bytes_with_encoding(part: bytes, encoding: Optional[str] = None) -> s
 def decode_encoded_word(charset: str, encoding: str, encoded_text: str) -> str:
     """Decode a single encoded word in an email header.
     
+    Handles the RFC 2047 encoded-word format used in email headers, supporting
+    both base64 (B) and quoted-printable (Q) encoding methods.
+    
     Args:
-        charset: Character set of the encoded text
-        encoding: Encoding method (B for base64, Q for quoted-printable)
-        encoded_text: The encoded text
+        charset: str: Character set of the encoded text (e.g., 'utf-8', 'iso-8859-1')
+        encoding: str: Encoding method - 'B' for base64, 'Q' for quoted-printable
+        encoded_text: str: The encoded text to decode
         
     Returns:
-        Decoded text
+        str: Decoded text. Returns the original text if decoding fails.
     """
     try:
         if encoding.upper() == 'B':
@@ -78,11 +88,16 @@ def decode_encoded_word(charset: str, encoding: str, encoded_text: str) -> str:
 def decode_encoded_words_regex(text: str) -> str:
     """Decode any encoded words in text using regex.
     
+    Searches for RFC 2047 encoded words in the text and decodes them.
+    This is used as a fallback mechanism when the standard email.header
+    module fails to decode properly.
+    
     Args:
-        text: Text that may contain encoded words
-        
+        text: str: Text that may contain encoded words in the format =?charset?encoding?text?=
+            
     Returns:
-        Decoded text
+        str: Text with all encoded words decoded. If no encoded words are found
+            or if decoding fails, returns the original text.
     """
     if '=?' not in text or '?=' not in text:
         return text
@@ -90,6 +105,14 @@ def decode_encoded_words_regex(text: str) -> str:
     pattern = r'=\?([^?]+)\?([BbQq])\?([^?]*)\?='
     
     def decode_match(match):
+        """Decode a single regex match of an encoded word.
+        
+        Args:
+            match: re.Match object containing the encoded word components
+            
+        Returns:
+            str: Decoded text for this match
+        """
         charset, encoding, encoded_text = match.groups()
         return decode_encoded_word(charset, encoding, encoded_text)
         
@@ -99,11 +122,19 @@ def decode_encoded_words_regex(text: str) -> str:
 def decode_header(header_text: str) -> str:
     """Decode email header text that may contain encoded words.
     
+    Uses a two-step process to decode email headers:
+    1. Try the standard email.header module
+    2. Fall back to regex-based decoding for any remaining encoded words
+    
+    This handles complex headers with mixed encodings and character sets.
+    
     Args:
-        header_text: The header text to decode
-        
+        header_text: str: The header text to decode, which may contain
+            encoded words in =?charset?encoding?text?= format
+            
     Returns:
-        Decoded header text
+        str: Fully decoded header text as a single string. If decoding
+            fails, returns the original text.
     """
     if not header_text:
         return ""
@@ -132,11 +163,17 @@ def decode_header(header_text: str) -> str:
 def parse_date(date_str: str) -> Optional[datetime]:
     """Parse email date string with caching.
     
+    Converts an email date string into a datetime object, with caching for
+    better performance. The function uses LRU caching to avoid repeatedly
+    parsing the same date strings.
+    
     Args:
-        date_str: The date string to parse
-        
+        date_str: str: The date string to parse, typically from an email's
+            Date header in RFC 2822 format
+            
     Returns:
-        Parsed datetime object or None if parsing fails
+        Optional[datetime]: Parsed datetime object, or None if parsing fails
+            or if date_str is empty
     """
     if not date_str:
         return None
@@ -156,12 +193,17 @@ def parse_date(date_str: str) -> Optional[datetime]:
 def decode_base64_content(body_data: str, default_encoding: str = 'utf-8') -> str:
     """Decode base64 encoded content.
     
+    Decodes base64 encoded content from email bodies, handling URL-safe
+    base64 encoding and character encoding issues.
+    
     Args:
-        body_data: Base64 encoded string
-        default_encoding: Encoding to use for decoding (default: utf-8)
-        
+        body_data: str: Base64 encoded string from email body
+        default_encoding: str: Character encoding to use for decoding the bytes
+            after base64 decoding. Defaults to 'utf-8'.
+            
     Returns:
-        Decoded content as string
+        str: Decoded content as string. Returns an empty string if body_data is
+            empty or if decoding fails.
     """
     if not body_data:
         return ""
@@ -176,12 +218,17 @@ def decode_base64_content(body_data: str, default_encoding: str = 'utf-8') -> st
 def get_content_by_mime_type(part: Dict[str, Any], mime_type: str) -> str:
     """Extract content from a part if it matches the specified MIME type.
     
+    Examines an email part and extracts its content if the MIME type matches
+    the requested type. This is used to extract specific content types like
+    text/plain or text/html from email messages.
+    
     Args:
-        part: Email part data
-        mime_type: MIME type to look for
+        part: Dict[str, Any]: Email part data from Gmail API response
+        mime_type: str: MIME type to look for (e.g., 'text/plain', 'text/html')
         
     Returns:
-        Decoded content if MIME type matches, empty string otherwise
+        str: Decoded content if MIME type matches, empty string otherwise or
+            if the part has no body data
     """
     part_mime_type = part.get('mimeType', '')
     body_data = part.get('body', {}).get('data', '')
@@ -196,13 +243,23 @@ def extract_content_from_parts(parts: List[Dict[str, Any]],
                                html_content: str = "") -> Tuple[str, str]:
     """Extract text and HTML content from message parts recursively.
     
+    Processes a list of email parts recursively to extract both text/plain
+    and text/html content. This handles complex multipart email structures
+    with nested parts.
+    
     Args:
-        parts: List of email parts
-        text_content: Existing text content to append to
-        html_content: Existing HTML content to append to
+        parts: List[Dict[str, Any]]: List of email parts from Gmail API response
+        text_content: str: Existing text content to append to. Defaults to empty string.
+        html_content: str: Existing HTML content to append to. Defaults to empty string.
         
     Returns:
-        Tuple of (text_content, html_content)
+        Tuple[str, str]: A tuple containing:
+            - text_content: Plain text content extracted from the parts
+            - html_content: HTML content extracted from the parts
+            
+    Note:
+        The function prioritizes finding content when text_content or html_content
+        are empty. If they already have values, it won't overwrite them.
     """
     if not parts:
         return text_content, html_content
@@ -231,11 +288,18 @@ def extract_content_from_parts(parts: List[Dict[str, Any]],
 def extract_email_parts(message_data: Dict[str, Any]) -> Tuple[str, str, Dict[str, str]]:
     """Extract text, HTML content, and headers from a Gmail message.
     
+    Parses the Gmail API message data to extract the message body in both
+    plain text and HTML formats, along with decoded email headers.
+    
     Args:
-        message_data: The Gmail API message data
+        message_data: Dict[str, Any]: The Gmail API message data object
+            containing payload, headers, parts, and body information
         
     Returns:
-        Tuple of (text_content, html_content, headers)
+        Tuple[str, str, Dict[str, str]]: A tuple containing:
+            - text_content: Plain text body of the email
+            - html_content: HTML body of the email
+            - headers: Dictionary of decoded header values with lowercase keys
     """
     # Extract headers
     headers = {}
@@ -274,11 +338,30 @@ def extract_email_parts(message_data: Dict[str, Any]) -> Tuple[str, str, Dict[st
 def process_message(message_data: Dict[str, Any]) -> Dict[str, Any]:
     """Process a Gmail message into a structured format.
     
+    Converts a raw Gmail API message response into a cleaner, structured format
+    by extracting headers, parsing dates, and decoding message content (both text
+    and HTML parts).
+    
     Args:
-        message_data: The Gmail API message data
+        message_data: Dict[str, Any]: The Gmail API message data as returned by
+            the API's users.messages.get method with format='full'
         
     Returns:
-        Structured message data
+        Dict[str, Any]: Structured message data with the following keys:
+            - id: Message ID
+            - thread_id: Thread ID
+            - from: Sender address
+            - to: Recipient address(es)
+            - cc: CC address(es)
+            - bcc: BCC address(es)
+            - subject: Email subject
+            - date: ISO format date string
+            - message_id: Message-ID header
+            - body_text: Plain text content
+            - body_html: HTML content
+            - labels: List of Gmail labels
+            - snippet: Short preview of message content
+            - headers: Dictionary of all headers
     """
     # Extract content and headers
     text_content, html_content, headers = extract_email_parts(message_data)
