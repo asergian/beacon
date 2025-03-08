@@ -15,17 +15,18 @@ import json
 from pathlib import Path
 
 
-def run_interrogate(directory: str, verbose: bool = False) -> Tuple[str, bool]:
+def run_interrogate(directory: str, verbose: bool = False, min_coverage: float = 95.0) -> Tuple[str, bool]:
     """Run interrogate on the specified directory.
     
     Args:
         directory: The directory to analyze
         verbose: Whether to include detailed output
+        min_coverage: Minimum acceptable coverage percentage
         
     Returns:
         Tuple containing the output text and whether the command was successful
     """
-    cmd = ["interrogate", directory]
+    cmd = ["interrogate", directory, "-f", str(min_coverage)]
     if verbose:
         cmd.append("-v")
     
@@ -74,7 +75,7 @@ def parse_results(output: str) -> Dict[str, Any]:
                     total = int(parts[1])
                     missing = int(parts[2])
                     # Handle percentage form (e.g., "100%" or "100.0%")
-                    cover_str = parts[3].replace("%", "").strip()
+                    cover_str = parts[4].replace("%", "").strip()
                     coverage = float(cover_str) if "." in cover_str else int(cover_str)
                     
                     results["files"][file_path] = {
@@ -82,7 +83,7 @@ def parse_results(output: str) -> Dict[str, Any]:
                         "missing": missing,
                         "coverage": coverage
                     }
-                except ValueError:
+                except (ValueError, IndexError):
                     # This could be a header row or separator, skip it
                     continue
                 
@@ -94,11 +95,11 @@ def parse_results(output: str) -> Dict[str, Any]:
             parts = [p.strip() for p in line.split("|") if p.strip()]
             if len(parts) >= 5:
                 try:
-                    # Similar protection for the total line
-                    total_coverage_str = parts[3].replace("%", "").strip()
+                    # Get the total coverage percentage from the correct column
+                    total_coverage_str = parts[4].replace("%", "").strip()
                     results["total_coverage"] = float(total_coverage_str)
                     results["total_missing"] = int(parts[2])
-                except ValueError:
+                except (ValueError, IndexError):
                     # Skip if we can't parse the values
                     continue
                 
@@ -109,7 +110,7 @@ def parse_results(output: str) -> Dict[str, Any]:
     return results
 
 
-def create_report(results: Dict[str, Any], min_coverage: float = 70.0) -> str:
+def create_report(results: Dict[str, Any], min_coverage: float = 95.0) -> str:
     """Create a human-readable report from the parsed results.
     
     Args:
@@ -121,7 +122,7 @@ def create_report(results: Dict[str, Any], min_coverage: float = 70.0) -> str:
     """
     report = []
     report.append("=" * 80)
-    report.append(f"DOCSTRING COVERAGE REPORT - {results['total_coverage']}% coverage")
+    report.append(f"DOCSTRING COVERAGE REPORT - {results['total_coverage']:.1f}% coverage")
     report.append("=" * 80)
     
     # Overall status
@@ -168,7 +169,7 @@ def main():
     """Run the script."""
     parser = argparse.ArgumentParser(description="Check docstring coverage in the codebase")
     parser.add_argument("directory", nargs="?", default="app", help="Directory to analyze")
-    parser.add_argument("--min-coverage", type=float, default=70.0, 
+    parser.add_argument("--min-coverage", type=float, default=95.0, 
                         help="Minimum acceptable coverage percentage")
     parser.add_argument("--verbose", "-v", action="store_true", 
                         help="Show verbose output")
@@ -177,7 +178,7 @@ def main():
     
     # Run interrogate
     print(f"Analyzing docstring coverage in '{args.directory}'...")
-    output, success = run_interrogate(args.directory, args.verbose)
+    output, success = run_interrogate(args.directory, args.verbose, args.min_coverage)
     
     if args.verbose:
         print(output)
