@@ -54,6 +54,24 @@ Once the application is running, you can access it in your web browser at `http:
 - **Test Connection**: `/test-connection` - Tests the email connection and fetches emails.
 - **Test Analysis**: `/test-analysis` - Fetches, parses, and analyzes emails.
 
+## Documentation
+
+Comprehensive documentation for Beacon is available in the [docs/](docs/) directory:
+
+- [**Architecture Overview**](docs/ARCHITECTURE.md): High-level system design and components
+- [**Email Processing Pipeline**](docs/email_processing.md): How emails are processed and analyzed
+- [**Memory Management**](docs/memory_management.md): Memory optimization techniques used
+- **API Documentation**: Generated using Sphinx and available at `docs/sphinx/build/html/index.html` after building
+
+To build the API documentation:
+
+```bash
+cd docs/sphinx
+make html
+```
+
+Module-specific documentation can be found in README.md files within each module directory.
+
 ## Features
 
 - **Email Analysis**: Uses OpenAI's LLM to analyze email content and extract actionable items.

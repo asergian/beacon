@@ -30,6 +30,16 @@ def login_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        """Inner function that checks if user is logged in.
+        
+        Args:
+            *args: Variable length argument list passed to the original function.
+            **kwargs: Arbitrary keyword arguments passed to the original function.
+            
+        Returns:
+            The result of the original function if user is logged in,
+            or a redirect to the login page if not.
+        """
         if 'user' not in session:
             return redirect(url_for('auth.show_login'))
         return f(*args, **kwargs)
@@ -59,6 +69,17 @@ def admin_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        """Inner function that checks if user is logged in and has admin role.
+        
+        Args:
+            *args: Variable length argument list passed to the original function.
+            **kwargs: Arbitrary keyword arguments passed to the original function.
+            
+        Returns:
+            The result of the original function if user is logged in and has admin role,
+            a redirect to the login page if not logged in,
+            or a 403 Forbidden response if user is not an admin.
+        """
         if 'user' not in session:
             return redirect(url_for('auth.show_login'))
         

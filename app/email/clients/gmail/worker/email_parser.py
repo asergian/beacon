@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 from functools import lru_cache
 
-from utils.logging_utils import get_logger
+from .utils.logging_utils import get_logger
 
 # Get a logger for this module
 logger = get_logger('gmail_parser')

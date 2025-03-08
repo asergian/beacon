@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Helpers Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Helpers Module</h1>
+<p>The Helpers Module provides functionality for helpers operations.</p>
+<h2>Overview</h2>
+<p>This module implements functionality related to helpers. The module is organized into 4 main components, including <code>Fetching</code>, <code>Context</code>, <code>Stats</code>, and others. The implementation follows a modular approach, enabling flexibility and maintainability while providing a cohesive interface to the rest of the application. This module serves as a key component in the application's helpers processing pipeline. Through a well-defined API, other modules can leverage the helpers functionality without needing to understand the implementation details. This encapsulation ensures that changes to the helpers implementation won't impact dependent code as long as the interface contract is maintained.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code>├── README.md
+├── __init__.py # Email pipeline helper functions.
+├── context.py # User context setup and validation.
+├── fetching.py # Email fetching and cache handling utilities.
+├── processing.py # Email processing and filtering utilities.
+├── stats.py # Statistics tracking and activity logging.
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Fetching</h3>
+<p>Email fetching and cache handling utilities.</p>
+<h3>Context</h3>
+<p>User context setup and validation.</p>
+<h3>Stats</h3>
+<p>Statistics tracking and activity logging.</p>
+<h3>Processing</h3>
+<p>Email processing and filtering utilities.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Example usage of the helpers module</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.pipeline.helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">SomeClass</span>  <span class="c1"># Replace with actual class</span>
+
+<span class="c1"># Initialize the component</span>
+<span class="n">component</span> <span class="o">=</span> <span class="n">SomeClass</span><span class="p">(</span><span class="n">param1</span><span class="o">=</span><span class="s2">&quot;value1&quot;</span><span class="p">,</span> <span class="n">param2</span><span class="o">=</span><span class="s2">&quot;value2&quot;</span><span class="p">)</span>
+
+<span class="c1"># Use the component&#39;s functionality</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">component</span><span class="o">.</span><span class="n">do_something</span><span class="p">(</span><span class="n">input_data</span><span class="o">=</span><span class="s2">&quot;example&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Result: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Additional operations</span>
+<span class="n">component</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="n">option</span><span class="o">=</span><span class="s2">&quot;value&quot;</span><span class="p">)</span>
+<span class="n">final_result</span> <span class="o">=</span> <span class="n">component</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
+
+<span class="c1"># Cleanup resources when done</span>
+<span class="n">component</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The helpers module follows these design principles:
+- Modular architecture with separation of concerns
+- Clean interfaces with proper documentation
+- Comprehensive error handling and recovery
+- Efficient resource utilization
+- Testable and maintainable code structure</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.email.clients.gmail.client</code>: For client functionality
+- <code>app.email.models.processed_email</code>: For processed_email functionality
+- <code>app.email.parsing.parser</code>: For parser functionality
+- <code>app.email.pipeline.helpers.context</code>: For context functionality
+- <code>app.email.pipeline.helpers.fetching</code>: For fetching functionality
+- <code>app.email.pipeline.helpers.processing</code>: For processing functionality
+- <code>app.email.pipeline.helpers.stats</code>: For stats functionality
+- <code>app.email.pipeline.orchestrator</code>: For orchestrator functionality
+- <code>app.email.processing.processor</code>: For processor functionality
+- <code>app.email.storage.base_cache</code>: For base_cache functionality
+- <code>app.models.activity</code>: For activity functionality
+- <code>app.models.user</code>: For user functionality
+- <code>app.utils.memory_profiling</code>: For memory_profiling functionality</p>
+<p>External:
+- <code>asyncio</code>: For asynchronous operations
+- <code>datetime</code>: For date and time handling
+- <code>flask</code>: For flask functionality
+- <code>gc</code>: For gc functionality
+- <code>logging</code>: For logging and debugging
+- <code>time</code>: For time functionality
+- <code>typing</code>: For type annotations
+- <code>zoneinfo</code>: For zoneinfo functionality</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="../../../../docs/sphinx/build/html/api.html">API Reference</a></li>
+<li><a href="../../../../docs/dev/helpers.md">Module Development Guide</a></li>
+<li><a href="../../../../docs/architecture.md">Related Components</a></li>
+</ul>
+    </div>
+</body>
+</html>

@@ -12,7 +12,7 @@ import signal
 import sys
 from typing import Any, Dict, Optional
 
-from utils.logging_utils import get_logger
+from .logging_utils import get_logger
 
 # Set up logger for this module
 logger = get_logger('process_utils')

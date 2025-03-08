@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Any
 from email import message_from_bytes
 from datetime import datetime, timedelta, timezone
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 from .auth import ensure_valid_credentials
 from .quota import QuotaManager
@@ -27,9 +28,29 @@ class MemoryCache:
     _GLOBAL_CACHE = {}
 
     def get(self, url):
+        """Retrieve cached content for a URL.
+        
+        This method implements the interface expected by googleapiclient.discovery
+        to retrieve cached content for discovery URLs.
+        
+        Args:
+            url: The URL to retrieve cached content for.
+            
+        Returns:
+            The cached content if available, None otherwise.
+        """
         return self._GLOBAL_CACHE.get(url)
 
     def set(self, url, content):
+        """Store content in the cache for a URL.
+        
+        This method implements the interface expected by googleapiclient.discovery
+        to store discovery document content in the cache.
+        
+        Args:
+            url: The URL to use as the cache key.
+            content: The content to store in the cache.
+        """
         self._GLOBAL_CACHE[url] = content
 
 
@@ -145,10 +166,42 @@ class GmailAPIService:
                 batch_request = self._service.new_batch_http_request()
                 
                 def callback(request_id, response, exception):
-                    if exception is None:
-                        batch_results.append(response)
-                    else:
-                        self.logger.error(f"Error in batch request: {exception}")
+                    """Handles the response for each request in a batch API call.
+
+                    This callback function processes the response or exception for each
+                    individual request within a batch request made to the Gmail API. It
+                    records the success or failure of the request and processes the
+                    response data if successful.
+
+                    Args:
+                        request_id (str): The ID of the completed request.
+                        response (dict): The response data if the request was successful.
+                        exception (Exception): The exception raised if the request failed.
+                    """
+                    nonlocal batch_results
+
+                    if exception:
+                        self._quota_manager.record_failure()
+                        if isinstance(exception, HttpError):
+                            if exception.resp.status in (429, 403):
+                                # Rate limit or quota exceeded
+                                self._quota_manager.record_rate_limit_error()
+                                self.logger.warning(f"Rate limit or quota exceeded: {exception}")
+                            else:
+                                self.logger.error(f"API error: {exception}")
+                        else:
+                            self.logger.error(f"Non-HTTP error: {exception}")
+                        return
+
+                    # Process successful response
+                    self._quota_manager.record_success()
+
+                    # Extract raw message data
+                    processed_data = create_email_data(response)
+                    batch_results.append(processed_data)
+
+                    if len(batch_results) % 10 == 0:
+                        self.logger.info(f"Processed {len(batch_results)} emails so far")
                 
                 # Add messages to batch
                 for msg in batch:

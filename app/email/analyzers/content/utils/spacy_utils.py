@@ -5,12 +5,15 @@ and Doc objects, with a focus on memory optimization and efficient text processi
 for email analysis workloads.
 
 Key Components:
+
 1. Model Management
+
    - Optimized model loading with minimal components
    - Memory-efficient configuration
    - Disabled unnecessary features (vectors, textcat)
 
 2. Memory Management
+
    - Thorough Doc object cleanup
    - Circular reference prevention
    - Aggressive garbage collection

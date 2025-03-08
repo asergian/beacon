@@ -1,12 +1,13 @@
-"""Gmail API client for worker process.
+"""Gmail API client module for worker process.
 
-This module provides functions for creating and interacting with the Gmail API
-in a memory-efficient way via the GmailService class.
+This module provides a Gmail API client for the worker process, handling
+interaction with the Gmail API including authentication, message fetching,
+and email sending.
 """
 
+import base64
 import json
 import logging
-import os
 import time
 import base64
 from email.mime.multipart import MIMEMultipart
@@ -20,14 +21,14 @@ from googleapiclient.discovery import build
 from googleapiclient.discovery_cache.base import Cache
 import httplib2
 
-# Import utility functions
-from utils import (
+# Import utility functions from local worker utils package
+from .utils import (
     log_memory_usage, 
     get_logger, 
     filter_emails_by_date,
     track_message_processing
 )
-from email_parser import process_message
+from .email_parser import process_message
 
 # Ensure httplib2 caching is disabled to prevent memory leaks
 httplib2.RETRIES = 1

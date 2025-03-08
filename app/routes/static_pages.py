@@ -27,6 +27,14 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"]
 )
 
+# Add a route for documentation
+@static_pages_bp.route('/docs/')
+@static_pages_bp.route('/docs/<path:path>')
+def serve_docs(path='index.html'):
+    """Serve the Sphinx documentation."""
+    docs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'docs/sphinx/build/html')
+    return send_from_directory(docs_dir, path) 
+
 @static_pages_bp.route('/privacy-policy')
 def privacy_policy():
     """Render the Privacy Policy page.

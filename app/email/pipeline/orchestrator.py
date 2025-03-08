@@ -16,23 +16,16 @@ The implementation of many helper methods has been moved to dedicated modules:
 """
 
 from dataclasses import dataclass
-from typing import List, Optional, Dict, AsyncGenerator, Tuple, Set
-from datetime import datetime, timezone
+from typing import List, Optional, Dict, AsyncGenerator, Set
 import logging
-from flask import session
-import time
-from datetime import tzinfo
 import gc
-from zoneinfo import ZoneInfo
 
 from ..processing.processor import EmailProcessor
 from ..models.processed_email import ProcessedEmail
 from ..storage.base_cache import EmailCache
 from ..clients.gmail.client import GmailClient
-from ..parsing.parser import EmailParser, EmailMetadata
-from app.models.activity import log_activity
+from ..parsing.parser import EmailParser
 from ..models.analysis_command import AnalysisCommand
-from app.models.user import User
 from app.utils.memory_profiling import log_memory_usage
 
 # Import helper modules
@@ -49,13 +42,24 @@ from .helpers.stats import generate_final_stats, log_activity as log_pipeline_ac
 
 @dataclass
 class AnalysisResult:
-    """Represents the result of email analysis"""
+    """Represents the result of email analysis.
+
+    Attributes:
+        emails (List[ProcessedEmail]): List of processed emails.
+        stats (Dict[str, any]): Processing statistics.
+        errors (List[Dict]): List of errors encountered during processing.
+    """
     emails: List[ProcessedEmail]
     stats: Dict[str, any]  # processing stats
     errors: List[Dict]
 
 class EmailPipeline:
-    """Unified pipeline for email processing and analysis"""
+    """
+    Pipeline for processing and analyzing emails.
+    
+    Coordinates the fetching, parsing, and processing of emails from Gmail.
+    Provides both streaming and non-streaming interfaces.
+    """
     
     def __init__(
         self,
@@ -64,6 +68,14 @@ class EmailPipeline:
         processor: EmailProcessor,
         cache: Optional[EmailCache] = None,
     ):
+        """Initialize the email processing pipeline.
+        
+        Args:
+            connection: Gmail client for fetching emails
+            parser: Email parser for converting raw emails to structured data
+            processor: Email processor for analyzing email content
+            cache: Optional cache for storing processed emails
+        """
         self.connection = connection
         self.parser = parser
         self.processor = processor
@@ -139,7 +151,25 @@ class EmailPipeline:
         }
 
     async def get_analyzed_emails_stream(self, command: AnalysisCommand) -> AsyncGenerator[dict, None]:
-        """Streaming version of get_analyzed_emails that yields results as they are processed"""
+        """Streams analyzed emails as they are processed.
+
+        This function is a streaming version of `get_analyzed_emails` that yields
+        results incrementally as they are processed. It handles fetching, parsing,
+        and analyzing emails, and provides updates on the status and results of
+        the analysis.
+
+        Args:
+            command (AnalysisCommand): The command containing parameters for email
+                analysis, such as the number of days back to fetch emails and cache
+                duration.
+
+        Yields:
+            dict: A dictionary containing the status updates, cached emails, or
+            analysis results as they are processed.
+
+        Raises:
+            Exception: If an error occurs during the email processing pipeline.
+        """
         errors = []
         stats = {
             "emails_fetched": 0,
@@ -256,6 +286,7 @@ class EmailPipeline:
                 self.logger.info("\n")
             except Exception as e:
                 self.logger.error(f"Error during streaming pipeline disconnect: {e}")
+
 
     async def get_analyzed_emails(self, command: AnalysisCommand) -> AnalysisResult:
         """Main method to get and analyze emails with caching and metrics
@@ -417,20 +448,23 @@ def create_pipeline(
     processor: EmailProcessor,
     cache: Optional[EmailCache] = None
 ) -> EmailPipeline:
-    """Create pipeline instance with pre-initialized components.
+    """Factory function to create an email processing pipeline.
+    
+    This function serves as a factory for creating EmailPipeline instances
+    with the provided components. It centralizes pipeline creation and makes
+    the initialization more consistent across the application.
     
     Args:
-        connection: Initialized Gmail client
-        parser: Initialized email parser
-        processor: Initialized email processor
-        cache: Optional initialized email cache
+        connection: Gmail client instance for fetching emails
+        parser: Email parser for converting raw emails to structured data
+        processor: Email processor for analysis and processing
+        cache: Optional email cache for storing processed emails
         
     Returns:
-        EmailPipeline: Configured pipeline instance
+        EmailPipeline: A configured pipeline instance ready for use
+        
+    Example:
+        pipeline = create_pipeline(gmail_client, parser, processor, redis_cache)
+        results = await pipeline.get_analyzed_emails(command)
     """
-    return EmailPipeline(
-        connection=connection,
-        parser=parser,
-        processor=processor,
-        cache=cache
-    ) 
+    return EmailPipeline(connection, parser, processor, cache) 

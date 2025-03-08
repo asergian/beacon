@@ -51,9 +51,19 @@ async def run_subprocess(command: list, logger: Optional[logging.Logger] = None,
     
     # Define reader functions for stdout and stderr
     async def read_stdout():
+        """Read the stdout data from the subprocess.
+        
+        Returns:
+            bytes: The stdout data read from the subprocess.
+        """
         return await process.stdout.read()
     
     async def read_stderr():
+        """Read the stderr data from the subprocess and log it.
+        
+        Returns:
+            List[bytes]: A list of lines read from stderr.
+        """
         lines = []
         while True:
             line = await process.stderr.readline()

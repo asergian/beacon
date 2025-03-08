@@ -1,8 +1,7 @@
-"""Content analyzer that uses subprocess for memory isolation from SpaCy.
+"""Content NLP Subprocess Analyzer for memory-efficient content processing.
 
-This module provides a content analyzer implementation that runs SpaCy operations
-in a separate process for memory isolation. It manages the lifecycle of NLP
-analysis while preventing memory leaks from SpaCy's large models.
+This module provides the NLPSubprocessAnalyzer class that handles content analysis
+in a separate process to optimize memory usage and prevent memory leaks.
 
 The analyzer implements several features:
 - Memory-isolated NLP processing

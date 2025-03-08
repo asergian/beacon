@@ -1,44 +1,68 @@
-# JavaScript Structure
+# Beacon Documentation
 
-This directory contains all the JavaScript code for the Beacon application, organized as follows:
+This directory contains comprehensive documentation for the Beacon email processing application, designed to help users, developers, and recruiters understand the application's capabilities and architecture.
 
-## Structure
+## Core Documentation
 
-- **core/** - Core application logic and initialization
-  - Contains main app initialization, global state, and shared event handling
+| Document | Description |
+|----------|-------------|
+| [**Architecture Guide**](ARCHITECTURE.md) | Overview of the system design, components, and code organization |
+| [**Technical Features**](TECHNICAL_FEATURES.md) | Detailed explanation of key technical features and implementation highlights |
+| [**Email Processing Pipeline**](email_processing.md) | In-depth explanation of the email processing pipeline |
+| [**Memory Management**](memory_management.md) | Strategies implemented for optimizing memory usage |
 
-- **modules/** - Feature-specific modules
-  - Contains self-contained feature modules like email (EmailState, EmailUI, EmailEvents, etc.)
-  
-- **components/** - Reusable UI components
-  - Contains modular UI elements and their related functionality
-  
-- **services/** - Data services and API integrations
-  - Contains code for fetching data, interacting with backends, and processing
-  
-- **utils/** - Utility functions and helpers
-  - Contains reusable utility functions, formatters, etc.
-  
-- **pages/** - Page-specific JavaScript
-  - Contains code specific to individual pages
-  
-- **lib/** - Third-party libraries
-  - Contains external libraries and dependencies
+## API Documentation
 
-## Email Module
+The API documentation is automatically generated from docstrings using Sphinx:
 
-The email module is a cohesive unit that handles all email-related functionality:
+```bash
+cd sphinx
+make html
+```
 
-- **EmailState.js** - Manages the state and data of emails
-- **EmailUI.js** - Handles UI rendering and updates for emails
-- **EmailService.js** - Manages API calls and data fetching for emails 
-- **EmailEvents.js** - Handles event setup and SSE connections
-- **EmailUtils.js** - Provides utility functions for email processing
-- **emailController.js** - Entry point that coordinates the email module
+After building, access the HTML documentation at [sphinx/build/html/index.html](sphinx/build/html/index.html).
 
-## Best Practices
+## For Developers
 
-1. Import dependencies using ES6 import/export
-2. Keep files focused on a single responsibility
-3. Place new code in the appropriate directory based on its purpose
-4. Use consistent naming conventions
+Each module within the application includes its own README.md file with specific implementation details, usage examples, and design choices. These module-level READMEs follow a standardized format to ensure consistency across the codebase.
+
+## Key Technical Highlights
+
+Beacon demonstrates several advanced software engineering practices:
+
+1. **AI Integration**: Uses both traditional NLP (spaCy) and LLMs (OpenAI) for email analysis
+2. **Memory Optimization**: Implements subprocess isolation for memory-intensive operations
+3. **Modular Architecture**: Cleanly separates concerns with a well-organized module structure
+4. **Error Handling**: Implements comprehensive error handling and graceful degradation
+5. **Documentation**: Features extensive documentation at multiple levels (application, module, function)
+
+## Repository Organization
+
+```
+beacon/
+├── app/                  # Main application package
+│   ├── email/            # Email processing modules
+│   │   ├── analyzers/    # Content and semantic analysis
+│   │   ├── clients/      # Email service clients (Gmail, IMAP)
+│   │   ├── models/       # Email data models
+│   │   └── pipeline/     # Processing pipeline
+│   ├── routes/           # Flask routes and views
+│   ├── services/         # Application services
+│   ├── models/           # Database models
+│   ├── utils/            # Utility functions
+│   └── ...
+├── docs/                 # Documentation (you are here)
+├── tests/                # Test suite
+└── scripts/              # Utility scripts
+```
+
+## Future Plans
+
+The application roadmap includes:
+- Enhanced AI capabilities for better email categorization
+- Implementation of a plugin system for custom email processors
+- Expansion of supported email providers beyond Gmail and IMAP
+
+## Contributing
+
+Contributions to both code and documentation are welcome. Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.

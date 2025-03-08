@@ -5,12 +5,15 @@ of email content such as sentiment, urgency, and email type. It uses pre-compile
 regex patterns and optimized sets for efficient text analysis.
 
 Key Components:
+
 1. Sentiment Analysis
+
    - Positive/negative sentiment detection
    - Gratitude and agreement recognition
    - Dissatisfaction and demand identification
 
 2. Email Type Detection
+
    - Bulk email identification (marketing, newsletters)
    - Automated message detection (system notifications, no-reply)
    - HTML content indicators

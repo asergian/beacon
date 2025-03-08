@@ -1,125 +1,96 @@
-# Email Pipeline Helper Modules
+# Helpers Module
 
-This directory contains modular helper functions that support the email processing pipeline. These modules separate concerns and make the core orchestrator code cleaner and more maintainable.
+The Helpers Module provides functionality for helpers operations.
 
-## Module Overview
+## Overview
 
-### `__init__.py`
+This module implements functionality related to helpers. The module is organized into 4 main components, including `Fetching`, `Context`, `Stats`, and others. The implementation follows a modular approach, enabling flexibility and maintainability while providing a cohesive interface to the rest of the application. This module serves as a key component in the application's helpers processing pipeline. Through a well-defined API, other modules can leverage the helpers functionality without needing to understand the implementation details. This encapsulation ensures that changes to the helpers implementation won't impact dependent code as long as the interface contract is maintained.
 
-Exposes all helper functions for easy importing. Use this to import helpers from other modules:
+## Directory Structure
+
+```
+├── README.md
+├── __init__.py # Email pipeline helper functions.
+├── context.py # User context setup and validation.
+├── fetching.py # Email fetching and cache handling utilities.
+├── processing.py # Email processing and filtering utilities.
+├── stats.py # Statistics tracking and activity logging.
+```
+
+## Components
+
+### Fetching
+Email fetching and cache handling utilities.
+
+### Context
+User context setup and validation.
+
+### Stats
+Statistics tracking and activity logging.
+
+### Processing
+Email processing and filtering utilities.
+
+## Usage Examples
 
 ```python
-from app.email.pipeline.helpers import (
-    setup_user_context,  # From context.py
-    fetch_cached_emails, # From fetching.py
-    process_in_batches,  # From processing.py
-    generate_final_stats  # From stats.py
-)
-```
+# Example usage of the helpers module
+from app.email.pipeline.helpers import SomeClass  # Replace with actual class
 
-### `context.py`
+# Initialize the component
+component = SomeClass(param1="value1", param2="value2")
 
-Handles user context setup and validation.
+# Use the component's functionality
+result = component.do_something(input_data="example")
+print(f"Result: {result}")
 
-**Key Functions:**
-- `setup_user_context`: Sets up the user context for email analysis, including:
-  - Validating user session
-  - Retrieving user ID and email
-  - Setting up user timezone
-  - Checking AI feature enablement
-  - Retrieving cache duration settings
+# Additional operations
+component.configure(option="value")
+final_result = component.process()
 
-### `fetching.py`
-
-Manages email retrieval from both cache and Gmail.
-
-**Key Functions:**
-- `send_cache_status`: Sends a status update about checking the cache
-- `fetch_cached_emails`: Retrieves cached emails matching criteria
-- `fetch_emails_from_gmail`: Connects to Gmail and fetches emails
-- `filter_cached_emails`: Filters cached emails to keep only those still in Gmail
-
-### `processing.py`
-
-Contains functions for processing and analyzing emails.
-
-**Key Functions:**
-- `process_without_ai`: Processes emails without AI features
-- `process_in_batches`: Processes emails in batches with AI features
-- `process_batch_results`: Processes batch results and yields updates
-- `process_all_at_once`: Processes all emails at once (no batching)
-- `apply_filters`: Applies priority and category filters to emails
-
-### `stats.py`
-
-Provides statistics generation and activity logging.
-
-**Key Functions:**
-- `generate_final_stats`: Generates and yields final pipeline statistics
-- `log_activity`: Logs email analysis activity for a user
-
-## Dependency Flow
+# Cleanup resources when done
+component.close()
 
 ```
-orchestrator.py
-    ↓
-    ├── context.py
-    │      ↓
-    ├── fetching.py
-    │      ↓
-    ├── processing.py
-    │      ↓
-    └── stats.py
-```
 
-## Usage Example
+## Internal Design
 
-```python
-from app.email.pipeline.helpers import (
-    setup_user_context,
-    fetch_cached_emails,
-    fetch_emails_from_gmail,
-    filter_cached_emails,
-    process_in_batches,
-    apply_filters,
-    log_activity
-)
+The helpers module follows these design principles:
+- Modular architecture with separation of concerns
+- Clean interfaces with proper documentation
+- Comprehensive error handling and recovery
+- Efficient resource utilization
+- Testable and maintainable code structure
 
-# Set up user context
-user_id, user_email, timezone_obj, ai_enabled, cache_duration = setup_user_context(command, logger)
+## Dependencies
 
-# Fetch cached emails
-cached_emails, cached_ids = await fetch_cached_emails(
-    command, user_email, timezone_obj, stats, cache, logger
-)
+Internal:
+- `app.email.clients.gmail.client`: For client functionality
+- `app.email.models.processed_email`: For processed_email functionality
+- `app.email.parsing.parser`: For parser functionality
+- `app.email.pipeline.helpers.context`: For context functionality
+- `app.email.pipeline.helpers.fetching`: For fetching functionality
+- `app.email.pipeline.helpers.processing`: For processing functionality
+- `app.email.pipeline.helpers.stats`: For stats functionality
+- `app.email.pipeline.orchestrator`: For orchestrator functionality
+- `app.email.processing.processor`: For processor functionality
+- `app.email.storage.base_cache`: For base_cache functionality
+- `app.models.activity`: For activity functionality
+- `app.models.user`: For user functionality
+- `app.utils.memory_profiling`: For memory_profiling functionality
 
-# Process emails with AI in batches
-async for result in process_in_batches(
-    parsed_emails, command, user_id, user_email, ai_enabled,
-    cache_duration, stats, processor, cache, logger
-):
-    # Handle result
-    pass
+External:
+- `asyncio`: For asynchronous operations
+- `datetime`: For date and time handling
+- `flask`: For flask functionality
+- `gc`: For gc functionality
+- `logging`: For logging and debugging
+- `time`: For time functionality
+- `typing`: For type annotations
+- `zoneinfo`: For zoneinfo functionality
 
-# Apply filters to emails
-filtered_emails = apply_filters(emails, command, logger)
+## Additional Resources
 
-# Log activity
-log_activity(user_id, filtered_emails, stats, command, logger)
-```
-
-## Design Principles
-
-1. **Separation of Concerns**: Each module handles a specific aspect of the pipeline
-2. **Consistent Interface**: Functions follow consistent parameter patterns
-3. **Error Handling**: All functions include appropriate error handling
-4. **Logging**: Comprehensive logging for debugging and monitoring
-5. **Type Annotations**: Full type hints for better IDE support and code validation
-
-## Extension Points
-
-To extend or modify pipeline functionality:
-
-1. **Add New Helper Functions**: Add new functions to existing modules
-2. **Create New Helper Modules**: For entirely new categories of functionality
-3. **Update `__init__.py`**: Export new functions for easy importing 
+- [API Reference](../../../../docs/sphinx/build/html/api.html)
+- [Module Development Guide](../../../../docs/dev/helpers.md)
+- [Related Components](../../../../docs/architecture.md)

@@ -32,13 +32,25 @@ from ..processors.response_parser import ResponseParser
 
 
 class BatchProcessor:
-    """Processes batches of emails for semantic analysis."""
-    
+    """Processes batches of emails for semantic analysis.
+
+    This class handles the processing of email batches for semantic analysis
+    using a language model. It prepares prompts, sends them to the model, and
+    processes the responses.
+
+    Attributes:
+        logger (logging.Logger): Logger for logging information and errors.
+        token_handler: Handler for managing tokenization and text truncation.
+        model (str): The language model to use for processing.
+        max_content_tokens (int): Maximum number of tokens for email content.
+        prompt_creator (PromptCreator): Utility for creating prompts.
+        response_parser (ResponseParser): Utility for parsing model responses.
+    """
     def __init__(self, token_handler):
         """Initialize the batch processor.
         
         Args:
-            token_handler: The token handler for text truncation
+            token_handler: The token handler for text truncation.
         """
         self.logger = logging.getLogger(__name__)
         self.token_handler = token_handler
@@ -51,13 +63,13 @@ class BatchProcessor:
         """Process a single batch of emails.
         
         Args:
-            batch: List of tuples containing (EmailMetadata, nlp_results)
+            batch: List of tuples containing (EmailMetadata, nlp_results).
             
         Returns:
-            List of analysis results
+            List of analysis results.
             
         Raises:
-            LLMProcessingError: If batch processing fails
+            LLMProcessingError: If batch processing fails.
         """
         try:
             # Create prompts for all emails in batch
@@ -80,14 +92,13 @@ class BatchProcessor:
         self, 
         batch: List[Tuple[EmailMetadata, Dict]]
     ) -> Tuple[List[str], List[EmailMetadata]]:
-        """
-        Prepare prompts for a batch of emails.
+        """Prepare prompts for a batch of emails.
         
         Args:
-            batch: List of tuples containing (EmailMetadata, nlp_results)
+            batch: List of tuples containing (EmailMetadata, nlp_results).
             
         Returns:
-            Tuple of (list of prompts, list of preprocessed emails)
+            Tuple of (list of prompts, list of preprocessed emails).
         """
         prompts = []
         clean_emails = []
@@ -104,14 +115,13 @@ class BatchProcessor:
         return prompts, clean_emails
     
     def _create_batch_messages(self, prompts: List[str]) -> List[List[Dict[str, str]]]:
-        """
-        Create message structures for batch processing.
+        """Create message structures for batch processing.
         
         Args:
-            prompts: List of prompts to convert to messages
+            prompts: List of prompts to convert to messages.
             
         Returns:
-            List of messages for the OpenAI API
+            List of messages for the OpenAI API.
         """
         messages = []
         for prompt in prompts:
@@ -125,17 +135,16 @@ class BatchProcessor:
         self, 
         messages: List[List[Dict[str, str]]]
     ) -> List[Any]:
-        """
-        Process a batch of messages with the LLM.
+        """Process a batch of messages with the LLM.
         
         Args:
-            messages: List of message structures for the OpenAI API
+            messages: List of message structures for the OpenAI API.
             
         Returns:
-            List of LLM responses
+            List of LLM responses.
             
         Raises:
-            LLMProcessingError: If the API call fails
+            LLMProcessingError: If the API call fails.
         """
         # Get OpenAI client
         client = await get_openai_client()
@@ -145,6 +154,14 @@ class BatchProcessor:
         
         # Process messages in parallel with asyncio.gather
         async def process_message(msg):
+            """Process a single message with the LLM.
+            
+            Args:
+                msg: The message structure to process.
+                
+            Returns:
+                The LLM response.
+            """
             return await send_completion_request(
                 client, 
                 self.model, 
@@ -168,16 +185,15 @@ class BatchProcessor:
         batch: List[Tuple[EmailMetadata, Dict]],
         clean_emails: List[EmailMetadata]
     ) -> List[Dict[str, Any]]:
-        """
-        Process batch responses and format results.
+        """Process batch responses and format results.
         
         Args:
-            responses: List of LLM responses
-            batch: Original batch of email data
-            clean_emails: List of preprocessed emails
+            responses: List of LLM responses.
+            batch: Original batch of email data.
+            clean_emails: List of preprocessed emails.
             
         Returns:
-            List of analysis results
+            List of analysis results.
         """
         results = []
         total_tokens = 0
@@ -218,13 +234,12 @@ class BatchProcessor:
         return results
     
     def _log_batch_stats(self, batch_size: int, total_tokens: int, total_cost: float) -> None:
-        """
-        Log batch processing statistics.
+        """Log batch processing statistics.
         
         Args:
-            batch_size: Number of emails in the batch
-            total_tokens: Total tokens used
-            total_cost: Total cost incurred
+            batch_size: Number of emails in the batch.
+            total_tokens: Total tokens used.
+            total_cost: Total cost incurred.
         """
         self.logger.info(
             f"Batch processing stats: emails processed: {batch_size}, "
@@ -249,11 +264,14 @@ class BatchProcessor:
         """Analyze a batch of emails using a single LLM request.
         
         Args:
-            emails: List of tuples containing (EmailMetadata, nlp_results)
-            max_batch_size: Maximum number of emails to process in a single batch
+            emails: List of tuples containing (EmailMetadata, nlp_results).
+            max_batch_size: Maximum number of emails to process in a single batch.
             
         Returns:
-            List of analysis results corresponding to input emails
+            List of analysis results corresponding to input emails.
+            
+        Raises:
+            LLMProcessingError: If batch analysis fails.
         """
         try:
             # Check if AI features are enabled

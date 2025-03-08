@@ -23,11 +23,21 @@ backups/
 # Jupyter Notebook Checkpoints  
 .ipynb_checkpoints/  
 
-# macOS System Files  
+# Temporary files
+*.swp
+*.swo
 .DS_Store  
 
 # Testing & Pytest Cache  
-.pytest_cache/  
+.pytest_cache/
 
-# Ignore this file itself  
-.gitignore  
+# Sphinx documentation build artifacts
+docs/sphinx/build/
+docs/sphinx/_build/
+docs/sphinx/.doctrees/
+docs/sphinx/source/_autosummary/
+docs/sphinx/.buildinfo
+
+# Python artifacts in docs directory
+docs/**/__pycache__/
+docs/**/*.pyc

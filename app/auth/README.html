@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Authentication Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Authentication Module</h1>
+<p>The Authentication module provides user authentication, authorization, and session management capabilities for the Beacon application.</p>
+<h2>Overview</h2>
+<p>This module handles all aspects of user authentication and authorization, including login flows, OAuth integration, session management, and access control. It enables secure user authentication using both traditional username/password methods and OAuth-based authentication with providers like Google.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">auth</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># Package exports and route registration</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">decorators</span><span class="o">.</span><span class="n">py</span><span class="w">      </span><span class="c1"># Authentication and authorization decorators</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">oauth</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="c1"># OAuth provider integration</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">routes</span><span class="o">.</span><span class="n">py</span><span class="w">          </span><span class="c1"># Authentication-related routes</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">          </span><span class="c1"># This documentation</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">utils</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="c1"># Authentication utilities</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Authentication Decorators</h3>
+<p>Provides decorators to protect routes and enforce authentication and authorization requirements. Includes <code>login_required</code> and <code>admin_required</code> decorators for access control.</p>
+<h3>OAuth Integration</h3>
+<p>Handles OAuth authentication flows with providers like Google, managing token exchange, user profile retrieval, and session establishment.</p>
+<h3>Authentication Routes</h3>
+<p>Implements routes for user login, logout, registration, and OAuth callback handling.</p>
+<h3>Authentication Utilities</h3>
+<p>Provides helper functions for password hashing, token generation, session management, and other authentication-related operations.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Protecting a route with authentication</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.auth.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">login_required</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/protected&#39;</span><span class="p">)</span>
+<span class="nd">@login_required</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">protected_route</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s2">&quot;This route requires authentication&quot;</span>
+
+<span class="c1"># Requiring admin privileges</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.auth.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">admin_required</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/admin&#39;</span><span class="p">)</span>
+<span class="nd">@admin_required</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">admin_route</span><span class="p">():</span>
+    <span class="k">return</span> <span class="s2">&quot;This route requires admin privileges&quot;</span>
+
+<span class="c1"># OAuth authentication</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.auth.oauth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_google_auth_url</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/login/google&#39;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">google_login</span><span class="p">():</span>
+    <span class="n">auth_url</span> <span class="o">=</span> <span class="n">get_google_auth_url</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">redirect</span><span class="p">(</span><span class="n">auth_url</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The authentication module follows these design principles:
+- Clear separation between authentication and authorization
+- Secure handling of credentials and tokens
+- Seamless integration with multiple authentication providers
+- Proper session management with appropriate timeouts and security controls
+- Decorator-based access control for easy application</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.models.user</code>: For user data management
+- <code>app.utils.logging_setup</code>: For logging authentication events</p>
+<p>External:
+- <code>flask</code>: For request handling and sessions
+- <code>requests</code>: For OAuth API communication
+- <code>werkzeug.security</code>: For password hashing and verification
+- <code>google-auth-oauthlib</code>: For Google OAuth integration</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="https://flask-login.readthedocs.io/">Flask-Login Documentation</a></li>
+<li><a href="https://oauth.net/2/">OAuth 2.0 Documentation</a></li>
+<li><a href="https://developers.google.com/identity/protocols/oauth2">Google OAuth Documentation</a> </li>
+</ul>
+    </div>
+</body>
+</html>

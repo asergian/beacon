@@ -72,12 +72,35 @@ class AsyncContextManager:
         """
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
+            """Synchronous wrapper function that executes the async function.
+            
+            This inner function creates an event loop, preserves context variables,
+            and executes the async function within the loop.
+            
+            Args:
+                *args: Variable length argument list passed to the original function.
+                **kwargs: Arbitrary keyword arguments passed to the original function.
+                
+            Returns:
+                The result of the async function execution.
+                
+            Raises:
+                RuntimeError: If there are issues with the event loop that can't be recovered.
+            """
             loop = self.get_loop()
             
             # Copy context vars from parent to child
             ctx = contextvars.copy_context()
             
             async def _wrapped():
+                """Inner coroutine that preserves context and calls the original async function.
+                
+                This function ensures that context variables are properly transferred to
+                the async execution context before calling the original function.
+                
+                Returns:
+                    The result of the original async function.
+                """
                 # Restore context
                 for var in ctx:
                     var.set(ctx[var])

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Models Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Email Models Module</h1>
+<p>The Email Models module defines the data structures and schemas used throughout the email processing system.</p>
+<h2>Overview</h2>
+<p>This module contains the data classes and schemas that represent emails and their analysis results. It defines the structure of objects passed between different components of the email system, ensuring consistent data representation. These models include both input structures for processing commands and output structures for analysis results.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">models</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">             </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">analysis_command</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># Processing command parameters</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">analysis_settings</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="c1"># Analysis configuration</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">exceptions</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="c1"># Email-specific exceptions</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">processed_email</span><span class="o">.</span><span class="n">py</span><span class="w">      </span><span class="c1"># Email processing result model</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">               </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Analysis Command</h3>
+<p>Defines parameters for email processing operations, including time ranges, filtering criteria, and processing options. Used to control email fetching and analysis operations.</p>
+<h3>Analysis Settings</h3>
+<p>Contains configuration settings for the email analysis process, including model selection, analysis depth, and feature flags for different analysis techniques.</p>
+<h3>Email Exceptions</h3>
+<p>Defines custom exception classes specific to email operations, allowing for precise error handling and appropriate recovery strategies.</p>
+<h3>Processed Email</h3>
+<p>Represents a fully processed email with all analysis results, including metadata, content analysis, semantic analysis, and derived properties like priority and action items.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Creating and using an analysis command</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.models.analysis_command</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalysisCommand</span>
+
+<span class="n">command</span> <span class="o">=</span> <span class="n">AnalysisCommand</span><span class="p">(</span>
+    <span class="n">days_back</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>               <span class="c1"># Process emails from the last 3 days</span>
+    <span class="n">cache_duration_days</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>     <span class="c1"># Cache results for 7 days</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>             <span class="c1"># Process in batches of 20 emails</span>
+    <span class="n">priority_threshold</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>     <span class="c1"># Only include emails with priority &gt;= 50</span>
+    <span class="n">categories</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Work&quot;</span><span class="p">,</span> <span class="s2">&quot;Personal&quot;</span><span class="p">]</span>  <span class="c1"># Filter by these categories</span>
+<span class="p">)</span>
+
+<span class="c1"># Working with a processed email</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.models.processed_email</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessedEmail</span>
+
+<span class="n">email</span> <span class="o">=</span> <span class="n">ProcessedEmail</span><span class="p">(</span>
+    <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;email_123&quot;</span><span class="p">,</span>
+    <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;Project Update Meeting&quot;</span><span class="p">,</span>
+    <span class="n">sender</span><span class="o">=</span><span class="s2">&quot;colleague@example.com&quot;</span><span class="p">,</span>
+    <span class="n">recipients</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;me@example.com&quot;</span><span class="p">],</span>
+    <span class="n">date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+    <span class="n">body</span><span class="o">=</span><span class="s2">&quot;Let&#39;s meet to discuss the project progress...&quot;</span><span class="p">,</span>
+    <span class="n">category</span><span class="o">=</span><span class="s2">&quot;Work&quot;</span><span class="p">,</span>
+    <span class="n">priority</span><span class="o">=</span><span class="mi">85</span><span class="p">,</span>
+    <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;Colleague wants to schedule a project update meeting&quot;</span><span class="p">,</span>
+    <span class="n">action_items</span><span class="o">=</span><span class="p">[</span>
+        <span class="p">{</span><span class="s2">&quot;task&quot;</span><span class="p">:</span> <span class="s2">&quot;Schedule meeting&quot;</span><span class="p">,</span> <span class="s2">&quot;due_date&quot;</span><span class="p">:</span> <span class="s2">&quot;2023-05-20&quot;</span><span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Email from </span><span class="si">{</span><span class="n">email</span><span class="o">.</span><span class="n">sender</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">email</span><span class="o">.</span><span class="n">subject</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Priority: </span><span class="si">{</span><span class="n">email</span><span class="o">.</span><span class="n">priority</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Action items: </span><span class="si">{</span><span class="n">email</span><span class="o">.</span><span class="n">action_items</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Handling email-specific exceptions</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.models.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailProcessingError</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Process email</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">process_email</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">EmailProcessingError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Email processing failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Implement recovery strategy</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The models module follows these design principles:
+- Clear definition of data structures with appropriate typing
+- Immutable objects where appropriate to prevent unexpected changes
+- Serialization support for caching and API responses
+- Default values for optional fields
+- Validation for critical fields</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- None (models are a foundational module)</p>
+<p>External:
+- <code>dataclasses</code>: For data class definitions
+- <code>typing</code>: For type annotations
+- <code>datetime</code>: For date and time handling
+- <code>pydantic</code>: For data validation (in some models)</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="../../../docs/email_processing.md">Email Processing Documentation</a></li>
+<li><a href="../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

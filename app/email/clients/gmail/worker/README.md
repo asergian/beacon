@@ -1,143 +1,104 @@
-# Gmail Worker Package
+# Gmail Worker Module
 
-This package provides a modular implementation of the Gmail worker process for memory-isolated email operations. It's designed to handle Gmail API interactions in a separate process, preventing memory leaks and resource exhaustion from impacting the main application.
+The Gmail Worker module implements a separate process for Gmail API operations to isolate memory usage and improve stability.
 
 ## Overview
 
-The Gmail worker solves several challenges in working with email data:
+This module provides a subprocess-based implementation for Gmail API operations. It's designed to run in a separate Python process to isolate memory usage, prevent leaks, and maintain stable performance in long-running applications. The worker receives commands from the main process, executes Gmail API operations, and returns results through interprocess communication.
 
-- **Memory Management**: Email processing can be memory-intensive, especially with large attachments
-- **Resource Isolation**: Running in a separate process prevents memory leaks from affecting the main application
-- **Efficient Batch Processing**: Optimized for handling large numbers of emails in memory-efficient batches
-- **Robust Error Handling**: Graceful error recovery and comprehensive logging
-- **Clean API**: Simple command-line interface for flexible integration
+## Directory Structure
 
-## Structure
-
-The package is organized into the following modules and subpackages:
-
-### Core Modules
-- `__init__.py`: Package initialization and module documentation
-- `main.py`: Command-line interface and main execution logic
-- `email_parser.py`: Email content parsing and decoding functionality
-- `api_client.py`: Gmail API client with batching and memory optimization
-
-### Utility Modules
-- `utils/`: Utility functions package
-  - `date_utils.py`: Date/time handling and timezone conversions
-  - `file_utils.py`: File operation utilities
-  - `logging_utils.py`: Logging configuration utilities
-  - `memory_management.py`: Memory tracking and optimization
-  - `processing_utils.py`: Email filtering and processing utilities
-  - See `utils/README.md` for detailed information
-
-## Installation
-
-The Gmail worker is part of the main application and doesn't require separate installation. However, it has the following dependencies:
-
-- Python 3.7+
-- google-api-python-client
-- google-auth
-- google-auth-oauthlib
-- google-auth-httplib2
-
-These dependencies are included in the main application's requirements.txt file.
-
-## Usage
-
-The worker is typically invoked by the parent client module, but can also be run directly as a command-line tool. The worker responds with JSON output containing the processed data or error information.
-
-### Fetching Emails
-
-```bash
-python -m app.email.clients.gmail.worker.main \
-  --action fetch_emails \
-  --credentials @/path/to/creds.json \
-  --user_email user@gmail.com \
-  --query "after:2023/01/01 from:important@example.com" \
-  --days_back 7 \
-  --max_results 100 \
-  --user_timezone "America/New_York"
+```
+worker/
+├── __init__.py           # Package exports
+├── api_client.py         # Worker API client
+├── email_parser.py       # Email parsing functionality
+├── main.py               # Worker entry point script
+├── utils/                # Worker-specific utilities
+│   ├── __init__.py       # Utility exports
+│   ├── date_utils.py     # Date handling utilities
+│   ├── file_utils.py     # File operations utilities
+│   ├── logging_utils.py  # Logging configuration
+│   ├── memory_management.py # Memory optimization
+│   ├── process_utils.py  # Process management
+│   └── processing_utils.py # Data processing helpers
+└── README.md             # This documentation
 ```
 
-#### Fetch Parameters:
+## Components
 
-- `--credentials`: OAuth credentials JSON string or file path (prefixed with @)
-- `--user_email`: Email address of the authenticated user
-- `--query`: Gmail search query (same format as Gmail search box)
-- `--days_back`: Number of days back to fetch emails (default: 1)
-- `--include_spam_trash`: Include emails from spam and trash folders (flag)
-- `--max_results`: Maximum number of results to return (default: 100)
-- `--user_timezone`: User's timezone for date filtering (default: US/Pacific)
+### Worker API Client
+Implements a dedicated Gmail API client that runs entirely within the worker process. It provides email fetching and other Gmail operations isolated from the main application.
 
-### Sending Emails
+### Email Parser
+Implements email parsing functionality specific to the worker environment, optimized for memory usage in a separate process.
 
-```bash
-python -m app.email.clients.gmail.worker.main \
-  --action send_email \
-  --credentials @/path/to/creds.json \
-  --user_email user@gmail.com \
-  --to recipient@example.com \
-  --subject "Important Message" \
-  --content @/path/to/content.txt \
-  --html_content @/path/to/content.html \
-  --cc cc@example.com \
-  --bcc bcc@example.com
+### Worker Main
+The entry point script that launches the worker process, parses command-line arguments, and coordinates operations between the main process and Gmail API.
+
+### Worker Utilities
+Collection of helper functions specifically for the worker process, including memory management, logging, and process coordination.
+
+## Usage Examples
+
+```python
+# Using the worker directly (typically not used directly, but through client_subprocess.py)
+import subprocess
+import json
+import sys
+
+# Prepare arguments for the worker process
+worker_script = "app/email/clients/gmail/worker/main.py"
+cmd = [
+    sys.executable,
+    worker_script,
+    "--credentials", "@/path/to/credentials.json",
+    "--user_email", "user@gmail.com",
+    "--action", "fetch_emails",
+    "--days_back", "3"
+]
+
+# Launch worker process
+process = subprocess.Popen(
+    cmd,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE
+)
+
+# Get output
+stdout, stderr = process.communicate()
+result = json.loads(stdout.decode())
+
+# Process emails
+for email in result["emails"]:
+    print(f"Email ID: {email['id']}")
 ```
 
-#### Send Parameters:
+## Internal Design
 
-- `--credentials`: OAuth credentials JSON string or file path (prefixed with @)
-- `--user_email`: Email address of the authenticated user
-- `--to`: Recipient email address(es), comma-separated for multiple recipients
-- `--subject`: Email subject line
-- `--content`: Plain text content or file path (prefixed with @)
-- `--html_content`: HTML content or file path (prefixed with @) (optional)
-- `--cc`: CC recipient(s), comma-separated (optional)
-- `--bcc`: BCC recipient(s), comma-separated (optional)
+The Gmail worker module follows these design principles:
+- Complete isolation from the main process
+- Memory-efficient implementation of Gmail operations
+- Command-line based interface for interprocess communication
+- Standardized JSON-based data exchange
+- Comprehensive error reporting back to the main process
 
-## Memory Management Techniques
+## Dependencies
 
-The Gmail worker implements several strategies for efficient memory usage:
+Internal:
+- None (designed to run independently)
 
-1. **Process Isolation**: Running in a separate process prevents memory leaks from affecting the main application
-2. **Aggressive Garbage Collection**: Custom garbage collection settings for better memory reclamation
-3. **Batch Processing**: Processing emails in small batches to limit peak memory usage
-4. **Resource Cleanup**: Explicit cleanup of connections and resources after use
-5. **Timeout Protection**: SIGALRM-based timeouts to prevent hanging processes
-6. **Memory Monitoring**: Tracking and logging of memory usage throughout execution
+External:
+- `google-api-python-client`: For Gmail API access
+- `google-auth`: For Google authentication
+- `google-auth-oauthlib`: For OAuth flow
+- `email`: Python's standard email package
+- `argparse`: For command-line argument parsing
+- `json`: For data serialization
 
-## Error Handling
+## Additional Resources
 
-The worker has comprehensive error handling to ensure reliability:
-
-- All errors are caught and converted to structured JSON responses
-- Detailed logging provides context for debugging
-- Retries with exponential backoff for transient API errors
-- Graceful degradation when possible
-
-## Troubleshooting
-
-Common issues and solutions:
-
-- **Timeout Errors**: Increase the timeout value in `setup_signal_handlers()` or process emails in smaller batches
-- **Memory Issues**: Reduce batch sizes in `get_messages_batch()` and `fetch_emails()`
-- **Authentication Errors**: Ensure OAuth credentials are valid and have appropriate scopes
-- **Parse Errors**: For problematic emails, use debug logging to identify issues
-
-## Design Principles
-
-1. **Memory Efficiency**: The worker is designed to minimize memory usage through careful resource management and isolation.
-2. **Modularity**: Each component has a single responsibility and clear interfaces for better maintainability.
-3. **Error Handling**: Comprehensive error handling with detailed logging for better diagnostics.
-4. **Performance**: Batch processing and concurrent operations for optimal performance.
-5. **Isolation**: Running in a separate process to isolate memory usage and prevent leaks.
-
-## Coding Standards
-
-This package follows Google coding standards:
-- Clear docstrings with Args/Returns/Raises sections
-- Type hints for all parameters and return values
-- Consistent naming conventions
-- Comprehensive error handling
-- Modular design with single responsibility principle 
+- [Multiprocessing in Python](https://docs.python.org/3/library/multiprocessing.html)
+- [Gmail API Documentation](https://developers.google.com/gmail/api)
+- [Memory Management Documentation](../../../../../docs/memory_management.md)
+- [API Reference](../../../../../docs/sphinx/build/html/api.html) 

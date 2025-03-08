@@ -1,147 +1,83 @@
 # Email Parsing Module
 
-A comprehensive email parsing and processing module that extracts structured metadata from raw email messages. This module handles various email formats, encodings, and special cases to provide consistent, normalized data.
+The Email Parsing module extracts structured data from raw email content, converting complex email formats into usable metadata.
 
-## Features
+## Overview
 
-- Extract metadata from raw email messages and API responses
-- Support for both Gmail API format and standard MIME format
-- Robust header decoding with multiple fallback mechanisms
-- HTML and plain text content processing
-- Comprehensive error handling and logging
-- Memory-optimized processing for large messages
+This module handles the parsing and extraction of information from raw email data. It converts complex, multi-part email formats into structured metadata objects that can be easily processed by other components. The parser handles various email components including headers, body text (in different formats), attachments, and threading information.
 
-## Structure
-
-The module is organized into the following components:
+## Directory Structure
 
 ```
-app/email/parsing/
-├── __init__.py        # Package exports and documentation
-├── parser.py          # Main parser implementation
-├── README.md          # This documentation file
-└── utils/             # Specialized utility functions
-    ├── __init__.py    # Utility exports
-    ├── body_extractor.py # Email body extraction utilities
-    ├── date_utils.py  # Date parsing and normalization
-    ├── header_utils.py # Header decoding and extraction
-    └── html_utils.py  # HTML processing utilities
+parsing/
+├── __init__.py           # Package exports
+├── parser.py             # Main parser implementation
+├── utils/                # Parsing utilities
+│   ├── __init__.py       # Utility exports
+│   ├── body_extractor.py # Email body extraction
+│   ├── date_utils.py     # Date parsing utilities
+│   ├── header_utils.py   # Header parsing functions
+│   └── html_utils.py     # HTML processing utilities
+└── README.md             # This documentation
 ```
 
-## Usage
+## Components
 
-### Basic Usage
+### Email Parser
+The main parser class that extracts structured metadata from raw email content. Handles conversion from raw email data to a standardized EmailMetadata object with normalized fields.
+
+### Parsing Utilities
+Specialized utilities for handling specific aspects of email parsing, including body text extraction, date normalization, header processing, and HTML content handling.
+
+## Usage Examples
 
 ```python
-from app.email.parsing import EmailParser
+# Parsing a raw email
+from app.email.parsing.parser import EmailParser
 
-# Create a parser instance
 parser = EmailParser()
-
-# Extract metadata from raw email data
-metadata = parser.extract_metadata(raw_email)
-
-# Access structured metadata
-print(f"Subject: {metadata.subject}")
-print(f"From: {metadata.sender}")
-print(f"Date: {metadata.date}")
-print(f"Body: {metadata.body[:100]}...")  # First 100 chars of body
-```
-
-### Working with Pre-processed Email Data
-
-```python
-# For emails that have been pre-processed (e.g., from Gmail API)
-preprocessed_email = {
-    'id': 'msg123',
-    'from': 'sender@example.com',
-    'subject': 'Hello World',
-    'body_html': '<p>This is the message</p>',
-    'body_text': 'This is the message',
-    'parsed_date': '2023-05-15T14:30:00'
+raw_email = {
+    "id": "email_123",
+    "raw_message": b"MIME-Version: 1.0\r\nFrom: sender@example.com\r\n..."
 }
+email_metadata = parser.extract_metadata(raw_email)
 
-metadata = parser.extract_metadata(preprocessed_email)
+print(f"From: {email_metadata.sender}")
+print(f"Subject: {email_metadata.subject}")
+print(f"Date: {email_metadata.date}")
+print(f"Body: {email_metadata.body[:100]}...")
+
+# Using specific utilities
+from app.email.parsing.utils.html_utils import extract_text_from_html
+
+html_content = "<html><body><p>Hello world!</p></body></html>"
+plain_text = extract_text_from_html(html_content)
+print(plain_text)  # "Hello world!"
 ```
 
-### Using Individual Utilities
+## Internal Design
 
-```python
-from app.email.parsing.utils import decode_header, normalize_date, strip_html
-
-# Decode an encoded email header
-subject = decode_header("=?utf-8?B?SGVsbG8gV29ybGQ=?=")  # "Hello World"
-
-# Normalize a date string to datetime
-date = normalize_date("2023-05-15T14:30:00")
-
-# Strip HTML tags from content
-plain_text = strip_html("<p>Hello <b>World</b></p>")  # "Hello World"
-```
-
-## Key Components
-
-### EmailParser
-
-The main class for parsing emails and extracting metadata.
-
-**Methods:**
-- `extract_metadata(raw_email)`: Parse and extract structured metadata
-
-### EmailMetadata
-
-A dataclass that holds structured email information.
-
-**Attributes:**
-- `id`: Unique email ID
-- `subject`: Email subject
-- `sender`: Email sender
-- `body`: Email body (HTML or text)
-- `date`: Email date as datetime object
-
-### Utility Modules
-
-#### Date Utils
-- `normalize_date()`: Convert various date formats to datetime
-- `parse_email_date()`: Parse RFC 2822 date format from email
-
-#### Header Utils
-- `decode_header()`: Decode MIME-encoded email headers
-- `safe_extract_header()`: Extract and decode headers with fallback
-
-#### HTML Utils
-- `strip_html()`: Convert HTML to plain text
-- `text_to_html()`: Convert plain text to HTML with link detection
-- `convert_urls_to_links()`: Convert URLs in text to clickable links
-
-#### Body Extractor
-- `extract_body_content()`: Extract body content from email message
-- `get_best_body_content()`: Select best body format from preprocessed email
-- `has_attachments()`: Check if an email has attachments
-
-## Error Handling
-
-The module provides robust error handling with the `EmailParsingError` exception class and detailed logging. All critical functions include try/except blocks to prevent failures from propagating.
-
-## Performance Considerations
-
-- The module is optimized to work with preprocessed email data when available
-- Memory management is implemented to prevent issues with large attachments
-- Header decoding uses progressive fallback mechanisms for robustness
+The parsing module follows these design principles:
+- Robust handling of various email formats
+- Proper decoding of character sets and encodings
+- Graceful fallback for malformed emails
+- Consistent extraction of essential metadata
+- Efficient processing of large emails
 
 ## Dependencies
 
-- Python's standard `email` package
-- Standard library modules: `re`, `base64`, `quopri`, `html`
-- Core Python datetime and typing modules
+Internal:
+- `app.utils.logging_setup`: For logging parsing events
 
-## Integration Points
+External:
+- `email`: Python's standard email parsing library
+- `dateutil.parser`: For flexible date parsing
+- `beautifulsoup4`: For HTML parsing and cleaning
+- `chardet`: For character encoding detection
 
-This module is designed to work with:
-- Gmail API email formats
-- Standard MIME email messages
-- Preprocessed email data from email clients
+## Additional Resources
 
-## Maintainers
-
-For questions or issues, contact the email processing team. 
+- [Email MIME Structure Reference](https://tools.ietf.org/html/rfc2045)
+- [Python email Package Documentation](https://docs.python.org/3/library/email.html)
+- [BeautifulSoup Documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
+- [API Reference](../../../docs/sphinx/build/html/api.html) 

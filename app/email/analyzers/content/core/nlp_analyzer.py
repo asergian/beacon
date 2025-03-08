@@ -6,15 +6,17 @@ and other text analysis features while managing memory efficiently through batch
 and model reloading.
 
 Key Features:
-    - Entity recognition and categorization
-    - Sentiment analysis
-    - Question detection and categorization
-    - Time sensitivity and deadline detection
-    - Email pattern analysis (bulk, automated)
-    - Memory-efficient batch processing
-    - Automatic model reloading to prevent memory leaks
 
-Example:
+- Entity recognition and categorization
+- Sentiment analysis
+- Question detection and categorization
+- Time sensitivity and deadline detection
+- Email pattern analysis (bulk, automated)
+- Memory-efficient batch processing
+- Automatic model reloading to prevent memory leaks
+
+Example::
+
     analyzer = ContentAnalyzer(nlp_model)
     results = await analyzer.analyze_batch(texts)
     for result in results:
@@ -22,12 +24,12 @@ Example:
         print(f"Sentiment: {result['sentiment_analysis']}")
 
 Memory Management:
-    The analyzer implements several memory optimization strategies:
-    - Batch processing with controlled batch sizes
-    - Regular garbage collection
-    - SpaCy document cleanup
-    - Model reloading after threshold
-    - Reference clearing
+
+- Batch processing with controlled batch sizes
+- Regular garbage collection
+- SpaCy document cleanup
+- Model reloading after threshold
+- Reference clearing
 """
 
 import spacy

@@ -1,110 +1,106 @@
-# Gmail Client
+# Gmail Client Module
 
-This module provides a Gmail API client for fetching and managing emails, implementing the BaseEmailClient interface using Google's Gmail API for better integration and performance.
+The Gmail Client module provides integration with Gmail's API for email operations including fetching, sending, and managing emails.
 
-## Module Structure
+## Overview
 
-The Gmail client has been refactored into a modular architecture to improve maintainability, testability, and separation of concerns:
+This module implements client interfaces for Gmail, allowing the application to connect to Gmail accounts, retrieve emails, and perform other email operations. It offers both in-process and subprocess-based implementations to optimize memory usage and performance. The module handles OAuth authentication, API access, rate limiting, and error recovery.
+
+## Directory Structure
 
 ```
 gmail/
-├── core/                 # Core components and functionality
-│   ├── __init__.py       # Exports all public components
-│   ├── api.py            # Gmail API service operations
-│   ├── auth.py           # Authentication utilities
-│   ├── email_utils.py    # Email processing utilities
-│   ├── exceptions.py     # Exception definitions
-│   └── quota.py          # Rate limit and quota management
-├── utils/                # Utilities for the Gmail client
-│   ├── __init__.py       # Exports utility functions
-│   ├── date_utils.py     # Date handling utilities
-│   ├── file_utils.py     # File operations utilities
-│   └── subprocess_utils.py # Subprocess handling utilities
-├── worker/               # Gmail worker for subprocess implementation
-│   ├── __init__.py
-│   ├── api_client.py     # Worker API client implementation
-│   ├── email_parser.py   # Email parsing functionality
-│   ├── main.py           # Main worker entry point
-│   └── README.md         # Worker documentation
-├── __init__.py           # Package initialization
-├── client.py             # Main Gmail client
-├── client_subprocess.py  # Subprocess-based client implementation
-└── README.md             # This documentation
+├── __init__.py              # Package exports
+├── client.py                # Main in-process Gmail client
+├── client_subprocess.py     # Subprocess-based Gmail client
+├── core/                    # Core API functionality
+│   ├── api.py               # Gmail API operations
+│   ├── auth.py              # Authentication utilities
+│   ├── email_utils.py       # Email-specific helpers
+│   ├── exceptions.py        # Gmail-specific errors
+│   └── quota.py             # Rate limiting and quotas
+├── utils/                   # Utility functions
+│   ├── date_utils.py        # Date handling utilities
+│   ├── file_utils.py        # File operations utilities
+│   └── subprocess_utils.py  # Subprocess management
+├── worker/                  # Subprocess worker
+│   ├── api_client.py        # Worker API client
+│   ├── email_parser.py      # Email parsing in worker
+│   ├── main.py              # Worker entry point
+│   └── utils/               # Worker-specific utilities
+└── README.md                # This documentation
 ```
 
 ## Components
 
-### Main Components
+### Gmail Client
+The main client class that provides a high-level interface for Gmail operations. It handles authentication, connection management, and error handling, while providing methods for fetching and sending emails.
 
-- **client.py**: The main Gmail client implementing the BaseEmailClient interface.
-- **client_subprocess.py**: A memory-isolated implementation that delegates API operations to a subprocess.
+### Subprocess Client
+A client implementation that runs Gmail API operations in a separate process to isolate memory usage. This approach prevents memory leaks and improves stability in long-running applications.
 
 ### Core Components
+The building blocks for Gmail operations, including API access, authentication, quota management, and error handling. These components implement the low-level functionality used by the client classes.
 
-- **core/api.py**: Provides the `GmailAPIService` class for all Gmail API operations.
-- **core/auth.py**: Handles authentication with the Gmail API, including credentials management.
-- **core/quota.py**: Manages API rate limits and quotas to prevent overruns.
-- **core/email_utils.py**: Utilities for processing email data.
-- **core/exceptions.py**: Defines exceptions used throughout the module.
+### Worker Implementation
+A separate process implementation for Gmail operations that can be launched by the subprocess client. It includes its own API client, parser, and utilities to function independently.
 
-### Utilities
-
-- **utils/subprocess_utils.py**: Utilities for subprocess operations.
-- **utils/file_utils.py**: Utilities for file operations.
-- **utils/date_utils.py**: Utilities for date calculations.
-
-### Worker
-
-The worker directory contains a subprocess implementation that handles Gmail API operations in a separate process for memory isolation.
-
-## Usage
-
-### Basic Usage
+## Usage Examples
 
 ```python
+# Using the standard in-process client
 from app.email.clients.gmail.client import GmailClient
 
-# Create a client
-gmail_client = GmailClient()
+client = GmailClient()
+await client.connect(user_email="user@gmail.com")
+emails = await client.fetch_emails(days_back=3)
 
-# Connect to Gmail API
-await gmail_client.connect('user@example.com')
-
-# Fetch emails
-emails = await gmail_client.fetch_emails(days_back=3)
-
-# Process emails
 for email in emails:
-    print(f"Subject: {email['subject']}")
+    print(f"Email ID: {email['id']}")
+    print(f"Raw content length: {len(email['raw_message'])}")
 
-# Close the connection
-await gmail_client.close()
-```
-
-### Subprocess Implementation
-
-For memory-intensive operations, you can use the subprocess implementation:
-
-```python
+# Using the subprocess-based client for better memory isolation
 from app.email.clients.gmail.client_subprocess import GmailClientSubprocess
 
-# Create a subprocess client
-gmail_client = GmailClientSubprocess()
+subprocess_client = GmailClientSubprocess()
+await subprocess_client.connect(user_email="user@gmail.com")
+emails = await subprocess_client.fetch_emails(days_back=3)
 
-# Connect and use same as the regular client
-await gmail_client.connect('user@example.com')
-emails = await gmail_client.fetch_emails(days_back=3)
-await gmail_client.close()
+# Sending an email
+await client.send_email(
+    to="recipient@example.com",
+    subject="Hello from Beacon",
+    body="This is a test email.",
+    html_body="<p>This is a <b>test</b> email.</p>"
+)
 ```
 
-## Architecture
+## Internal Design
 
-The Gmail client follows a modular design pattern:
+The Gmail client module follows these design principles:
+- Clean separation between API access and client interfaces
+- Memory management via subprocess isolation
+- Progressive retry and error recovery
+- Quota and rate limit management
+- Comprehensive error handling
 
-1. The main `client.py` presents a simplified facade over the core components.
-2. Core functionality is split into separate modules by concern.
-3. The `GmailAPIService` in core/api.py handles direct interactions with the Gmail API.
-4. Authentication and quota management are handled in dedicated modules.
-5. The subprocess implementation uses a worker subprocess for memory isolation.
+## Dependencies
 
-This architecture allows for better separation of concerns, easier testing, and improved maintainability. 
+Internal:
+- `app.utils.memory_profiling`: For memory management
+- `app.utils.async_helpers`: For asynchronous operations
+- `app.email.models.exceptions`: For error handling
+
+External:
+- `google-api-python-client`: For Gmail API access
+- `google-auth`: For Google authentication
+- `google-auth-oauthlib`: For OAuth flow
+- `asyncio`: For asynchronous operations
+- `base64`: For MIME encoding/decoding
+
+## Additional Resources
+
+- [Gmail API Documentation](https://developers.google.com/gmail/api)
+- [Google Auth Library Documentation](https://googleapis.dev/python/google-auth/latest/index.html)
+- [Email Processing Documentation](../../../../docs/email_processing.md)
+- [API Reference](../../../../docs/sphinx/build/html/api.html) 

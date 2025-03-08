@@ -1,3 +1,10 @@
+"""
+Email sending module for SMTP-based email delivery.
+
+This module provides functionality for sending emails via SMTP protocol,
+handling both synchronous and asynchronous operations. It includes
+error handling and support for HTML content.
+"""
 import smtplib
 import logging
 import asyncio
@@ -9,7 +16,12 @@ from typing import Optional, Dict, Any, List
 logger = logging.getLogger(__name__)
 
 class EmailSendingError(Exception):
-    """Exception raised when email sending fails."""
+    """
+    Exception raised when email sending fails.
+    
+    Attributes:
+        message (str): Explanation of the error.
+    """
     pass
 
 class EmailSender:

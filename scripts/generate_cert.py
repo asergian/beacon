@@ -1,8 +1,13 @@
+#!/usr/bin/env python3
 """Generate self-signed certificates for development HTTPS.
 
 This script creates self-signed SSL certificates for local development with HTTPS.
 It generates both a certificate and a private key file in PEM format,
 configuring them with sensible defaults for localhost development.
+
+The certificates are configured with appropriate Subject Alternative Names (SANs)
+for localhost development, making them suitable for testing HTTPS functionality
+without browser security warnings when properly installed as a trusted certificate.
 
 Typical usage:
     $ python scripts/generate_cert.py
@@ -26,11 +31,16 @@ def generate_self_signed_cert(cert_dir="certs"):
             created if it does not exist.
     
     Returns:
-        None: Files are written directly to the filesystem.
+        tuple: Paths to the generated certificate and key files (cert_path, key_path)
     
     Raises:
         OSError: If there are permission issues when creating directories or files.
         OpenSSL.crypto.Error: If certificate generation fails.
+    
+    Note:
+        In browsers, you may need to manually trust this certificate or use
+        tools like mkcert (https://github.com/FiloSottile/mkcert) for automatic
+        trust configuration.
     """
     
     # Create certificates directory if it doesn't exist
@@ -63,15 +73,24 @@ def generate_self_signed_cert(cert_dir="certs"):
     cert.sign(key, 'sha256')
     
     # Write certificate and private key to files
-    with open(os.path.join(cert_dir, "cert.pem"), "wb") as f:
+    cert_path = os.path.join(cert_dir, "cert.pem")
+    key_path = os.path.join(cert_dir, "key.pem")
+    
+    with open(cert_path, "wb") as f:
         f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert))
     
-    with open(os.path.join(cert_dir, "key.pem"), "wb") as f:
+    with open(key_path, "wb") as f:
         f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, key))
+    
+    print(f"Generated certificate: {cert_path}")
+    print(f"Generated private key: {key_path}")
+    
+    return cert_path, key_path
 
 if __name__ == "__main__":
     """Script entry point.
     
-    Calls the certificate generation function with default parameters.
+    Calls the certificate generation function with default parameters
+    and generates a self-signed certificate for localhost development.
     """
     generate_self_signed_cert() 

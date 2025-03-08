@@ -5,14 +5,15 @@ in a separate process to isolate memory usage from the main application.
 It loads a SpaCy model, processes text, and returns analysis results as JSON.
 
 The module performs several types of analysis:
-    - Named Entity Recognition (NER)
-    - Key phrase extraction
-    - Sentiment analysis
-    - Email type classification (bulk/automated)
-    - Urgency detection
-    - Question identification
 
-Typical usage example:
+- Named Entity Recognition (NER)
+- Key phrase extraction
+- Sentiment analysis
+- Email type classification (bulk/automated)
+- Urgency detection
+- Question identification
+
+Typical usage example::
 
     # Process a single text
     python nlp_worker.py --text "Your email content here"
@@ -30,6 +31,7 @@ Attributes:
 Memory Management:
     This module is designed to run in isolation and implements several memory
     management strategies:
+
     - Garbage collection after processing each document
     - Document cleanup using spacy_utils.cleanup_doc
     - Limited text size (10K chars) for processing
@@ -67,10 +69,10 @@ from utils.pattern_matchers import (
 
 def extract_entities(doc: spacy.tokens.Doc) -> Dict[str, List[Dict[str, Any]]]:
     """Extract named entities from a SpaCy document.
-
+    
     Args:
         doc: A SpaCy Doc object containing processed text.
-
+    
     Returns:
         A dictionary mapping entity labels to lists of entity information dictionaries.
         Each entity dictionary contains:
@@ -222,10 +224,10 @@ def process_texts(texts: List[str]) -> List[Dict[str, Any]]:
     This function handles the complete pipeline of loading the model,
     processing each text, and cleaning up resources. It's designed to run
     in a separate process and handles all NLP processing internally.
-
+    
     Args:
         texts: List of texts to process.
-
+    
     Returns:
         List of dictionaries containing analysis results for each text.
         Each dictionary contains:

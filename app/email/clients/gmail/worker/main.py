@@ -1,7 +1,7 @@
 """Main entry point for Gmail worker process.
 
-This module provides the command-line interface and main execution logic
-for the Gmail worker process.
+This module provides the main entry point for the Gmail worker process,
+handling email fetching and sending tasks in a separate process.
 """
 
 import asyncio
@@ -13,8 +13,8 @@ import traceback
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-# Import local modules
-from utils import (
+# Import local modules with proper package references
+from .utils import (
     get_logger,
     parse_content_from_file,
     cleanup_resources,
@@ -23,7 +23,7 @@ from utils import (
     optimize_process,
     parse_arguments
 )
-from api_client import GmailService
+from .api_client import GmailService
 
 
 # Configure logging to write to a file

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Email Module</h1>
+<p>The Email module provides comprehensive email processing capabilities including fetching, parsing, analyzing, and managing emails from various providers.</p>
+<h2>Overview</h2>
+<p>This module forms the core of Beacon's email processing system. It handles every aspect of email management from connecting to email providers (like Gmail), fetching and parsing emails, analyzing content using NLP and LLM techniques, to processing and storing results. The email module implements a pipeline architecture that enables efficient processing of large volumes of emails with sophisticated analysis.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">email</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">                </span><span class="c1"># This documentation</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">analyzers</span><span class="o">/</span><span class="w">               </span><span class="c1"># Email content analysis components</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">content</span><span class="o">/</span><span class="w">             </span><span class="c1"># NLP-based content analysis</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">semantic</span><span class="o">/</span><span class="w">            </span><span class="c1"># LLM-based semantic analysis</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">clients</span><span class="o">/</span><span class="w">                 </span><span class="c1"># Email service provider clients</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">gmail</span><span class="o">/</span><span class="w">               </span><span class="c1"># Gmail API client</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">imap</span><span class="o">/</span><span class="w">                </span><span class="c1"># IMAP protocol client</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">models</span><span class="o">/</span><span class="w">                  </span><span class="c1"># Email data structures and schemas</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">parsing</span><span class="o">/</span><span class="w">                 </span><span class="c1"># Email parsing and extraction</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">pipeline</span><span class="o">/</span><span class="w">                </span><span class="c1"># Orchestration and workflow</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">processing</span><span class="o">/</span><span class="w">              </span><span class="c1"># Email processing and transformation</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">storage</span><span class="o">/</span><span class="w">                 </span><span class="c1"># Caching and persistence</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">utils</span><span class="o">/</span><span class="w">                   </span><span class="c1"># Email-specific utilities</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Email Clients</h3>
+<p>Provides interfaces to connect to different email service providers like Gmail and standard IMAP servers. Handles authentication, connection management, and raw email retrieval.</p>
+<h3>Email Parsing</h3>
+<p>Extracts structured data from raw email content, including headers, body text, attachments, and metadata. Handles different email formats and encodings.</p>
+<h3>Email Analysis</h3>
+<p>Analyzes email content using two approaches:
+- Content Analysis: NLP-based processing for entity extraction, keyword identification, and text classification
+- Semantic Analysis: LLM-based processing for deeper understanding, summarization, and action item extraction</p>
+<h3>Email Pipeline</h3>
+<p>Orchestrates the complete email processing workflow, managing the sequence of operations from fetching to analysis. Provides both streaming and batch processing capabilities.</p>
+<h3>Email Storage</h3>
+<p>Handles caching and persistence of email data and analysis results, with support for Redis-based caching and efficient retrieval.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Initialize email pipeline with components</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.pipeline.orchestrator</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_pipeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.clients.gmail.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">GmailClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.parsing.parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailParser</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.processing.processor</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailProcessor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.storage.redis_cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisEmailCache</span>
+
+<span class="c1"># Create pipeline components</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">GmailClient</span><span class="p">()</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">EmailParser</span><span class="p">()</span>
+<span class="n">processor</span> <span class="o">=</span> <span class="n">EmailProcessor</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">analyzer</span><span class="p">,</span> <span class="n">llm_analyzer</span><span class="p">,</span> <span class="n">parser</span><span class="p">)</span>
+<span class="n">cache</span> <span class="o">=</span> <span class="n">RedisEmailCache</span><span class="p">()</span>
+
+<span class="c1"># Initialize pipeline</span>
+<span class="n">pipeline</span> <span class="o">=</span> <span class="n">create_pipeline</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">parser</span><span class="p">,</span> <span class="n">processor</span><span class="p">,</span> <span class="n">cache</span><span class="p">)</span>
+
+<span class="c1"># Analyze emails with command parameters</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.models.analysis_command</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalysisCommand</span>
+<span class="n">command</span> <span class="o">=</span> <span class="n">AnalysisCommand</span><span class="p">(</span><span class="n">days_back</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">cache_duration_days</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">get_analyzed_emails</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The email module follows these design principles:
+- Clean separation of concerns between fetching, parsing, and analysis
+- Asynchronous processing to handle I/O-bound operations efficiently
+- Memory management for resource-intensive operations
+- Caching to avoid redundant processing
+- Error handling with graceful degradation</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.services.openai_service</code>: For LLM access
+- <code>app.models.user</code>: For user settings and preferences
+- <code>app.utils.memory_profiling</code>: For memory management
+- <code>app.utils.async_helpers</code>: For asynchronous operations</p>
+<p>External:
+- <code>google-api-python-client</code>: For Gmail API access
+- <code>spacy</code>: For NLP analysis
+- <code>openai</code>: For LLM analysis
+- <code>redis</code>: For caching
+- <code>beautifulsoup4</code>: For HTML parsing</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="../../docs/email_processing.md">Email Processing Documentation</a></li>
+<li><a href="../../docs/memory_management.md">Memory Management Documentation</a></li>
+<li><a href="../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>

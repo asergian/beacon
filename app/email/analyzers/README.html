@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Analyzers Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Email Analyzers Module</h1>
+<p>The Email Analyzers module provides content analysis capabilities for emails using both NLP and LLM approaches.</p>
+<h2>Overview</h2>
+<p>This module contains the components responsible for analyzing email content to extract insights, identify entities, categorize emails, and determine priority. It implements two complementary approaches: content analysis using traditional NLP techniques, and semantic analysis using Large Language Models (LLMs).</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">analyzers</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">base</span><span class="o">.</span><span class="n">py</span><span class="w">               </span><span class="c1"># Base analyzer interfaces</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">content</span><span class="o">/</span><span class="w">              </span><span class="c1"># NLP-based content analysis</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">core</span><span class="o">/</span><span class="w">             </span><span class="c1"># Core analyzer implementation</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">processing</span><span class="o">/</span><span class="w">       </span><span class="c1"># Processing infrastructure</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">utils</span><span class="o">/</span><span class="w">            </span><span class="c1"># Content analysis utilities</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">semantic</span><span class="o">/</span><span class="w">             </span><span class="c1"># LLM-based semantic analysis</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">processors</span><span class="o">/</span><span class="w">       </span><span class="c1"># Processing components</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">utilities</span><span class="o">/</span><span class="w">        </span><span class="c1"># Semantic analysis utilities</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">             </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Base Analyzer</h3>
+<p>Defines the common interface for all analyzer implementations, ensuring consistent behavior across different analysis approaches.</p>
+<h3>Content Analyzer</h3>
+<p>Implements analysis using traditional NLP techniques with spaCy. Focuses on entity extraction, keyword identification, and text classification. Optimized for efficiency and low resource usage.</p>
+<h3>Semantic Analyzer</h3>
+<p>Implements analysis using OpenAI's language models. Provides deep semantic understanding, summarization, action item extraction, and priority determination. Offers highly accurate but more resource-intensive analysis.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using the content analyzer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.analyzers.content.core.nlp_analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContentAnalyzer</span>
+
+<span class="n">analyzer</span> <span class="o">=</span> <span class="n">ContentAnalyzer</span><span class="p">()</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">analyze</span><span class="p">(</span><span class="s2">&quot;This is an email about the project deadline on Friday.&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Entities: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">entities</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Keywords: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">keywords</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Using the semantic analyzer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.analyzers.semantic.analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">SemanticAnalyzer</span>
+
+<span class="n">semantic_analyzer</span> <span class="o">=</span> <span class="n">SemanticAnalyzer</span><span class="p">()</span>
+<span class="n">semantic_results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">semantic_analyzer</span><span class="o">.</span><span class="n">analyze</span><span class="p">(</span><span class="n">email_metadata</span><span class="p">,</span> <span class="n">nlp_results</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Summary: </span><span class="si">{</span><span class="n">semantic_results</span><span class="o">.</span><span class="n">summary</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Priority: </span><span class="si">{</span><span class="n">semantic_results</span><span class="o">.</span><span class="n">priority</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Action items: </span><span class="si">{</span><span class="n">semantic_results</span><span class="o">.</span><span class="n">action_items</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The analyzers module follows these design principles:
+- Clean separation between different analysis approaches
+- Consistent interfaces for all analyzers
+- Memory management for resource-intensive operations
+- Asynchronous processing for LLM operations
+- Caching and optimization for performance</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.services.openai_service</code>: For LLM access
+- <code>app.utils.memory_profiling</code>: For memory management
+- <code>app.utils.async_helpers</code>: For asynchronous operations</p>
+<p>External:
+- <code>spacy</code>: For NLP analysis
+- <code>openai</code>: For LLM analysis
+- <code>tiktoken</code>: For token counting
+- <code>numpy</code>: For vector operations</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="../../../docs/email_processing.md">Email Processing Documentation</a></li>
+<li><a href="../../../docs/memory_management.md">Memory Management Documentation</a></li>
+<li><a href="https://spacy.io/api/doc">spaCy Documentation</a></li>
+<li><a href="https://platform.openai.com/docs/api-reference">OpenAI API Documentation</a> </li>
+</ul>
+    </div>
+</body>
+</html>

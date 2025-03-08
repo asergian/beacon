@@ -31,6 +31,18 @@ def async_route(f):
     """
     @wraps(f)
     def wrapper(*args, **kwargs):
+        """Synchronous wrapper function that runs the async function.
+        
+        This function executes the decorated async function in a newly created
+        event loop using asyncio.run().
+        
+        Args:
+            *args: Variable length argument list passed to the original function.
+            **kwargs: Arbitrary keyword arguments passed to the original function.
+            
+        Returns:
+            The result of the async function execution.
+        """
         return asyncio.run(f(*args, **kwargs))
     return wrapper
 

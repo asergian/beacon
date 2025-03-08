@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Email Utilities Module</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            color: #333;
+        }
+        .markdown-body {
+            padding: 15px;
+        }
+        h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 3px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(27, 31, 35, 0.05);
+            border-radius: 3px;
+            padding: 0.2em 0.4em;
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding: 0 1em;
+            color: #6a737d;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        table th, table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="markdown-body">
+        <h1>Email Utilities Module</h1>
+<p>The Email Utilities module provides shared helper functions specifically for email processing operations.</p>
+<h2>Overview</h2>
+<p>This module contains utility functions and classes that support various aspects of email processing. These utilities handle specialized tasks like message ID cleaning, priority scoring, rate limiting, and pipeline statistics tracking. They are used throughout the email module to implement common functionality in a consistent way.</p>
+<h2>Directory Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">utils</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">             </span><span class="c1"># Package exports</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">message_id_cleaner</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="c1"># Message ID normalization</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">pipeline_stats</span><span class="o">.</span><span class="n">py</span><span class="w">       </span><span class="c1"># Processing statistics tracking</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">priority_scorer</span><span class="o">.</span><span class="n">py</span><span class="w">      </span><span class="c1"># Email priority calculation</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">rate_limiter</span><span class="o">.</span><span class="n">py</span><span class="w">         </span><span class="c1"># API rate limiting</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">README</span><span class="o">.</span><span class="n">md</span><span class="w">               </span><span class="c1"># This documentation</span>
+</code></pre></div>
+
+<h2>Components</h2>
+<h3>Message ID Cleaner</h3>
+<p>Utility for cleaning and normalizing email message IDs to ensure consistent identification regardless of format variations.</p>
+<h3>Pipeline Statistics</h3>
+<p>Tools for tracking and reporting on email processing statistics, including volume, processing time, and success rates.</p>
+<h3>Priority Scorer</h3>
+<p>Implements the email priority scoring algorithm, considering factors like sender importance, content analysis, and time sensitivity to determine email priority.</p>
+<h3>Rate Limiter</h3>
+<p>Provides rate limiting functionality to manage API request rates, particularly for external services like the Gmail API and OpenAI.</p>
+<h2>Usage Examples</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Using the priority scorer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.utils.priority_scorer</span><span class="w"> </span><span class="kn">import</span> <span class="n">PriorityScorer</span>
+
+<span class="n">scorer</span> <span class="o">=</span> <span class="n">PriorityScorer</span><span class="p">()</span>
+<span class="n">priority</span> <span class="o">=</span> <span class="n">scorer</span><span class="o">.</span><span class="n">calculate_priority</span><span class="p">(</span>
+    <span class="n">sender</span><span class="o">=</span><span class="s2">&quot;important@example.com&quot;</span><span class="p">,</span>
+    <span class="n">subject</span><span class="o">=</span><span class="s2">&quot;Urgent: Project deadline&quot;</span><span class="p">,</span>
+    <span class="n">content_analysis</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;urgency&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span>
+        <span class="s2">&quot;importance&quot;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">,</span>
+        <span class="s2">&quot;entities&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;project&quot;</span><span class="p">,</span> <span class="s2">&quot;deadline&quot;</span><span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">date_received</span><span class="o">=</span><span class="s2">&quot;2023-05-15T09:00:00Z&quot;</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Email priority score: </span><span class="si">{</span><span class="n">priority</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># 0-100 score</span>
+
+<span class="c1"># Using pipeline statistics</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.utils.pipeline_stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">PipelineStats</span>
+
+<span class="n">stats</span> <span class="o">=</span> <span class="n">PipelineStats</span><span class="p">()</span>
+<span class="n">stats</span><span class="o">.</span><span class="n">start_processing</span><span class="p">()</span>
+
+<span class="c1"># ... perform processing ...</span>
+
+<span class="n">stats</span><span class="o">.</span><span class="n">record_email_processed</span><span class="p">(</span><span class="n">successful</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">stats</span><span class="o">.</span><span class="n">record_email_processed</span><span class="p">(</span><span class="n">successful</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">stats</span><span class="o">.</span><span class="n">finish_processing</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total processed: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">total_processed</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Success rate: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">success_rate</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing time: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">processing_time_seconds</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+
+<span class="c1"># Using rate limiter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.email.utils.rate_limiter</span><span class="w"> </span><span class="kn">import</span> <span class="n">RateLimiter</span>
+
+<span class="n">limiter</span> <span class="o">=</span> <span class="n">RateLimiter</span><span class="p">(</span><span class="n">max_requests</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">time_window</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>  <span class="c1"># 60 requests per minute</span>
+<span class="k">if</span> <span class="k">await</span> <span class="n">limiter</span><span class="o">.</span><span class="n">can_proceed</span><span class="p">(</span><span class="s2">&quot;api_calls&quot;</span><span class="p">):</span>
+    <span class="c1"># Make API call</span>
+    <span class="k">await</span> <span class="n">limiter</span><span class="o">.</span><span class="n">record_request</span><span class="p">(</span><span class="s2">&quot;api_calls&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c1"># Handle rate limit exceeded</span>
+    <span class="n">wait_time</span> <span class="o">=</span> <span class="k">await</span> <span class="n">limiter</span><span class="o">.</span><span class="n">get_wait_time</span><span class="p">(</span><span class="s2">&quot;api_calls&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rate limit exceeded. Try again in </span><span class="si">{</span><span class="n">wait_time</span><span class="si">}</span><span class="s2"> seconds&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h2>Internal Design</h2>
+<p>The utilities module follows these design principles:
+- Small, focused functions with single responsibilities
+- Stateless design where possible for easy testing
+- Configurable behavior through parameters
+- Consistent logging and error handling
+- Performance optimization for frequently used operations</p>
+<h2>Dependencies</h2>
+<p>Internal:
+- <code>app.utils.logging_setup</code>: For logging operations</p>
+<p>External:
+- <code>re</code>: For regular expression operations
+- <code>datetime</code>: For date and time handling
+- <code>asyncio</code>: For asynchronous rate limiting
+- <code>redis</code>: For distributed rate limiting</p>
+<h2>Additional Resources</h2>
+<ul>
+<li><a href="../../../docs/email_processing.md">Email Processing Documentation</a></li>
+<li><a href="../../../docs/sphinx/build/html/api.html">API Reference</a> </li>
+</ul>
+    </div>
+</body>
+</html>
