@@ -12,9 +12,12 @@ pip install --upgrade wheel setuptools
 # Install pipreqs for automatic dependency detection
 pip install pipreqs
 
-# Automatically generate requirements.txt based on imports in the code
+# Automatically generate requirements.txt from actual imports...
 echo "Generating requirements.txt from actual imports..."
 pipreqs . --force --encoding=latin1
+
+# Install Cython first (required for jnius)
+pip install Cython
 
 # Install all dependencies from requirements.txt
 # This now includes both app and documentation dependencies
