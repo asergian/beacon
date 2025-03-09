@@ -23,6 +23,9 @@ pipreqs . --force --encoding=latin1 --ignore=venv,.venv,env,tests
 # This now includes both app and documentation dependencies
 pip install -r requirements.txt
 
+# Install Sphinx and its dependencies
+pip install Sphinx furo interrogate myst-parser
+
 # Build documentation
 cd docs/sphinx
 make html
