@@ -14,7 +14,7 @@ pip install pipreqs
 
 # Automatically generate requirements.txt based on imports in the code
 echo "Generating requirements.txt from actual imports..."
-pipreqs . --force
+pipreqs . --force --encoding=latin1
 
 # Install all dependencies from requirements.txt
 # This now includes both app and documentation dependencies
