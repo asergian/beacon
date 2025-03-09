@@ -16,8 +16,8 @@ pip install pipreqs
 echo "Generating requirements.txt from actual imports..."
 pipreqs . --force --encoding=latin1
 
-# Filter out jnius from requirements.txt
-grep -v "jnius" requirements.txt > requirements-filtered.txt
+# Filter out problematic packages from requirements.txt
+grep -v -E "jnius|pyodide" requirements.txt > requirements-filtered.txt
 
 # Install all dependencies from requirements.txt
 # This now includes both app and documentation dependencies
