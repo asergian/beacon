@@ -16,12 +16,12 @@ pip install pipreqs
 echo "Generating requirements.txt from actual imports..."
 pipreqs . --force --encoding=latin1
 
-# Install Cython first (required for jnius)
-pip install Cython
+# Filter out jnius from requirements.txt
+grep -v "jnius" requirements.txt > requirements-filtered.txt
 
 # Install all dependencies from requirements.txt
 # This now includes both app and documentation dependencies
-pip install -r requirements.txt
+pip install -r requirements-filtered.txt
 
 # Build documentation
 cd docs/sphinx
