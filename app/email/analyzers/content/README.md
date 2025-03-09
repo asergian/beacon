@@ -93,5 +93,5 @@ External:
 
 - [spaCy Documentation](https://spacy.io/api/doc)
 - [NLP Concepts Overview](https://spacy.io/usage/linguistic-features)
-- [Memory Management Documentation](../../../../docs/memory_management.md)
-- [API Reference](../../../../docs/sphinx/build/html/api.html) 
+- [Memory Management Documentation]({doc}`memory_management`)
+- [API Reference]({doc}`api`) 

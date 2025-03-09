@@ -86,4 +86,4 @@ External:
 
 - [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
 - [Flask-SQLAlchemy Documentation](https://flask-sqlalchemy.palletsprojects.com/)
-- [API Reference](../../docs/sphinx/source/api.html#module-app.models) 
+- [API Reference]({doc}`api`) 

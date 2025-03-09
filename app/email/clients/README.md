@@ -88,7 +88,7 @@ External:
 
 ## Additional Resources
 
-- [Email Processing Documentation](../../../docs/sphinx/source/email_processing.html)
+- [Email Processing Documentation]({doc}`email_processing`)
 - [Gmail API Documentation](https://developers.google.com/gmail/api)
 - [IMAP Protocol Documentation](https://datatracker.ietf.org/doc/html/rfc3501)
-- [API Reference](../../../docs/sphinx/source/api.html) 
+- [API Reference]({doc}`api`) 

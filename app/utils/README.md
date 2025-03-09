@@ -79,5 +79,5 @@ External:
 
 - [Asyncio Documentation](https://docs.python.org/3/library/asyncio.html)
 - [Python Logging Documentation](https://docs.python.org/3/library/logging.html)
-- [Memory Management Guide](../../docs/sphinx/source/memory_management.html)
-- [API Reference](../../docs/sphinx/source/api.html#module-app.utils)
+- [Memory Management Guide]({doc}`memory_management`)
+- [API Reference]({doc}`api`)

@@ -78,7 +78,7 @@ External:
 
 ## Additional Resources
 
-- [Email Processing Documentation](../../../docs/sphinx/source/email_processing.html)
-- [Memory Management Documentation](../../../docs/sphinx/source/memory_management.html)
+- [Email Processing Documentation]({doc}`email_processing`)
+- [Memory Management Documentation]({doc}`memory_management`)
 - [spaCy Documentation](https://spacy.io/api/doc)
 - [OpenAI API Documentation](https://platform.openai.com/docs/api-reference) 

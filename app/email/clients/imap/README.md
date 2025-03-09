@@ -134,4 +134,4 @@ External:
 - [IMAP Protocol RFC3501](https://tools.ietf.org/html/rfc3501)
 - [Email Format RFC822](https://tools.ietf.org/html/rfc822)
 - [MIME Format RFC2045](https://tools.ietf.org/html/rfc2045)
-- [API Reference](../../../../docs/sphinx/build/html/api.html) 
+- [API Reference]({doc}`api`) 

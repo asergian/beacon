@@ -102,5 +102,5 @@ External:
 
 - [Gmail API Documentation](https://developers.google.com/gmail/api)
 - [Google Auth Library Documentation](https://googleapis.dev/python/google-auth/latest/index.html)
-- [Email Processing Documentation](../../../../docs/email_processing.md)
-- [API Reference](../../../../docs/sphinx/build/html/api.html) 
+- [Email Processing Documentation]({doc}`email_processing`)
+- [API Reference]({doc}`api`) 

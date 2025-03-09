@@ -84,6 +84,6 @@ External:
 
 ## Additional Resources
 
-- [Email Processing Documentation](../../../docs/sphinx/source/email_processing.html)
-- [Memory Management Documentation](../../../docs/sphinx/source/memory_management.html)
-- [API Reference](../../../docs/sphinx/source/api.html) 
+- [Email Processing Documentation]({doc}`email_processing`)
+- [Memory Management Documentation]({doc}`memory_management`)
+- [API Reference]({doc}`api`) 

@@ -82,4 +82,4 @@ External:
 
 - [Flask Routing Documentation](https://flask.palletsprojects.com/en/2.0.x/quickstart/#routing)
 - [Flask Blueprints Documentation](https://flask.palletsprojects.com/en/2.0.x/blueprints/)
-- [API Reference](../../docs/sphinx/source/api.html#module-app.routes) 
+- [API Reference]({doc}`api`) 

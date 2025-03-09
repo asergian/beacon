@@ -119,5 +119,5 @@ External:
 
 - [OpenAI API Documentation](https://platform.openai.com/docs/api-reference)
 - [Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering)
-- [Email Processing Documentation](../../../docs/email_processing.md)
-- [API Reference](../../../../docs/sphinx/build/html/api.html) 
+- [Email Processing Documentation]({doc}`email_processing`)
+- [API Reference]({doc}`api`) 
