@@ -14,7 +14,7 @@ pip install pipreqs
 
 # Automatically generate requirements.txt from actual imports...
 echo "Generating requirements.txt from actual imports..."
-pipreqs . --force --encoding=latin1 --ignore=venv,.venv,env,tests,examples,docs
+pipreqs . --force --encoding=latin1 --ignore=venv,.venv,env,tests
 
 # Filter out problematic packages from requirements.txt
 #grep -v -E "jnius|pyodide" requirements.txt > requirements-filtered.txt
