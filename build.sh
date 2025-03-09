@@ -14,14 +14,14 @@ pip install pipreqs
 
 # Automatically generate requirements.txt from actual imports...
 echo "Generating requirements.txt from actual imports..."
-pipreqs . --force --encoding=latin1
+pipreqs . --force --encoding=latin1 --ignore=venv,.venv,env,tests,examples,docs
 
 # Filter out problematic packages from requirements.txt
-grep -v -E "jnius|pyodide" requirements.txt > requirements-filtered.txt
+#grep -v -E "jnius|pyodide" requirements.txt > requirements-filtered.txt
 
 # Install all dependencies from requirements.txt
 # This now includes both app and documentation dependencies
-pip install -r requirements-filtered.txt
+pip install -r requirements.txt
 
 # Build documentation
 cd docs/sphinx
