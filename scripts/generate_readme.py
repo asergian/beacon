@@ -526,7 +526,7 @@ def format_dependencies(dependencies: List[str], verbosity: int = 2) -> str:
         }
         
         return "\n".join([
-            f"- `{dep}`: {descriptions.get(dep, f'For {dep.split('.')[-1]} functionality')}"
+            f"- `{dep}`: {descriptions.get(dep, 'For ' + dep.split('.')[-1] + ' functionality')}"
             for dep in dependencies
         ])
     
