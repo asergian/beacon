@@ -316,7 +316,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 1rem;
   background-color: var(--card-bg);
   border-radius: 8px;
   padding: 15px;
@@ -593,8 +593,7 @@ body {
     width: 100%;
     min-height: calc(100vh - var(--header-height) - var(--filters-row-height));
     height: auto;
-    padding: 10px;
-    padding-right: 0px;
+    padding: 10px 0 10px 10px; /* Changed to remove right padding globally and keep left padding */
     overflow-y: auto;
     max-height: calc(100vh - var(--header-height));
     -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
@@ -646,11 +645,26 @@ body {
     display: flex !important; /* Only visible when explicitly needed */
   }
   
-  /* Ensure no right padding on email details for mobile */
+  /* Standardized padding for email details containers on mobile */
   #email-details {
-    padding-right: 5px !important; /* Force no right padding with higher specificity */
+    padding-right: 0 !important; /* No right padding to keep scrollbar flush with edge */
   }
   
+  /* Standardized padding for all boxes within email details on mobile */
+  .email-meta, 
+  .summary-actions-box,
+  .summary-section {
+    padding-left: 10px;
+    padding-right: 10px; /* Add right padding to the content (not the container) */
+    margin-right: 0;
+    width: 100%;
+  }
+  
+  /* Adjust action items padding for mobile */
+  .action-items-list {
+    padding-left: 15px; /* Slightly reduce indent on mobile */
+  }
+
   .filters-row.collapsed {
     max-height: 0;
     padding: 0;
@@ -770,11 +784,12 @@ body {
     background-color: #ffffff;
     border-radius: 8px;
     padding: 20px;
-    margin-bottom: 20px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     position: relative;
     overflow: auto;
 }
+
+
 
 .email-body-container {
     padding-bottom: 30px; /* Extra padding at bottom to prevent content cut-off */
@@ -855,7 +870,7 @@ body {
 
 /* Update email body styles */
 #details-body {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 /* Email details section tag styling */
