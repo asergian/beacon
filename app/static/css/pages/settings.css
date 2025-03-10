@@ -249,4 +249,62 @@ body {
 .slider-input::-moz-range-thumb,
 .slider-value {
     display: none;
+}
+
+/* ----------------------------------------------------------------------------
+ * RESPONSIVE ADJUSTMENTS
+ * Mobile optimization for settings screens
+ * ----------------------------------------------------------------------------
+ */
+@media (max-width: 640px) {
+    /* Container padding adjustment */
+    .settings-container {
+        padding: 1.5rem 1rem;
+    }
+    
+    /* Smaller title size */
+    .settings-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Make all form elements and selects full width */
+    .select-container,
+    .modern-select {
+        width: 100%;
+    }
+    
+    /* Make button groups and buttons full width */
+    .button-group, 
+    .setting-group .button {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+    }
+
+    .button-group button {
+        width: 100%;
+    }
+    
+    /* Custom category layout improvement */
+    .custom-category-item {
+        padding: 1rem 0.75rem;
+    }
+    
+    .category-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .category-color {
+        margin-top: 0.5rem;
+    }
+    
+    .category-description,
+    .category-values-input {
+        width: 100%;
+        padding: 0.5rem;
+    }
 } 

@@ -312,12 +312,36 @@
         padding: 1.5rem;
     }
     
+    /* Keep toggle settings in a row for better mobile layout */
     .setting-content {
-        flex-direction: column;
+        flex-direction: row; /* Keep in row rather than column */
         gap: 1rem;
+        flex-wrap: wrap; /* Allow wrapping for narrow screens */
+        align-items: center;
     }
     
+    /* Give most of the width to the setting info */
     .setting-info {
+        flex: 1;
+        min-width: 200px; /* Ensure text has enough space */
+    }
+    
+    /* Settings with toggles should stay in a row */
+    .setting-item .toggle-container {
+        flex: 0 0 auto; /* Don't grow or shrink toggles */
+    }
+    
+    /* Dropdown and button settings can wrap to full width */
+    .setting-item .select-container,
+    .setting-item .button-container,
+    .setting-item .form-input {
+        flex: 0 0 100%; /* Full width for dropdowns, inputs and buttons */
+        margin-top: 0.5rem;
+        order: 3; /* Push below the setting info */
+    }
+    
+    /* Make modern selects full width on mobile */
+    .setting-item .modern-select {
         width: 100%;
     }
 } 

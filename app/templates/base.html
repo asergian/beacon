@@ -13,7 +13,7 @@
     <!-- Navigation Bar -->
     <header>
         <div class="header-container">
-            {% if 'email' in request.path or 'summary' in request.path or request.endpoint and 'email' in request.endpoint %}
+            {% if 'email' in request.path or 'summary' in request.path or request.endpoint and 'email' in request.endpoint or request.endpoint == 'demo.demo_home' %}
             <!-- Mobile Filter Toggle Button (only shown on email summary page) -->
             <button id="filter-toggle" class="filter-toggle" aria-label="Toggle filters">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
