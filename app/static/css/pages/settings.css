@@ -274,17 +274,38 @@ body {
         width: 100%;
     }
     
-    /* Make button groups and buttons full width */
-    .button-group, 
-    .setting-group .button {
+    /* Base styles for all button groups */
+    .button-group {
+        display: flex;
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
-        text-align: center;
+        gap: 0.5rem;
     }
 
+    /* Default style for button groups with 3 or fewer buttons - single row */
     .button-group button {
-        width: 100%;
+        flex: 1;
+    }
+    
+    /* Apply flex wrapping only to button groups with more than 3 buttons */
+    .button-group:has(> button:nth-child(4)) {
+        flex-wrap: wrap;
+        max-height: 6rem; /* Limit to approximately 2 rows */
+        overflow: hidden; /* Hide any content beyond the max height */
+    }
+
+    /* For button groups with 4-5 buttons */
+    .button-group:has(> button:nth-child(4)):not(:has(> button:nth-child(6))) button {
+        flex: 1 1 auto;
+        min-width: calc(33% - 0.5rem); /* Allow up to 3 per row */
+    }
+    
+    /* For button groups with 6+ buttons */
+    .button-group:has(> button:nth-child(6)) button {
+        flex: 1 1 auto;
+        min-width: calc(33% - 0.5rem); /* Allow up to 4 per row */
+        max-width: calc(33% - 0.5rem); /* But no more than 3 per row */
     }
     
     /* Custom category layout improvement */
@@ -292,14 +313,30 @@ body {
         padding: 1rem 0.75rem;
     }
     
+    /* Keep category header items side by side */
     .category-header {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
         gap: 0.5rem;
+        width: 100%;
     }
     
+    /* Make the input take available space and shrink as needed */
+    .category-header .category-name {
+        flex: 1 1 auto;
+        min-width: 100px; /* Allow input to shrink below its intrinsic width */
+    }
+
     .category-color {
-        margin-top: 0.5rem;
+        flex: 0 0 auto !important;
+        width: 32px;
+        display: block
+    }
+    
+    /* Keep delete button at consistent size */
+    .delete-category-btn {
+        flex: 0 0 auto;
+        margin-left: 5px;
     }
     
     .category-description,
