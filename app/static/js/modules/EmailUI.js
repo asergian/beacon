@@ -167,8 +167,31 @@ export const EmailUI = {
             return;
         }
         
-        // Update selected state in UI
+        // On mobile, handle column visibility and FABs
+        const isMobile = window.innerWidth <= 768;
         const previousSelected = document.querySelector('.email-item.active');
+        const isUserClick = !!previousSelected || document.referrer.includes('email');
+        
+        if (isMobile && isUserClick) {
+            const emailListColumn = document.querySelector('.email-list-column');
+            const emailDetailsColumn = document.querySelector('.email-details-column');
+            const toggleBtn = document.getElementById('mobile-toggle-btn');
+            const navFabs = document.querySelectorAll('.nav-fab');
+            
+            if (emailListColumn && emailDetailsColumn) {
+                // Show details, hide list
+                emailListColumn.style.display = 'none';
+                emailDetailsColumn.style.display = 'block';
+                
+                // Make all FABs visible on mobile when viewing details
+                toggleBtn.classList.add('visible');
+                navFabs.forEach(fab => {
+                    fab.classList.add('visible');
+                });
+            }
+        }
+        
+        // Update selected state in UI
         if (previousSelected) {
             previousSelected.classList.remove('active');
         }

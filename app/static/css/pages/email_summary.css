@@ -473,23 +473,156 @@ body {
  * ----------------------------------------------------------------------------
  */
 @media (max-width: 768px) {
+  /* Header adjustments */
+  header {
+    min-height: 50px;
+  }
+
+  .header-container {
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .header-nav ul {
+    justify-content: center;
+  }
+  
+  .header-nav .nav-link span {
+    display: none;
+  }
+  
+  .header-nav .nav-link::before {
+    margin-right: 0;
+  }
+  
+  .logo-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+  
+  /* Footer adjustments */
+  footer {
+    position: static !important; 
+    margin-top: auto;
+    box-sizing: border-box;
+  }
+  
+  .footer-right {
+    display: none; /* Hide footer links on mobile */
+  }
+  
+  /* Filter toggle button - transparent with border on mobile too */
+  .filter-toggle {
+    display: flex !important; /* Force display on mobile */
+  }
+  
+  /* Filters row */
+  .filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    transition: max-height 0.3s ease;
+    overflow: hidden;
+    max-height: 200px;
+  }
+  
+  .filters-row.collapsed {
+    max-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+  }
+  
+  .filter-group {
+    flex: 1;
+    min-width: 100px;
+  }
+  
+  .filter-group select {
+    width: 100%;
+  }
+  
+  /* Email columns layout */
   .content-columns {
     flex-direction: column;
     height: auto;
-    overflow: visible;
+    overflow: hidden;
+    position: relative;
   }
-
+  
   .email-list-column {
     width: 100%;
-    height: 300px; /* Fixed height for mobile */
+    min-height: calc(100vh - var(--header-height) - 60px);
+    height: auto;
     border-right: none;
-    border-bottom: 1px solid var(--border-color);
+    overflow-y: auto;
+    max-height: calc(100vh - var(--header-height));
+    -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
   }
 
   .email-details-column {
     width: 100%;
-    height: calc(100vh - var(--header-height) - var(--filters-height) - 300px - var(--footer-height));
+    min-height: calc(100vh - var(--header-height) - 60px);
+    height: auto;
     padding: 10px;
+    padding-right: 0px;
+    overflow-y: auto;
+    max-height: calc(100vh - var(--header-height));
+    -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
+  }
+
+  /* Column visibility classes */
+  .email-list-column.mobile-hidden {
+    display: none;
+  }
+  
+  .email-details-column.mobile-visible {
+    display: block;
+  }
+  
+  /* Button visibility */
+  .mobile-toggle-btn.visible {
+    display: flex;
+  }
+  
+  /* FAB sizing and positioning for mobile */
+  .nav-fab, .mobile-toggle-btn {
+    display: none !important; /* Force hidden by default on mobile */
+    width: 40px;
+    height: 40px;
+    right: 15px;
+  }
+  
+  /* FAB icons size */
+  .nav-fab svg, .mobile-toggle-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+  
+  /* Mobile positioning with footer height calculation */
+  .nav-fab {
+    bottom: calc(var(--footer-height) + 25px);
+  }
+  
+  .nav-fab.top-fab {
+    bottom: calc(var(--footer-height) + 83px);
+  }
+  
+  .mobile-toggle-btn {
+    bottom: calc(var(--footer-height) + 140px);
+  }
+  
+  /* Only this selector can override the display:none */
+  .nav-fab.visible, .mobile-toggle-btn.visible {
+    display: flex !important; /* Only visible when explicitly needed */
+  }
+  
+  /* Ensure no right padding on email details for mobile */
+  #email-details {
+    padding-right: 5px !important; /* Force no right padding with higher specificity */
   }
 }
 
@@ -678,7 +811,7 @@ body {
 #email-details {
   height: 100%;
   overflow-y: auto;
-  padding-right: 15px;
+  padding-right: 10px;
 }
 
 /* Update email body styles */
@@ -719,39 +852,6 @@ body {
 #key-dates-list li.important {
   color: var(--text-color);
   font-weight: 500;
-}
-
-@media (max-width: 768px) {
-  .filters-row {
-    flex-direction: column;
-    gap: 10px;
-    align-items: stretch;
-    padding: 10px;
-  }
-  
-  .filter-group {
-    width: 100%;
-  }
-  
-  .filter-group select {
-    width: 100%;
-  }
-  
-  .content-columns {
-    flex-direction: column;
-  }
-  
-  .email-list-column {
-    width: 100%;
-    height: 300px;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
-  }
-  
-  .email-details-column {
-    width: 100%;
-    padding: 10px;
-  }
 }
 
 /* ----------------------------------------------------------------------------
@@ -837,69 +937,76 @@ body {
   margin-bottom: 15px;
 }
 
-/* Navigation FAB buttons */
-/* ----------------------------------------------------------------------------
- * NAVIGATION COMPONENTS
- * Floating action buttons for page navigation
- * ----------------------------------------------------------------------------
- */
+/* Navigation FABs - visible by default on desktop */
 .nav-fab {
   position: fixed;
-  bottom: 80px; /* Position higher above footer */
+  bottom: calc(var(--footer-height) + 25px);
   right: 25px;
-  width: 48px; /* Slightly larger */
-  height: 48px; /* Slightly larger */
+  width: 48px; 
+  height: 48px;
   border-radius: 50%;
   background-color: var(--primary-color);
   color: white;
-  display: flex;
+  display: flex; /* Always visible on desktop */
   align-items: center;
   justify-content: center;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.3); /* Stronger shadow for better visibility */
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
   z-index: 1000;
   cursor: pointer;
-  opacity: 1; 
+  opacity: 0.9;
   transform: scale(1);
-  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s, opacity 0.2s;
   border: none;
 }
 
-/* Button hover effect */
 .nav-fab:hover {
   background-color: var(--primary-hover);
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  opacity: 1;
 }
 
-/* Button active effect */
 .nav-fab:active {
   transform: scale(0.95);
 }
 
 .nav-fab svg {
-  width: 24px; /* Larger icon */
-  height: 24px; /* Larger icon */
+  width: 24px;
+  height: 24px;
 }
 
 .nav-fab.top-fab {
-  bottom: 138px; /* Adjusted for larger button size */
+  bottom: calc(var(--footer-height) + 83px);
 }
 
-/* For mobile devices, adjust position */
-/* ----------------------------------------------------------------------------
- * MOBILE NAVIGATION
- * Adjustments for navigation elements on mobile devices
- * ----------------------------------------------------------------------------
- */
-@media (max-width: 768px) {
-  .nav-fab {
-    right: 20px;
-    bottom: 25px;
-  }
-  
-  .nav-fab.top-fab {
-    bottom: 83px;
-  }
+/* Mobile toggle button (only used on mobile) */
+.mobile-toggle-btn {
+  position: fixed;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  color: white;
+  display: none; /* Hidden by default */
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  z-index: 1000;
+  cursor: pointer;
+  border: none;
+  right: 25px;
+  bottom: calc(var(--footer-height) + 140px);
+  opacity: 0.9;
+}
+
+.mobile-toggle-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.mobile-toggle-btn:hover {
+  opacity: 1;
+  transform: scale(1.05);
 }
 
 /* Additional style for plain text emails in dark mode - only for email body, not response box */
@@ -931,4 +1038,30 @@ body {
 [data-theme="dark"] .email-response-section {
   background-color: var(--card-bg);
   box-shadow: var(--card-shadow);
+}
+
+/* Filter toggle default state - hidden on desktop */
+.filter-toggle {
+  display: none; /* Hidden by default on desktop */
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: white;
+  padding: 5px;
+  margin-right: 10px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  z-index: 10;
+}
+
+.filter-toggle:hover {
+  border-color: var(--primary-color);
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.filter-toggle svg {
+  width: 18px;
+  height: 18px;
 }
