@@ -138,9 +138,10 @@ body {
  */
 .email-list-column {
   width: 30%;
+  height: calc(100vh - var(--header-height) - var(--filter-row-visible-height));
+  overflow-y: auto;
   border-right: 1px solid var(--border-color);
-  height: 100%;
-  overflow-y: auto !important; /* Use auto instead of scroll to only show when needed */
+  transition: height 0.3s ease;
   flex-shrink: 0; /* Prevent shrinking */
   display: flex;
   flex-direction: column;
@@ -507,6 +508,7 @@ body {
     position: static !important; 
     margin-top: auto;
     box-sizing: border-box;
+    display: none;
   }
   
   .footer-right {
@@ -518,31 +520,55 @@ body {
     display: flex !important; /* Force display on mobile */
   }
   
-  /* Filters row */
+  /* Horizontally scrollable filters for mobile */
   .filters-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px;
-    transition: max-height 0.3s ease;
-    overflow: hidden;
-    max-height: 200px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    padding: 10px 8px;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    max-height: var(--filter-row-height);
+    border-bottom: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+    scrollbar-width: none;
   }
   
-  .filters-row.collapsed {
-    max-height: 0;
-    padding: 0;
-    margin: 0;
-    border: none;
+  /* Hide scrollbar in Webkit browsers */
+  .filters-row::-webkit-scrollbar {
+    display: none;
   }
   
   .filter-group {
-    flex: 1;
-    min-width: 100px;
+    min-width: 200px; /* Slightly wider to fit label + dropdown */
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row; /* Changed from column to row */
+    align-items: center; /* Center items vertically */
+    gap: 8px;
+  }
+  
+  .filter-group label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap; /* Prevent label wrapping */
+    min-width: 50px; /* Give the label a minimum width */
+    margin: 0; /* Remove margin */
   }
   
   .filter-group select {
-    width: 100%;
+    flex: 1; /* Take remaining space */
+    min-width: 120px; /* Ensure select has enough space */
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+  
+  /* Update filter row height for this layout */
+  :root {
+    --filter-row-height: 60px; /* Height for horizontal layout with labels in row */
   }
   
   /* Email columns layout */
@@ -555,17 +581,17 @@ body {
   
   .email-list-column {
     width: 100%;
-    min-height: calc(100vh - var(--header-height) - 60px);
-    height: auto;
+    min-height: auto; /* Remove min-height to allow dynamic sizing */
+    height: calc(100vh - var(--header-height) - var(--filter-row-visible-height));
+    max-height: calc(100vh - var(--header-height) - var(--filter-row-visible-height));
+    transition: height 0.3s ease, max-height 0.3s ease;
     border-right: none;
     overflow-y: auto;
-    max-height: calc(100vh - var(--header-height));
-    -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
   }
 
   .email-details-column {
     width: 100%;
-    min-height: calc(100vh - var(--header-height) - 60px);
+    min-height: calc(100vh - var(--header-height) - var(--filters-row-height));
     height: auto;
     padding: 10px;
     padding-right: 0px;
@@ -623,6 +649,19 @@ body {
   /* Ensure no right padding on email details for mobile */
   #email-details {
     padding-right: 5px !important; /* Force no right padding with higher specificity */
+  }
+  
+  .filters-row.collapsed {
+    max-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    overflow: hidden;
+  }
+  
+  .filters-row.collapsed + .content-columns .email-list-column {
+    height: calc(100vh - var(--header-height) - var(--filter-row-hidden-height));
+    max-height: calc(100vh - var(--header-height) - var(--filter-row-hidden-height));
   }
 }
 
@@ -1064,4 +1103,11 @@ body {
 .filter-toggle svg {
   width: 18px;
   height: 18px;
+}
+
+/* Add CSS variables for dynamic height calculations */
+:root {
+  --filter-row-height: 55px; /* Default for desktop */
+  --filter-row-visible-height: var(--filter-row-height);
+  --filter-row-hidden-height: 0px;
 }
