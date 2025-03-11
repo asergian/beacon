@@ -60,10 +60,6 @@ body.login-page {
     align-items: center;
 }
 
-.nav-logo img {
-    filter: brightness(0) invert(1); /* Make logo white */
-}
-
 .nav-links {
     display: flex;
     align-items: center;

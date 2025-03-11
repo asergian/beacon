@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100">
+  <!-- Transparent background -->
+  <rect width="400" height="100" fill="transparent"/>
+  
+  <!-- Logo container - properly vertically centered -->
+  <g transform="translate(10, 25)">
+    <!-- Background circle -->
+    <circle cx="25" cy="25" r="25" fill="#FFFFFF" />
+    
+    <!-- Envelope shape - softer colors -->
+    <path d="M13 16 L37 16 L37 35 L13 35 Z" fill="#A7C5A9" opacity="0.8" />
+    <!-- Envelope flap -->
+    <path d="M13 16 L25 24 L37 16" fill="#C9D9CA" opacity="0.9" />
+    
+    <!-- Lighthouse -->
+    <rect x="22" y="22" width="6" height="13" fill="#B0C4B1" />
+    
+    <!-- Lighthouse stripes -->
+    <rect x="22" y="25" width="6" height="2" fill="#FFFFFF" />
+    <rect x="22" y="30" width="6" height="2" fill="#FFFFFF" />
+    
+    <!-- Lighthouse top -->
+    <rect x="23" y="19" width="4" height="3" fill="#B0C4B1" />
+    <circle cx="25" cy="18" r="2" fill="#FFFFFF" />
+    
+    <!-- Light beam -->
+    <path d="M25 16 L21 10 L29 10 Z" fill="#DCE5DC" opacity="0.9" />
+  </g>
+  
+  <!-- "Beacon" text properly centered vertically with logo -->
+  <text x="70" y="58" font-family="Arial, sans-serif" font-weight="700" font-size="40" fill="#FFFFFF">Beacon</text>
+</svg>

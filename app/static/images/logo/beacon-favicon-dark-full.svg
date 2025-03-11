@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Envelope Base - Dark Gray -->
+  <g transform="translate(0,10)">
+    <path d="M10,30 L110,30 L110,90 L10,90 Z" fill="#333333"/>
+    
+    <!-- Top Cutout - prominent triangular beacon -->
+    <path d="M50,30 L70,30 L60,10 Z" fill="transparent"/>
+    
+    <!-- Refined Light Rays - Thicker and more prominent -->
+    <path d="M40,25 L20,10" stroke="#333333" stroke-width="4" stroke-linecap="round"/>
+    <path d="M50,20 L35,0" stroke="#333333" stroke-width="4" stroke-linecap="round"/>
+    <path d="M60,15 L60,0" stroke="#333333" stroke-width="4" stroke-linecap="round"/>
+    <path d="M70,20 L85,0" stroke="#333333" stroke-width="4" stroke-linecap="round"/>
+    <path d="M80,25 L100,10" stroke="#333333" stroke-width="4" stroke-linecap="round"/>
+    
+    <!-- Envelope Lines - With rounded ends -->
+    <path d="M10,30 L60,70 L110,30" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="30" y1="70" x2="90" y2="70" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>

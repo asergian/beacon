@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Circle Background -->
+  <circle cx="60" cy="60" r="50" fill="#95B1A1"/>
+  
+  <!-- Envelope Base -->
+  <path d="M35,55 L85,55 L85,85 L35,85 Z" fill="white"/>
+  
+  <!-- Top Cutout -->
+  <path d="M47.5,55 L72.5,55 L60,45 Z" fill="#95B1A1"/>
+  
+  <!-- Refined Light Rays -->
+  <path d="M45,50 L30,42" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <path d="M52.5,47.5 L42,35" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <path d="M60,45 L60,32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <path d="M67.5,47.5 L78,35" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <path d="M75,50 L90,42" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Envelope Lines -->
+  <path d="M35,55 L60,75 L85,55" fill="none" stroke="#95B1A1" stroke-width="1.5"/>
+  <line x1="45" y1="75" x2="75" y2="75" stroke="#95B1A1" stroke-width="1.5"/>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <!-- Background circle -->
+  <circle cx="200" cy="200" r="180" fill="#8BAB8D" />
+  
+  <!-- Light beams - bolder -->
+  <path d="M200 20 L50 200 L350 200 Z" fill="#F5F5DC" opacity="0.5" />
+  <path d="M200 20 L100 300 L300 300 Z" fill="#F5F5DC" opacity="0.4" />
+  
+  <!-- Lighthouse base - wider -->
+  <rect x="165" y="260" width="70" height="45" fill="#2D3E40" />
+  
+  <!-- Lighthouse tower - thicker -->
+  <rect x="175" y="140" width="50" height="120" fill="#2D3E40" />
+  
+  <!-- Lighthouse stripes - bolder -->
+  <rect x="175" y="160" width="50" height="22" fill="#F5F5DC" />
+  <rect x="175" y="204" width="50" height="22" fill="#F5F5DC" />
+  <rect x="175" y="248" width="50" height="22" fill="#F5F5DC" />
+  
+  <!-- Lighthouse top - more prominent -->
+  <rect x="185" y="120" width="30" height="20" fill="#2D3E40" />
+  <circle cx="200" cy="110" r="12" fill="#F5F5DC" />
+  
+  <!-- Water/waves - bolder -->
+  <path d="M100 320 L300 320" stroke="#5E8C61" stroke-width="8" />
+  <path d="M120 335 L280 335" stroke="#5E8C61" stroke-width="6" />
+  <path d="M140 347 L260 347" stroke="#5E8C61" stroke-width="4" />
+</svg>

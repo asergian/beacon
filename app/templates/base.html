@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Beacon | Email Assistant{% endblock %}</title>
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo/beacon-favicon-dark-full.svg') }}">
     {% block styles %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     {% endblock %}
@@ -31,7 +31,7 @@
             {% endif %}
             <div class="logo-container">
                 <a href="{% if session.get('user', {}).get('is_demo', False) %}{{ url_for('demo.demo_home') }}{% else %}{{ url_for('email.home') }}{% endif %}">
-                    <img class="logo-image" src="{{ url_for('static', filename='images/beacon-logo-hero.svg') }}" alt="Beacon" height="40">
+                    <img class="logo-image" src="{{ url_for('static', filename='images/logo/beacon-header-white.svg') }}" alt="Beacon" height="40">
                     <span class="logo-text">Beacon</span>
                 </a>
             </div>
