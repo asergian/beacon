@@ -1122,3 +1122,51 @@ body {
   --filter-row-visible-height: var(--filter-row-height);
   --filter-row-hidden-height: 0px;
 }
+
+/* ----------------------------------------------------------------------------
+ * PULL TO REFRESH
+ * Styling for the mobile pull-to-refresh feature
+ * ----------------------------------------------------------------------------
+ */
+.pull-to-refresh {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -60px; /* Start off-screen */
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background-color: var(--bg-color);
+  transition: transform 0.2s;
+  z-index: 10;
+  pointer-events: none; /* Don't interfere with scrolling */
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pull-to-refresh .refresh-icon {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  transition: transform 0.5s;
+}
+
+.pull-to-refresh .refresh-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.pull-to-refresh.pulling .refresh-icon {
+  transform: rotate(180deg);
+}
+
+.pull-to-refresh.refreshing .refresh-icon {
+  animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
