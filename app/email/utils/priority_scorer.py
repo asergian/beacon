@@ -6,9 +6,13 @@ content analysis. It helps in ranking and categorizing emails by their relative 
 """
 
 from typing import Set, Tuple, Dict, Union, Any
+import logging
 from ..models.analysis_settings import ProcessingConfig
 # Remove the circular import
 # from ..core.email_parsing import EmailMetadata
+
+# Create a module-level logger
+logger = logging.getLogger(__name__)
 
 class PriorityScorer:
     """Calculates priority scores for emails based on various factors.
@@ -54,7 +58,7 @@ class PriorityScorer:
         """
         self.priority_threshold = threshold
 
-    def score(self, email_data: Union[Any, str], nlp_results: Dict, llm_results: Dict) -> Tuple[int, str]:
+    def score(self, email_data: Union[Any, str], nlp_results: Dict, llm_results: Dict, priority_threshold: int = None) -> Tuple[int, str]:
         """Calculate the priority score and level for an email.
         
         Analyzes email metadata and analysis results to calculate a numeric
@@ -64,6 +68,7 @@ class PriorityScorer:
             email_data: Either EmailMetadata object or sender string
             nlp_results: Dictionary containing NLP analysis results
             llm_results: Dictionary containing LLM analysis results
+            priority_threshold: Optional user-specific priority threshold (overrides instance setting)
             
         Returns:
             Tuple containing:
@@ -71,13 +76,16 @@ class PriorityScorer:
                 - String priority level ("HIGH", "MEDIUM", or "LOW")
         """
         try:
+            # Use user-provided threshold if available, otherwise use the instance threshold
+            threshold_to_use = priority_threshold if priority_threshold is not None else self.priority_threshold
+        
             # Extract sender from email_data
             sender = self._extract_sender(email_data)
             
             # Calculate base score with all factors
             score = self._calculate_base_score()
             score = self._apply_sender_boost(score, sender)
-            score = self._apply_urgency_factors(score, nlp_results, llm_results)
+            score = self._apply_urgency_factors(score, nlp_results, llm_results, threshold_to_use)
             score = self._apply_content_factors(score, nlp_results)
             score = self._apply_category_context_factors(score, llm_results)
             score = self._apply_email_pattern_penalties(score, nlp_results)
@@ -86,12 +94,12 @@ class PriorityScorer:
             score = self._normalize_score(score)
             
             # Determine priority level based on score and threshold
-            priority_level = self._determine_priority_level(score)
+            priority_level = self._determine_priority_level(score, threshold_to_use)
             
             return score, priority_level
             
         except Exception as e:
-            print(f"Error calculating priority: {e}")
+            logger.error(f"Error calculating priority: {e}")
             return self.config.BASE_PRIORITY_SCORE, self.PRIORITY_LOW
     
     def _extract_sender(self, email_data: Union[Any, str]) -> str:
@@ -128,13 +136,14 @@ class PriorityScorer:
             score += self.config.VIP_SCORE_BOOST
         return score
     
-    def _apply_urgency_factors(self, score: int, nlp_results: Dict, llm_results: Dict) -> int:
+    def _apply_urgency_factors(self, score: int, nlp_results: Dict, llm_results: Dict, threshold: int) -> int:
         """Apply boosts for urgency and action requirements.
         
         Args:
             score: Current priority score
             nlp_results: Dictionary containing NLP analysis results
             llm_results: Dictionary containing LLM analysis results
+            threshold: Priority threshold to use for scoring
             
         Returns:
             Updated priority score with urgency factors applied
@@ -149,9 +158,9 @@ class PriorityScorer:
             action_boost = self.config.ACTION_SCORE_BOOST
             
             # Apply higher boost for action required items
-            if self.priority_threshold >= 70:  # High threshold (user wants fewer high-priority emails)
+            if int(threshold) >= 70:  # High threshold (user wants fewer high-priority emails)
                 action_boost += 5              # Still boost action items even with high threshold
-            elif self.priority_threshold <= 30:  # Low threshold (user wants more high-priority emails)
+            elif int(threshold) <= 30:  # Low threshold (user wants more high-priority emails)
                 action_boost += 15             # Boost action items significantly with low threshold
             else:  # Medium threshold (default)
                 action_boost += 10             # Moderate additional boost for action items
@@ -300,7 +309,7 @@ class PriorityScorer:
         """
         return max(self.config.MIN_PRIORITY, min(score, self.config.MAX_PRIORITY))
     
-    def _determine_priority_level(self, score: int) -> str:
+    def _determine_priority_level(self, score: int, threshold: int) -> str:
         """Determine priority level based on score and threshold setting.
         
         This converts the numeric score into a categorical priority level
@@ -308,18 +317,22 @@ class PriorityScorer:
         
         Args:
             score: Calculated priority score
+            threshold: User-provided priority threshold
             
         Returns:
             String priority level ("HIGH", "MEDIUM", or "LOW")
         """
-        if self.priority_threshold == 30:  # Low threshold
+
+        logger.info(f"Priority threshold: {threshold}; score: {score}")
+
+        if int(threshold) == 30:  # Low threshold
             if score >= 75:
                 return self.PRIORITY_HIGH
             elif score >= 45:
                 return self.PRIORITY_MEDIUM
             else:
                 return self.PRIORITY_LOW
-        elif self.priority_threshold == 70:  # High threshold
+        elif int(threshold) == 70:  # High threshold
             if score >= 85:
                 return self.PRIORITY_HIGH
             elif score >= 65:

@@ -133,6 +133,44 @@ class User(db.Model):
             
         return setting if setting is not None else default_value
     
+    def _clear_user_cache(self, setting_key=None):
+        """Clear the user's cache when AI settings are updated.
+        
+        Args:
+            setting_key: Optional key that was updated (for logging)
+        """
+        try:
+            # Import here to avoid circular imports
+            from flask import current_app
+            
+            # Log the cache clearing
+            if setting_key:
+                logging.info(f"Clearing cache for user {self.id} after updating setting {setting_key}")
+            else:
+                logging.info(f"Clearing cache for user {self.id} after bulk updating AI settings")
+            
+            # Get the actual app instance, not just the proxy
+            app = current_app._get_current_object()
+            user_email = self.email
+            
+            # Function to run in a separate thread with proper app context
+            def clear_user_cache(app, user_email):
+                # Create a new application context for this thread
+                with app.app_context():
+                    try:
+                        import asyncio
+                        asyncio.run(app.pipeline.cache.clear_cache(user_email))
+                        logging.info(f"Successfully cleared cache for user email: {user_email}")
+                    except Exception as e:
+                        logging.error(f"Failed to clear cache for user email {user_email}: {e}")
+            
+            # Run in a separate thread to avoid blocking
+            from threading import Thread
+            Thread(target=clear_user_cache, args=(app, user_email)).start()
+            
+        except Exception as e:
+            logging.error(f"Error setting up cache clearing after settings update: {e}")
+    
     def set_setting(self, key: str, value: Any) -> None:
         """Set a single setting value.
         
@@ -144,7 +182,12 @@ class User(db.Model):
         if key == 'ai_features.model_type':
             logging.info(f"Setting model_type - Key: {key}, Value: {value}")
             
+        # Store the setting
         UserSetting.set_setting(self.id, key, value)
+        
+        # Clear cache when AI-related settings are updated
+        if key.startswith('ai_features.'):
+            self._clear_user_cache(key)
     
     def get_settings_group(self, prefix: str) -> Dict[str, Any]:
         """Get all settings with a specific prefix.
@@ -203,6 +246,11 @@ class User(db.Model):
                 self.set_setting(full_key, value)
             
             db.session.commit()
+            
+            # Clear cache specifically for AI-related settings once after all updates
+            if prefix == 'ai_features' and values:
+                self._clear_user_cache()
+                
         except Exception as e:
             logging.error(f"Failed to update settings group: {e}")
             db.session.rollback()

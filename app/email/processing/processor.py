@@ -139,6 +139,24 @@ class EmailProcessor:
         # Keep only essential batch start memory logging
         log_memory_usage(self.logger, "Email Batch Start")
         
+        # Get user's priority threshold once for the entire batch
+        user_priority_threshold = None
+        try:
+            if hasattr(current_app, 'get_current_user'):
+                user = current_app.get_current_user()
+                if user:
+                    # Get the user's priority threshold setting
+                    user_priority_threshold = user.get_setting('ai_features.priority_threshold', 50)
+                    self.logger.debug(f"Using user priority threshold: {user_priority_threshold}")
+            elif user_id and 'user' in session and session['user'].get('id'):
+                from app.models.user import User
+                user = User.query.get(user_id)
+                if user:
+                    user_priority_threshold = user.get_setting('ai_features.priority_threshold', 50)
+                    self.logger.debug(f"Using user priority threshold: {user_priority_threshold}")
+        except Exception as e:
+            self.logger.warning(f"Could not retrieve user priority threshold, using default: {e}")
+        
         try:
             # Process emails in chunks to avoid memory issues
             email_batch = parsed_emails
@@ -149,11 +167,11 @@ class EmailProcessor:
             # Step 2: Run LLM analysis if enabled
             processed_emails = []
             if ai_enabled is not False:  # Default to True if not specified
-                processed_emails = await self._perform_llm_analysis(email_batch, nlp_results)
+                processed_emails = await self._perform_llm_analysis(email_batch, nlp_results, user_priority_threshold)
             
             # Step 3: Fall back to basic processing if needed
             if not processed_emails and email_batch:
-                processed_emails = self._perform_fallback_processing(email_batch, nlp_results)
+                processed_emails = self._perform_fallback_processing(email_batch, nlp_results, user_priority_threshold)
         
         except Exception as e:
             self.logger.error(f"Email batch processing failed: {e}")
@@ -242,7 +260,7 @@ class EmailProcessor:
             # Create default response for failed NLP processing
             return [{}] * len(email_batch)
 
-    async def _perform_llm_analysis(self, email_batch: List[EmailMetadata], nlp_results: List[Dict]) -> List[ProcessedEmail]:
+    async def _perform_llm_analysis(self, email_batch: List[EmailMetadata], nlp_results: List[Dict], user_priority_threshold: Optional[int]) -> List[ProcessedEmail]:
         """Perform LLM analysis on emails with their NLP results.
         
         Uses large language models to analyze emails for deeper semantic understanding,
@@ -251,6 +269,7 @@ class EmailProcessor:
         Args:
             email_batch: List of email metadata objects
             nlp_results: List of NLP analysis results
+            user_priority_threshold: User-defined priority threshold for LLM analysis
             
         Returns:
             List of processed emails with full analysis
@@ -281,7 +300,7 @@ class EmailProcessor:
                 llm_result = llm_results[i] if i < len(llm_results) else {}
                 
                 # Combine results
-                processed_email = self._create_processed_email(email, nlp_result, llm_result)
+                processed_email = self._create_processed_email(email, nlp_result, llm_result, user_priority_threshold)
                 processed_emails.append(processed_email)
                 
         except Exception as e:
@@ -289,7 +308,7 @@ class EmailProcessor:
         
         return processed_emails
 
-    def _perform_fallback_processing(self, email_batch: List[EmailMetadata], nlp_results: List[Dict]) -> List[ProcessedEmail]:
+    def _perform_fallback_processing(self, email_batch: List[EmailMetadata], nlp_results: List[Dict], user_priority_threshold: Optional[int]) -> List[ProcessedEmail]:
         """Process emails with just NLP results when LLM processing fails.
         
         Creates basic processed emails using only NLP analysis results
@@ -298,6 +317,7 @@ class EmailProcessor:
         Args:
             email_batch: List of email metadata objects
             nlp_results: List of NLP analysis results
+            user_priority_threshold: User-defined priority threshold for LLM analysis
             
         Returns:
             List of processed emails with basic analysis
@@ -312,7 +332,7 @@ class EmailProcessor:
                 nlp_result = nlp_results[i] if i < len(nlp_results) else {}
                 
                 # Create a processed email without LLM
-                processed_email = self._create_processed_email(email, nlp_result, {})
+                processed_email = self._create_processed_email(email, nlp_result, {}, user_priority_threshold)
                 processed_emails.append(processed_email)
                 
             except Exception as e:
@@ -324,7 +344,7 @@ class EmailProcessor:
     # Private Methods - Email Processing Helpers
     # =========================================================================
 
-    def _create_processed_email(self, email: EmailMetadata, nlp_result: Dict, llm_result: Dict) -> ProcessedEmail:
+    def _create_processed_email(self, email: EmailMetadata, nlp_result: Dict, llm_result: Dict, user_priority_threshold: Optional[int]) -> ProcessedEmail:
         """Create a processed email from NLP and LLM results.
         
         Combines the original email metadata with analysis results to create
@@ -334,6 +354,7 @@ class EmailProcessor:
             email: Original email metadata
             nlp_result: Results from NLP analysis
             llm_result: Results from LLM analysis (may be empty)
+            user_priority_threshold: User-defined priority threshold for LLM analysis
             
         Returns:
             Fully processed email with all analysis results
@@ -346,7 +367,8 @@ class EmailProcessor:
             priority_score, priority_level = self.priority_calculator.score(
                 email.sender,
                 nlp_result,
-                llm_result
+                llm_result,
+                priority_threshold=user_priority_threshold
             )
         except Exception as e:
             self.logger.warning(f"Priority calculation failed for email {email.id}, using defaults: {e}")
