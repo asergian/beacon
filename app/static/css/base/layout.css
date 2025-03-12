@@ -386,8 +386,17 @@ footer {
  */
 @media (max-width: 768px) {
     header {
-        height: calc(var(--header-height) - 10px); /* Ensure header height is maintained on mobile */
-        min-height: 50px; /* Minimum height to prevent collapse */
+        height: calc(var(--header-height) - 10px);
+        min-height: 50px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+    }
+
+    .main-content {
+        padding-top: calc(var(--header-height)) !important;
     }
     
     .header-container {

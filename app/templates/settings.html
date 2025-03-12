@@ -8,41 +8,155 @@
 {% endblock %}
 
 {% block content %}
-<div class="main-content">
-    <div class="settings-container">
-        <h1 class="settings-title">Settings</h1>
-        
-        <div class="settings-section">
-            <h2 class="section-title">General Settings</h2>
-            <div class="setting-group">
-                <div class="setting-item">
-                    <div class="setting-content">
-                        <div class="setting-info">
-                            <span class="setting-title">Dark Theme</span>
-                            <span class="setting-description">Switch between light and dark mode</span>
-                        </div>
-                        <div class="toggle-container">
-                            <input type="checkbox" 
-                                   name="theme" 
-                                   id="theme"
-                                   {% if user_settings.theme == 'dark' %}checked{% endif %}
-                            >
-                            <span class="toggle-switch"></span>
+<div class="settings-container">
+    <h1 class="settings-title">Settings</h1>
+    
+    <div class="settings-section">
+        <h2 class="section-title">General Settings</h2>
+        <div class="setting-group">
+            <div class="setting-item">
+                <div class="setting-content">
+                    <div class="setting-info">
+                        <span class="setting-title">Dark Theme</span>
+                        <span class="setting-description">Switch between light and dark mode</span>
+                    </div>
+                    <div class="toggle-container">
+                        <input type="checkbox" 
+                                name="theme" 
+                                id="theme"
+                                {% if user_settings.theme == 'dark' %}checked{% endif %}
+                        >
+                        <span class="toggle-switch"></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-content">
+                    <div class="setting-info">
+                        <span class="setting-title">Timezone</span>
+                        <span class="setting-description">Your local timezone for email retrieval</span>
+                    </div>
+                    <div class="select-container">
+                        <select id="timezone" name="timezone" class="modern-select">
+                            {% for tz in common_timezones %}
+                                <option value="{{ tz }}" {% if user_settings.timezone == tz %}selected{% endif %}>{{ tz }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="select-arrow">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
                         </div>
                     </div>
                 </div>
-                
+            </div>
+        </div>
+    </div>
+    
+    <div class="settings-section">
+        <h2 class="section-title">Email Processing</h2>
+        
+        <div class="setting-group">
+            <h3 class="group-title">Email Preferences</h3>
+            <div class="setting-item">
+                <div class="setting-content">
+                    <div class="setting-info">
+                        <span class="setting-title">Email History</span>
+                        <span class="setting-description">Number of days of email history to fetch</span>
+                    </div>
+                    <div class="button-group">
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '1' %}selected{% endif %}"
+                                data-value="1" 
+                                data-setting="email_preferences.days_to_analyze">1d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '3' %}selected{% endif %}"
+                                data-value="3" 
+                                data-setting="email_preferences.days_to_analyze">3d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '5' %}selected{% endif %}"
+                                data-value="5" 
+                                data-setting="email_preferences.days_to_analyze">5d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '7' %}selected{% endif %}"
+                                data-value="7" 
+                                data-setting="email_preferences.days_to_analyze">7d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '14' %}selected{% endif %}"
+                                data-value="14" 
+                                data-setting="email_preferences.days_to_analyze">14d</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-content">
+                    <div class="setting-info">
+                        <span class="setting-title">Cache Duration</span>
+                        <span class="setting-description">Number of days to store emails in cache</span>
+                    </div>
+                    <div class="button-group">
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '0' %}selected{% endif %}"
+                                data-value="0" 
+                                data-setting="email_preferences.cache_duration_days">0d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '1' %}selected{% endif %}"
+                                data-value="1" 
+                                data-setting="email_preferences.cache_duration_days">1d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '3' %}selected{% endif %}"
+                                data-value="3" 
+                                data-setting="email_preferences.cache_duration_days">3d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '7' %}selected{% endif %}"
+                                data-value="7" 
+                                data-setting="email_preferences.cache_duration_days">7d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '14' %}selected{% endif %}"
+                                data-value="14" 
+                                data-setting="email_preferences.cache_duration_days">14d</button>
+                        <button type="button" 
+                                class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '30' %}selected{% endif %}"
+                                data-value="30" 
+                                data-setting="email_preferences.cache_duration_days">30d</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3 class="group-title">AI Features</h3>
+            <div class="setting-item">
+                <div class="setting-content">
+                    <div class="setting-info">
+                        <span class="setting-title">Enable AI Analysis</span>
+                        <span class="setting-description">Turn on/off AI-powered email analysis</span>
+                    </div>
+                    <div class="toggle-container">
+                        <input type="checkbox" 
+                                name="ai_features.enabled" 
+                                id="ai_features_enabled"
+                                {% if user_settings.get('ai_features', {}).get('enabled', True) %}checked{% endif %}
+                        >
+                        <span class="toggle-switch"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ai-dependent-settings" {% if not user_settings.get('ai_features', {}).get('enabled', True) %}style="display: none;"{% endif %}>
+                <!-- LLM Configuration -->
                 <div class="setting-item">
                     <div class="setting-content">
                         <div class="setting-info">
-                            <span class="setting-title">Timezone</span>
-                            <span class="setting-description">Your local timezone for email retrieval</span>
+                            <span class="setting-title">Model Selection</span>
+                            <span class="setting-description">Choose between speed and accuracy (affects cost)</span>
                         </div>
                         <div class="select-container">
-                            <select id="timezone" name="timezone" class="modern-select">
-                                {% for tz in common_timezones %}
-                                    <option value="{{ tz }}" {% if user_settings.timezone == tz %}selected{% endif %}>{{ tz }}</option>
-                                {% endfor %}
+                            <select id="model_type" name="ai_features.model_type" class="modern-select">
+                                <option value="gpt-4o-mini" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o-mini' %}selected{% endif %}>Standard (GPT-4o-mini)</option>
+                                <option value="gpt-4o" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o' %}selected{% endif %}>Premium (GPT-4o)</option>
                             </select>
                             <div class="select-arrow">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -52,238 +166,122 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="settings-section">
-            <h2 class="section-title">Email Processing</h2>
-            
-            <div class="setting-group">
-                <h3 class="group-title">Email Preferences</h3>
-                <div class="setting-item">
-                    <div class="setting-content">
-                        <div class="setting-info">
-                            <span class="setting-title">Email History</span>
-                            <span class="setting-description">Number of days of email history to fetch</span>
-                        </div>
-                        <div class="button-group">
-                            <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '1' %}selected{% endif %}"
-                                    data-value="1" 
-                                    data-setting="email_preferences.days_to_analyze">1d</button>
-                            <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '3' %}selected{% endif %}"
-                                    data-value="3" 
-                                    data-setting="email_preferences.days_to_analyze">3d</button>
-                            <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '5' %}selected{% endif %}"
-                                    data-value="5" 
-                                    data-setting="email_preferences.days_to_analyze">5d</button>
-                            <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '7' %}selected{% endif %}"
-                                    data-value="7" 
-                                    data-setting="email_preferences.days_to_analyze">7d</button>
-                            <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.days_to_analyze|string == '14' %}selected{% endif %}"
-                                    data-value="14" 
-                                    data-setting="email_preferences.days_to_analyze">14d</button>
-                        </div>
-                    </div>
-                </div>
 
                 <div class="setting-item">
                     <div class="setting-content">
                         <div class="setting-info">
-                            <span class="setting-title">Cache Duration</span>
-                            <span class="setting-description">Number of days to store emails in cache</span>
+                            <span class="setting-title">Email Context Length</span>
+                            <span class="setting-description">How much of each email to analyze (affects cost)</span>
                         </div>
                         <div class="button-group">
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '0' %}selected{% endif %}"
-                                    data-value="0" 
-                                    data-setting="email_preferences.cache_duration_days">0d</button>
+                                    class="value-button {% if user_settings.get('ai_features', {}).get('context_length') == '500' %}selected{% endif %}"
+                                    data-value="500" 
+                                    data-setting="ai_features.context_length">Short</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '1' %}selected{% endif %}"
-                                    data-value="1" 
-                                    data-setting="email_preferences.cache_duration_days">1d</button>
+                                    class="value-button {% if user_settings.get('ai_features', {}).get('context_length') == '1000' %}selected{% endif %}"
+                                    data-value="1000" 
+                                    data-setting="ai_features.context_length">Medium</button>
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '3' %}selected{% endif %}"
-                                    data-value="3" 
-                                    data-setting="email_preferences.cache_duration_days">3d</button>
+                                    class="value-button {% if user_settings.get('ai_features', {}).get('context_length') == '2000' %}selected{% endif %}"
+                                    data-value="2000" 
+                                    data-setting="ai_features.context_length">Full</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Priority Settings -->
+                <div class="setting-item">
+                    <div class="setting-content">
+                        <div class="setting-info">
+                            <span class="setting-title">Priority Threshold</span>
+                            <span class="setting-description">Minimum priority level for important emails</span>
+                        </div>
+                        <div class="button-group">
                             <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '7' %}selected{% endif %}"
-                                    data-value="7" 
-                                    data-setting="email_preferences.cache_duration_days">7d</button>
-                            <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '14' %}selected{% endif %}"
-                                    data-value="14" 
-                                    data-setting="email_preferences.cache_duration_days">14d</button>
-                            <button type="button" 
-                                    class="value-button {% if user_settings.email_preferences.cache_duration_days|string == '30' %}selected{% endif %}"
+                                    class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold')|string == '30' %}selected{% endif %}"
                                     data-value="30" 
-                                    data-setting="email_preferences.cache_duration_days">30d</button>
+                                    data-setting="ai_features.priority_threshold">Low</button>
+                            <button type="button" 
+                                    class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold')|string == '50' %}selected{% endif %}"
+                                    data-value="50" 
+                                    data-setting="ai_features.priority_threshold">Medium</button>
+                            <button type="button" 
+                                    class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold')|string == '70' %}selected{% endif %}"
+                                    data-value="70" 
+                                    data-setting="ai_features.priority_threshold">High</button>
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="setting-group">
-                <h3 class="group-title">AI Features</h3>
+
                 <div class="setting-item">
                     <div class="setting-content">
                         <div class="setting-info">
-                            <span class="setting-title">Enable AI Analysis</span>
-                            <span class="setting-description">Turn on/off AI-powered email analysis</span>
+                            <span class="setting-title">Summary Length</span>
+                            <span class="setting-description">Length of generated email summaries</span>
                         </div>
-                        <div class="toggle-container">
-                            <input type="checkbox" 
-                                   name="ai_features.enabled" 
-                                   id="ai_features_enabled"
-                                   {% if user_settings.get('ai_features', {}).get('enabled', True) %}checked{% endif %}
-                            >
-                            <span class="toggle-switch"></span>
+                        <div class="button-group">
+                            <button type="button" 
+                                    class="value-button {% if user_settings.get('ai_features', {}).get('summary_length') == 'short' %}selected{% endif %}"
+                                    data-value="short" 
+                                    data-setting="ai_features.summary_length">Short</button>
+                            <button type="button" 
+                                    class="value-button {% if user_settings.get('ai_features', {}).get('summary_length') == 'medium' %}selected{% endif %}"
+                                    data-value="medium" 
+                                    data-setting="ai_features.summary_length">Medium</button>
+                            <button type="button" 
+                                    class="value-button {% if user_settings.get('ai_features', {}).get('summary_length') == 'long' %}selected{% endif %}"
+                                    data-value="long" 
+                                    data-setting="ai_features.summary_length">Long</button>
                         </div>
                     </div>
                 </div>
 
-                <div class="ai-dependent-settings" {% if not user_settings.get('ai_features', {}).get('enabled', True) %}style="display: none;"{% endif %}>
-                    <!-- LLM Configuration -->
-                    <div class="setting-item">
-                        <div class="setting-content">
-                            <div class="setting-info">
-                                <span class="setting-title">Model Selection</span>
-                                <span class="setting-description">Choose between speed and accuracy (affects cost)</span>
-                            </div>
-                            <div class="select-container">
-                                <select id="model_type" name="ai_features.model_type" class="modern-select">
-                                    <option value="gpt-4o-mini" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o-mini' %}selected{% endif %}>Standard (GPT-4o-mini)</option>
-                                    <option value="gpt-4o" {% if user_settings.get('ai_features', {}).get('model_type') == 'gpt-4o' %}selected{% endif %}>Premium (GPT-4o)</option>
-                                </select>
-                                <div class="select-arrow">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polyline points="6 9 12 15 18 9"></polyline>
-                                    </svg>
-                                </div>
-                            </div>
+                <!-- Custom Categories -->
+                <div class="setting-item custom-categories-section">
+                    <div class="setting-content">
+                        <div class="setting-info">
+                            <span class="setting-title">Custom Categories</span>
+                            <span class="setting-description">Add up to 3 custom categories for email classification</span>
                         </div>
                     </div>
-
-                    <div class="setting-item">
-                        <div class="setting-content">
-                            <div class="setting-info">
-                                <span class="setting-title">Email Context Length</span>
-                                <span class="setting-description">How much of each email to analyze (affects cost)</span>
+                    
+                    <div class="custom-categories-list">
+                        {% set categories = user_settings.get('ai_features', {}).get('custom_categories', []) %}
+                        {% for category in categories %}
+                        <div class="custom-category-item">
+                            <div class="category-header">
+                                <input type="text" 
+                                        name="ai_features.custom_categories[{{ loop.index0 }}].name" 
+                                        value="{{ category.get('name', '') }}"
+                                        placeholder="e.g., Project Status"
+                                        class="form-input category-name">
+                                <input type="color"
+                                        name="ai_features.custom_categories[{{ loop.index0 }}].color"
+                                        value="{{ category.color if category.color is defined else category.get('color', '#8B5CF6') }}"
+                                        class="form-input category-color"
+                                        title="Choose category color">
+                                <button type="button" class="delete-category-btn" title="Delete category">×</button>
                             </div>
-                            <div class="button-group">
-                                <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('context_length') == '500' %}selected{% endif %}"
-                                        data-value="500" 
-                                        data-setting="ai_features.context_length">Short</button>
-                                <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('context_length') == '1000' %}selected{% endif %}"
-                                        data-value="1000" 
-                                        data-setting="ai_features.context_length">Medium</button>
-                                <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('context_length') == '2000' %}selected{% endif %}"
-                                        data-value="2000" 
-                                        data-setting="ai_features.context_length">Full</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Priority Settings -->
-                    <div class="setting-item">
-                        <div class="setting-content">
-                            <div class="setting-info">
-                                <span class="setting-title">Priority Threshold</span>
-                                <span class="setting-description">Minimum priority level for important emails</span>
-                            </div>
-                            <div class="button-group">
-                                <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold')|string == '30' %}selected{% endif %}"
-                                        data-value="30" 
-                                        data-setting="ai_features.priority_threshold">Low</button>
-                                <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold')|string == '50' %}selected{% endif %}"
-                                        data-value="50" 
-                                        data-setting="ai_features.priority_threshold">Medium</button>
-                                <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('priority_threshold')|string == '70' %}selected{% endif %}"
-                                        data-value="70" 
-                                        data-setting="ai_features.priority_threshold">High</button>
+                            <textarea name="ai_features.custom_categories[{{ loop.index0 }}].description" 
+                                        placeholder="e.g., Track the current state of project-related emails"
+                                        class="form-textarea category-description"
+                                        maxlength="100">{{ category.get('description', '') }}</textarea>
+                            <div class="category-values">
+                                <input type="text" 
+                                        name="ai_features.custom_categories[{{ loop.index0 }}].values" 
+                                        value="{{ category.get('values', [])|join(', ') }}"
+                                        placeholder="e.g., Active, On Hold, Completed"
+                                        class="form-input category-values-input">
                             </div>
                         </div>
-                    </div>
-
-                    <div class="setting-item">
-                        <div class="setting-content">
-                            <div class="setting-info">
-                                <span class="setting-title">Summary Length</span>
-                                <span class="setting-description">Length of generated email summaries</span>
-                            </div>
-                            <div class="button-group">
-                                <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('summary_length') == 'short' %}selected{% endif %}"
-                                        data-value="short" 
-                                        data-setting="ai_features.summary_length">Short</button>
-                                <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('summary_length') == 'medium' %}selected{% endif %}"
-                                        data-value="medium" 
-                                        data-setting="ai_features.summary_length">Medium</button>
-                                <button type="button" 
-                                        class="value-button {% if user_settings.get('ai_features', {}).get('summary_length') == 'long' %}selected{% endif %}"
-                                        data-value="long" 
-                                        data-setting="ai_features.summary_length">Long</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Custom Categories -->
-                    <div class="setting-item custom-categories-section">
-                        <div class="setting-content">
-                            <div class="setting-info">
-                                <span class="setting-title">Custom Categories</span>
-                                <span class="setting-description">Add up to 3 custom categories for email classification</span>
-                            </div>
-                        </div>
-                        
-                        <div class="custom-categories-list">
-                            {% set categories = user_settings.get('ai_features', {}).get('custom_categories', []) %}
-                            {% for category in categories %}
-                            <div class="custom-category-item">
-                                <div class="category-header">
-                                    <input type="text" 
-                                           name="ai_features.custom_categories[{{ loop.index0 }}].name" 
-                                           value="{{ category.get('name', '') }}"
-                                           placeholder="e.g., Project Status"
-                                           class="form-input category-name">
-                                    <input type="color"
-                                           name="ai_features.custom_categories[{{ loop.index0 }}].color"
-                                           value="{{ category.color if category.color is defined else category.get('color', '#8B5CF6') }}"
-                                           class="form-input category-color"
-                                           title="Choose category color">
-                                    <button type="button" class="delete-category-btn" title="Delete category">×</button>
-                                </div>
-                                <textarea name="ai_features.custom_categories[{{ loop.index0 }}].description" 
-                                          placeholder="e.g., Track the current state of project-related emails"
-                                          class="form-textarea category-description"
-                                          maxlength="100">{{ category.get('description', '') }}</textarea>
-                                <div class="category-values">
-                                    <input type="text" 
-                                           name="ai_features.custom_categories[{{ loop.index0 }}].values" 
-                                           value="{{ category.get('values', [])|join(', ') }}"
-                                           placeholder="e.g., Active, On Hold, Completed"
-                                           class="form-input category-values-input">
-                                </div>
-                            </div>
-                            {% endfor %}
-                            {% if categories|length < 3 %}
-                            <button type="button" id="add-category-btn" class="btn-secondary">
-                                <span class="btn-icon">+</span>
-                                Add Category ({{ 3 - categories|length }} remaining)
-                            </button>
-                            {% endif %}
-                        </div>
+                        {% endfor %}
+                        {% if categories|length < 3 %}
+                        <button type="button" id="add-category-btn" class="btn-secondary">
+                            <span class="btn-icon">+</span>
+                            Add Category ({{ 3 - categories|length }} remaining)
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
