@@ -476,18 +476,17 @@ body {
 @media (max-width: 768px) {
   /* Header adjustments */
   header {
-    min-height: 50px;
+    padding: 0 10px; /* Reduce header padding */
   }
 
   .header-container {
-    min-height: 50px;
-    padding: 8px 15px;
-    display: flex;
-    align-items: center;
+    padding: 0;
+    gap: 10px;
+    justify-content: space-between;
   }
   
   .header-nav ul {
-    justify-content: center;
+    gap: 15px;
   }
   
   .header-nav .nav-link span {
@@ -592,7 +591,7 @@ body {
 
   .email-details-column {
     width: 100%;
-    min-height: calc(100vh - var(--header-height) - var(--filters-row-height));
+    min-height: calc(100vh - var(--header-height) - var(--filter-row-visible-height));
     height: auto;
     padding: 10px 0 10px 10px; /* Changed to remove right padding globally and keep left padding */
     overflow-y: auto;
@@ -672,6 +671,19 @@ body {
   .filters-row.collapsed + .content-columns .email-list-column {
     height: calc(100vh - var(--header-height) - var(--filter-row-hidden-height));
     max-height: calc(100vh - var(--header-height) - var(--filter-row-hidden-height));
+  }
+
+  /* Ensure email-list-column doesn't exceed screen height on mobile */
+  .email-list-column {
+    max-height: calc(100vh - var(--header-height));
+    overflow-y: auto;
+  }
+
+  /* Main content adjustments for mobile */
+  .main-content {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
   }
 }
 
@@ -1121,6 +1133,8 @@ body {
   --filter-row-height: 55px; /* Default for desktop */
   --filter-row-visible-height: var(--filter-row-height);
   --filter-row-hidden-height: 0px;
+  --filters-height: var(--filter-row-height); /* Alias for consistency with other components */
+  --filters-row-height: var(--filter-row-height); /* Alias for backward compatibility */
 }
 
 /* ----------------------------------------------------------------------------

@@ -183,6 +183,11 @@ export const EmailUI = {
                 emailListColumn.style.display = 'none';
                 emailDetailsColumn.style.display = 'block';
                 
+                // Ensure heights are reset to prevent overflow
+                document.body.style.overflow = 'hidden';
+                emailDetailsColumn.style.height = 'auto';
+                emailDetailsColumn.style.maxHeight = `calc(100vh - var(--header-height))`;
+                
                 // Make all FABs visible on mobile when viewing details
                 toggleBtn.classList.add('visible');
                 navFabs.forEach(fab => {
