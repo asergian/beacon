@@ -31,11 +31,18 @@ class ProcessingConfig:
         QUESTION_BOOST: Score increase for emails containing questions
         FOLLOWUP_BOOST: Score increase for follow-ups to user's emails
         
+        # Category context factors
+        WORK_ACTION_BOOST: Score increase for work emails requiring action
+        PERSONAL_ACTION_BOOST: Score increase for personal emails requiring action
+        RECRUITING_BOOST: Score increase for recruiting/job emails requiring action
+        BUILD_FAILURE_BOOST: Score increase for build/CI failure notifications
+        
         # Penalties
         BULK_PENALTY: Score decrease for mass emails/newsletters
         AUTOMATED_PENALTY: Score decrease for automated system emails
+        PROMOTION_PENALTY: Score decrease for promotional emails
         
-        # Limits
+        # Caps
         MAX_PRIORITY: Maximum possible priority score
         MIN_PRIORITY: Minimum possible priority score
     """
@@ -44,7 +51,7 @@ class ProcessingConfig:
     
     # Major factors
     VIP_SCORE_BOOST: int = 30      # VIP sender
-    URGENCY_SCORE_BOOST: int = 25  # Urgent email
+    URGENCY_SCORE_BOOST: int = 25  # Email has urgency indicators
     ACTION_SCORE_BOOST: int = 20   # Action needed
     
     # Additional factors
@@ -55,9 +62,16 @@ class ProcessingConfig:
     QUESTION_BOOST: int = 5        # Contains direct questions
     FOLLOWUP_BOOST: int = 5        # Follow-up to user's sent email
     
+    # Category context factors
+    WORK_ACTION_BOOST: int = 15    # Work email requiring action
+    PERSONAL_ACTION_BOOST: int = 10  # Personal email requiring action
+    RECRUITING_BOOST: int = 15     # Recruiting/job email requiring action
+    BUILD_FAILURE_BOOST: int = 20  # Build/CI failure notification
+    
     # Penalties
     BULK_PENALTY: int = -10        # Mass email/newsletter
     AUTOMATED_PENALTY: int = -15   # Automated system email
+    PROMOTION_PENALTY: int = -5    # Promotional email
     
     # Caps
     MAX_PRIORITY: int = 100

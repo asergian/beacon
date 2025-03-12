@@ -39,8 +39,7 @@ def init_routes(app: Flask):
         app.register_blueprint(user_bp, url_prefix='/user')
         app.register_blueprint(static_pages_bp, url_prefix='/pages')
         app.register_blueprint(demo_bp, url_prefix='/demo')
-        if app.debug:  # Only register test routes in debug mode
-            app.register_blueprint(test_bp, url_prefix='/test')
+        app.register_blueprint(test_bp, url_prefix='/test')
         #if multiprocessing.parent_process():
         #    logger.info(f"Routes initialized for worker process (PID: {os.getpid()})" )
     except Exception as e:

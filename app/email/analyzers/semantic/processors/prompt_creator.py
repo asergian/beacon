@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Tuple
 from flask import g
 
 from ....parsing.parser import EmailMetadata
-from ..utilities.text_processor import format_list, format_dict, sanitize_text, select_important_patterns
+from ..utilities.text_processor import format_list, format_dict, sanitize_text, select_important_patterns, sanitize_content, limit_content_length
 
 
 class PromptCreator:
@@ -23,48 +23,26 @@ class PromptCreator:
         """Create a prompt for the LLM analysis.
         
         Args:
-            email_data: Parsed email data as EmailMetadata object
-            nlp_results: Results from NLP analysis
+            email_data: Email metadata for analysis
+            nlp_results: Dictionary containing NLP analysis results
             
         Returns:
-            String prompt for the LLM
+            Prompt text for LLM analysis
         """
         try:
-            # Validate and sanitize NLP results
-            if nlp_results is None:
-                self.logger.warning("NLP results are None, using empty dict")
-                nlp_results = {}
+            # Get sanitized content (subject and body)
+            subject = sanitize_content(email_data.subject)
+            body = limit_content_length(sanitize_content(email_data.body), self.config.CHARACTER_LIMIT)
+            sender = sanitize_content(email_data.sender)
             
-            # Get user settings from current app context
-            user_settings = {}
-            if hasattr(g, 'user') and hasattr(g.user, 'settings'):
-                user_settings = g.user.settings
-
-            # Get custom categories from user settings
-            custom_categories = g.user.get_setting('ai_features.custom_categories', []) if hasattr(g, 'user') else []
-            
-            # Format custom categories for prompt if they exist
-            custom_categories_prompt = self._format_custom_categories(custom_categories)
-
-            # Ensure all expected NLP result sections exist with defaults
-            nlp_results = self._ensure_complete_nlp_results(nlp_results)
-            
-            # Get summary length preference and set constraints
-            summary_length = g.user.get_setting('ai_features.summary_length', 'medium')
-            selected_constraints = self._get_summary_constraints(summary_length)
-
-            # Get and validate email content
-            subject = getattr(email_data, 'subject', 'No subject')
-            sender = getattr(email_data, 'sender', 'Unknown sender')
-            body = getattr(email_data, 'body', '')
-
-            # Ensure content is properly sanitized
-            subject = sanitize_text(subject)
-            sender = sanitize_text(sender)
-            body = sanitize_text(body) if body else ""
-
-            # Process NLP results with error handling
+            # Format NLP results for prompt context
             analysis_context = self._format_analysis_context(nlp_results)
+            
+            # Select the appropriate summary constraints based on content length
+            selected_constraints = self._select_summary_constraints(body)
+            
+            # Create custom categories prompt
+            custom_categories_prompt = self._format_custom_categories(self.config.custom_categories)
             
             # Create the prompt with validated data and limited content
             prompt = f"""You are an email analysis assistant. Analyze the following email and provide a structured assessment to help prioritize inbox management.
@@ -99,20 +77,30 @@ TASK
 Analyze this email and provide a JSON response with the following fields:
 
 1. needs_action (boolean):
-    - true if the email requires a response or action
-    - false if it's purely informational
+    - true if the email requires a response, action, or is worth the user's attention
+    - false if it's purely informational with no action needed
+    - Be more likely to mark as true if:
+      * Email contains direct questions or requests
+      * Email is from a recruiter, job opportunity, or LinkedIn message
+      * Email is about a failed build, CI process, or deployment
+      * Email is a follow-up on previous communication
+      * Email requires approval, review, or sign-off
 
 2. category (string, exactly one of):
     - "Work" - business/professional communications
     - "Personal" - friends, family, personal matters
     - "Promotions" - marketing, sales, newsletters
     - "Informational" - notifications, updates, reports
+    - Always categorize recruiter emails, job opportunities, or LinkedIn messages as "Work"
+    - Always categorize build/CI/deployment notifications as "Work"
 
 3. action_items (array of objects):
     - Each object must have:
         * "description": clear, actionable task
         * "due_date": YYYY-MM-DD or null if no specific deadline
     - Leave empty array if no actions needed
+    - For emails involving job opportunities or recruiters, include specific action items like "Respond to recruiter", "Complete application", etc.
+    - For build failures, include action items like "Investigate build failure"
 
 4. summary (string):
     {selected_constraints['guidance']}
@@ -128,12 +116,31 @@ Analyze this email and provide a JSON response with the following fields:
     - 41-60: Medium priority
     - 61-80: High priority
     - 81-100: Urgent/immediate attention
+    
     Consider the following in priority scoring:
-    - Urgency indicators: {nlp_results['urgency']}
+    - Urgency indicators: {analysis_context['urgency']}
     - Time sensitivity: {bool(analysis_context['has_deadlines'])}
     - Question type: {analysis_context['question_type']}
     - Sentiment: {analysis_context['sentiment_strength']}
     - Email type: {analysis_context['email_type_raw']}
+    
+    Higher Priority Contexts (score 60-100):
+    - Emails requiring immediate action with deadlines
+    - Messages from recruiters or job opportunities needing a response
+    - Build/deployment failures needing attention
+    - Work communications that need decisions or actions
+    - VIP contacts or direct supervisor communications
+    
+    Medium Priority Contexts (score 40-59):
+    - General work communications without urgency
+    - Personal messages needing response (not urgent)
+    - Informational emails related to important projects
+    
+    Lower Priority Contexts (score 0-39):
+    - Promotional and marketing emails
+    - Newsletters
+    - Routine notifications
+    - Purely informational updates without action items
 
 {custom_categories_prompt}
 
