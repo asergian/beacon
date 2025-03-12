@@ -6,9 +6,6 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize navigation buttons
-    initNavButtons();
-    
     // Initialize mobile view toggle
     initMobileToggle();
     
@@ -26,52 +23,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
- * Initializes the navigation buttons for jumping between email content and response sections.
- * Handles button click functionality for navigation.
- */
-function initNavButtons() {
-    const toResponseBtn = document.getElementById('to-response-fab');
-    const toTopBtn = document.getElementById('to-top-fab');
-    const responseSection = document.getElementById('email-response');
-    const emailDetails = document.getElementById('email-details');
-    const emailMeta = document.querySelector('.email-meta');
-    
-    if (!toResponseBtn || !toTopBtn) {
-        console.error('Navigation buttons not found');
-        return;
-    }
-    
-    // Scroll to response section
-    toResponseBtn.addEventListener('click', function() {
-        if (responseSection) {
-            //console.log('Scrolling to response section');
-            responseSection.scrollIntoView({ behavior: 'smooth' });
-        }
-    });
-    
-    // Scroll to email meta section
-    toTopBtn.addEventListener('click', function() {
-        if (emailMeta) {
-            //console.log('Scrolling to email meta section');
-            emailMeta.scrollIntoView({ behavior: 'smooth' });
-        } else if (emailDetails) {
-            //console.log('Email meta not found, scrolling to email details');
-            emailDetails.scrollIntoView({ behavior: 'smooth' });
-        } else {
-            //console.log('Neither email meta nor details found, scrolling to top');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    });
-}
-
-/**
  * Initializes the toggle button for returning to email list on mobile.
  */
 function initMobileToggle() {
     const toggleBtn = document.getElementById('mobile-toggle-btn');
     const emailListColumn = document.querySelector('.email-list-column');
     const emailDetailsColumn = document.querySelector('.email-details-column');
-    const navFabs = document.querySelectorAll('.nav-fab');
     
     if (!toggleBtn || !emailListColumn || !emailDetailsColumn) {
         console.error('Mobile toggle elements not found');
@@ -88,12 +45,9 @@ function initMobileToggle() {
         // Remove explicit height settings to allow CSS to control it
         emailListColumn.style.maxHeight = '';
         
-        // On mobile, hide all FABs when viewing email list
+        // On mobile, hide mobile toggle when viewing email list
         if (window.innerWidth <= 768) {
             toggleBtn.classList.remove('visible');
-            navFabs.forEach(fab => {
-                fab.classList.remove('visible');
-            });
         }
     });
 }
@@ -134,7 +88,6 @@ function checkScreenSize() {
     const emailListColumn = document.querySelector('.email-list-column');
     const emailDetailsColumn = document.querySelector('.email-details-column');
     const filtersRow = document.querySelector('.filters-row');
-    const navFabs = document.querySelectorAll('.nav-fab');
     
     if (!toggleBtn || !emailListColumn || !emailDetailsColumn) {
         console.error('Mobile toggle elements not found');
@@ -155,13 +108,8 @@ function checkScreenSize() {
         emailDetailsColumn.style.maxHeight = '';
         document.body.style.overflow = 'hidden';
         
-        // Mobile: Hide all FABs on list view - Make EXTRA sure they're hidden
+        // Mobile: Hide mobile toggle button on list view
         toggleBtn.classList.remove('visible');
-        //console.log("Mobile view - hiding FABs");
-        navFabs.forEach(fab => {
-            fab.classList.remove('visible');
-            //console.log("Removed visible class from FAB:", fab.id);
-        });
         
         // Mobile: Collapse filters
         if (filtersRow) {
@@ -180,13 +128,6 @@ function checkScreenSize() {
         emailListColumn.style.maxHeight = '';
         emailDetailsColumn.style.height = '';
         emailDetailsColumn.style.maxHeight = '';
-        
-        // Desktop: Make sure navigation FABs are visible
-        //console.log("Desktop view - showing FABs");
-        navFabs.forEach(fab => {
-            fab.classList.add('visible');
-            //console.log("Added visible class to FAB:", fab.id);
-        });
         
         // Only hide the mobile toggle button on desktop
         toggleBtn.classList.remove('visible');

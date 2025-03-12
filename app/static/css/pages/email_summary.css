@@ -624,35 +624,23 @@ body {
     display: flex;
   }
   
-  /* FAB sizing and positioning for mobile */
-  .nav-fab, .mobile-toggle-btn {
+  /* Mobile toggle button sizing and positioning */
+  .mobile-toggle-btn {
     display: none !important; /* Force hidden by default on mobile */
     width: 40px;
     height: 40px;
     right: 15px;
+    bottom: 25px !important; /* Position at the bottom */
   }
   
-  /* FAB icons size */
-  .nav-fab svg, .mobile-toggle-btn svg {
+  /* Icon sizing for mobile toggle */
+  .mobile-toggle-btn svg {
     width: 22px;
     height: 22px;
   }
   
-  /* Mobile positioning with footer height calculation */
-  .nav-fab {
-    bottom: 25px !important; /* Force override any other bottom values */
-  }
-  
-  .nav-fab.top-fab {
-    bottom: 83px !important; /* Force override any other bottom values */
-  }
-  
-  .mobile-toggle-btn {
-    bottom: 140px !important; /* Force override any other bottom values */
-  }
-  
   /* Only this selector can override the display:none */
-  .nav-fab.visible, .mobile-toggle-btn.visible {
+  .mobile-toggle-btn.visible {
     display: flex !important; /* Only visible when explicitly needed */
   }
   
@@ -1003,48 +991,6 @@ body {
   margin-bottom: 15px;
 }
 
-/* Navigation FABs - visible by default on desktop */
-.nav-fab {
-  position: fixed;
-  bottom: calc(var(--footer-height) + 25px);
-  right: 25px;
-  width: 48px; 
-  height: 48px;
-  border-radius: 50%;
-  background-color: var(--primary-color);
-  color: white;
-  display: flex; /* Always visible on desktop */
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-  z-index: 1000;
-  cursor: pointer;
-  opacity: 0.9;
-  transform: scale(1);
-  transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s, opacity 0.2s;
-  border: none;
-}
-
-.nav-fab:hover {
-  background-color: var(--primary-hover);
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-  opacity: 1;
-}
-
-.nav-fab:active {
-  transform: scale(0.95);
-}
-
-.nav-fab svg {
-  width: 24px;
-  height: 24px;
-}
-
-.nav-fab.top-fab {
-  bottom: calc(var(--footer-height) + 83px);
-}
-
 /* Mobile toggle button (only used on mobile) */
 .mobile-toggle-btn {
   position: fixed;
@@ -1061,7 +1007,7 @@ body {
   cursor: pointer;
   border: none;
   right: 25px;
-  bottom: calc(var(--footer-height) + 140px);
+  bottom: 25px;
   opacity: 0.9;
 }
 
