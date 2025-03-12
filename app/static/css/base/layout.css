@@ -46,6 +46,7 @@ header {
     color: var(--text-color);
     width: 100%;
     height: var(--header-height);
+    min-height: var(--header-height);
     position: sticky;
     top: 0;
     z-index: 100;
@@ -300,6 +301,19 @@ footer {
     margin: 0;
 }
 
+/* Mobile/desktop visibility classes */
+.mobile-only {
+    display: none;
+}
+
+.short-text {
+    display: none;
+}
+
+.full-text {
+    display: inline;
+}
+
 /**
  * Footer link styling.
  */
@@ -366,12 +380,6 @@ footer {
    Responsive Breakpoints
    ========================================================================= */
 
-@media (max-width: 1024px) {
-    .footer-right ul:first-child {
-        display: none;
-    }
-}
-
 /**
  * Medium-sized screen adjustments.
  * Adjusts spacing and layout for tablets and smaller devices.
@@ -402,12 +410,15 @@ footer {
     }
     
     .footer-left {
-        width: 100%;
-        text-align: center;
+        text-align: left;
     }
     
     .footer-right {
-        display: none;
+        text-align: right;
+    }
+    
+    .footer-right ul {
+        gap: 1rem;
     }
     
     .header-nav ul {
@@ -434,6 +445,77 @@ footer {
     .logo-text {
         display: block;
         font-size: 1.4rem;
+    }
+}
+
+/* Special breakpoint for footer modification */
+@media (max-width: 1100px) {
+    .footer-container {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        text-align: left;
+    }
+    
+    .footer-left {
+        width: auto;
+        text-align: left;
+    }
+    
+    .footer-right {
+        width: auto;
+        display: block;
+    }
+    
+    .footer-right .footer-links {
+        gap: 0.5rem;
+    }
+    
+    /* Show abbreviated text and hide full text */
+    .full-text {
+        display: none;
+    }
+    
+    .short-text {
+        display: inline;
+    }
+    
+    /* Show mobile elements and hide desktop-only elements */
+    .mobile-only {
+        display: inline-block;
+    }
+    
+    .desktop-only {
+        display: none;
+    }
+    
+    /* Style for the separator */
+    .separator {
+        color: var(--footer-text);
+        opacity: 0.5;
+        margin: 0 0.1rem;
+    }
+}
+
+/* Special breakpoint for small screens - below 650px */
+@media (max-width: 650px) {
+    /* For base layout, hide footer-right and center footer-left */
+    .footer-container {
+        justify-content: center;
+        text-align: center;
+    }
+    
+    .footer-right {
+        display: none;
+    }
+    
+    .footer-left {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .footer-left p {
+        font-size: 0.9rem; /* Slightly smaller text */
     }
 }
 

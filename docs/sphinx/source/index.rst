@@ -8,7 +8,7 @@ Welcome to Beacon's documentation!
 
 Beacon is a Flask-based application that processes and analyzes emails using both NLP and LLM capabilities. This documentation provides detailed information about the system architecture, key features, and API reference.
 
-.. image:: _static/beacon_logo.png
+.. image:: _static/beacon-header-dark.svg
    :alt: Beacon Logo
    :align: center
    :width: 300px

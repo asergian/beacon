@@ -480,6 +480,7 @@ body {
   }
 
   .header-container {
+    min-height: 50px;
     padding: 8px 15px;
     display: flex;
     align-items: center;

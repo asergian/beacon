@@ -475,6 +475,10 @@
         font-size: 1.4rem;
     }
     
+    .contact-options {
+        flex-direction: column;
+    }
+
     .contact-option {
         flex: 1 1 100%;
     }
@@ -494,5 +498,80 @@
     .toast {
         max-width: none;
         width: 100%;
+    }
+}
+
+/* ----------------------------------------------------------------------------
+ * FLOATING ACTION BUTTONS
+ * Navigation FABs for quick scrolling on policy pages
+ * ----------------------------------------------------------------------------
+ */
+.nav-fab {
+    position: fixed;
+    bottom: 25px;
+    width: 48px; 
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+    z-index: 1000;
+    cursor: pointer;
+    opacity: 0.9;
+    transform: scale(1);
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    border: none;
+}
+
+.nav-fab.visible {
+    display: flex; /* Show when the .visible class is added */
+}
+
+.nav-fab:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    opacity: 1;
+}
+
+.nav-fab:active {
+    transform: scale(0.95);
+}
+
+.nav-fab svg {
+    width: 24px;
+    height: 24px;
+}
+
+.nav-fab.top-fab {
+    right: 25px;
+}
+
+.nav-fab.bottom-fab {
+    right: 85px; /* Position to the left of the top button */
+}
+
+/* Mobile adjustments for FABs */
+@media (max-width: 768px) {
+    .nav-fab {
+        width: 44px;
+        height: 44px;
+        bottom: 20px;
+    }
+    
+    .nav-fab.top-fab {
+        right: 15px;
+    }
+    
+    .nav-fab.bottom-fab {
+        right: 70px;
+    }
+    
+    .nav-fab svg {
+        width: 22px;
+        height: 22px;
     }
 } 

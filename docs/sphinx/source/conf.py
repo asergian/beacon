@@ -41,16 +41,25 @@ exclude_patterns = []
 html_theme = 'furo'
 html_static_path = ['_static']
 
+# Logo configuration
+html_logo = '_static/beacon-header-dark.svg'
+html_title = 'Documentation'
+html_favicon = '_static/beacon-favicon-dark.svg'
+
 # Custom CSS
 html_css_files = [
     'custom.css',
+]
+
+# Custom JavaScript
+html_js_files = [
+    'custom.js',
 ]
 
 # Furo theme options
 html_theme_options = {
     "sidebar_hide_name": False,
     "navigation_with_keys": True,
-    "announcement": "This is the new modern documentation for Beacon.",
     "light_css_variables": {
         "color-brand-primary": "#0366d6",
         "color-brand-content": "#0366d6",

@@ -7,6 +7,11 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/policy.css') }}">
 {% endblock %}
 
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/components/scroll-fabs.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="policy-container">
     <h1>Terms of Service</h1>
@@ -117,4 +122,6 @@
         <p>Email: <a href="mailto:beacon@shronas.com">beacon@shronas.com</a></p>
     </section>
 </div>
+
+{% include 'components/scroll_fabs.html' %}
 {% endblock %} 

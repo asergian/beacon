@@ -10,6 +10,7 @@
 {% block scripts %}
 {{ super() }}
 <script src="{{ url_for('static', filename='js/pages/support.js') }}"></script>
+<script src="{{ url_for('static', filename='js/components/scroll-fabs.js') }}"></script>
 {% endblock %}
 
 {% block content %}
@@ -123,4 +124,6 @@
         </ul>
     </section>
 </div>
+
+{% include 'components/scroll_fabs.html' %}
 {% endblock %} 

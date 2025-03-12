@@ -478,6 +478,25 @@ footer {
     background-position: center;
 }
 
+/* Mobile/desktop visibility classes */
+.mobile-only {
+    display: none;
+}
+
+.short-text {
+    display: none;
+}
+
+.full-text {
+    display: inline;
+}
+
+/* Separator styling */
+.separator {
+    color: white;
+    opacity: 0.5;
+}
+
 /* Responsive Styles */
 @media (max-width: 1024px) {
     .hero h1 {
@@ -510,18 +529,6 @@ footer {
         flex-direction: column;
     }
     
-    .footer-container {
-        flex-direction: column;
-        gap: 1.5rem;
-        text-align: center;
-    }
-    
-    .footer-right ul {
-        gap: 1rem;
-        display: none;
-        justify-content: center;
-    }
-
     .about-stats {
         flex-direction: column;
         gap: 2rem;
@@ -530,13 +537,46 @@ footer {
 
 @media (max-width: 1100px) {
     .footer-container {
-        flex-direction: column;
-        gap: 1.5rem;
-        text-align: center;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .footer-left {
+        width: auto;
+        text-align: left;
     }
     
     .footer-right {
+        width: auto;
+        display: block;
+    }
+    
+    .footer-right .footer-links {
+        gap: 0.5rem;
+    }
+    
+    /* Show abbreviated text and hide full text */
+    .full-text {
         display: none;
+    }
+    
+    .short-text {
+        display: inline;
+    }
+    
+    /* Show mobile elements and hide desktop-only elements */
+    .mobile-only {
+        display: inline-block;
+    }
+    
+    .desktop-only {
+        display: none;
+    }
+    
+    /* Style for the separator */
+    .separator {
+        margin: 0 0.1rem;
     }
 }
 
@@ -548,6 +588,45 @@ footer {
     .features-grid, 
     .screenshots-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Special footer behavior for login page on very small screens */
+@media (max-width: 650px) {
+    footer {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .footer-container {
+        flex-direction: column;
+        gap: 0.5rem;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .footer-left {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .footer-left p {
+        font-size: 0.9rem;
+    }
+    
+    .footer-right {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .footer-right .footer-links {
+        justify-content: center;
+        gap: 0.4rem;
+    }
+    
+    .footer-right a {
+        font-size: 0.9rem;
     }
 }
 

@@ -13,7 +13,9 @@
     <nav class="landing-nav">
         <div class="nav-container">
             <div class="nav-logo">
-                <img src="{{ url_for('static', filename='images/logo/beacon-header-white.svg') }}" alt="Beacon" height="40">
+                <a href="{{ url_for('auth.show_login') }}">
+                    <img src="{{ url_for('static', filename='images/logo/beacon-header-white.svg') }}" alt="Beacon" height="40">
+                </a>
             </div>
             <div class="nav-links">
                 <a href="#features">Features</a>
@@ -168,12 +170,37 @@
                 <p>&copy; 2025 Beacon. All rights reserved.</p>
             </div>
             <div class="footer-right">
-                <ul>
-                    <li><a href="{{ url_for('static_pages.serve_docs', path='api.html') }}" target="_blank" class="dev-link">API Documentation</a></li>
-                    <li><a href="{{ url_for('static_pages.serve_docs', path='development.html') }}" target="_blank" class="dev-link">Developer Guide</a></li>
-                    <li><a href="{{ url_for('static_pages.privacy_policy') }}">Privacy Policy</a></li>
-                    <li><a href="{{ url_for('static_pages.terms_of_service') }}">Terms of Service</a></li>
-                    <li><a href="{{ url_for('static_pages.support') }}">Support</a></li>
+                <ul class="footer-links">
+                    <li>
+                        <a href="{{ url_for('static_pages.serve_docs', path='api.html') }}" class="dev-link">
+                            <span class="full-text">API Documentation</span>
+                            <span class="short-text">Docs</span>
+                        </a>
+                    </li>
+                    <li class="desktop-only">
+                        <a href="{{ url_for('static_pages.serve_docs', path='development.html') }}" class="dev-link">Developer Guide</a>
+                    </li>
+                    <li class="separator mobile-only">|</li>
+                    <li>
+                        <a href="{{ url_for('static_pages.privacy_policy') }}">
+                            <span class="full-text">Privacy Policy</span>
+                            <span class="short-text">Privacy</span>
+                        </a>
+                    </li>
+                    <li class="separator mobile-only">|</li>
+                    <li>
+                        <a href="{{ url_for('static_pages.terms_of_service') }}">
+                            <span class="full-text">Terms of Service</span>
+                            <span class="short-text">Terms</span>
+                        </a>
+                    </li>
+                    <li class="separator mobile-only">|</li>
+                    <li>
+                        <a href="{{ url_for('static_pages.support') }}">
+                            <span class="full-text">Support</span>
+                            <span class="short-text">Support</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
