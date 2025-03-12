@@ -9,15 +9,45 @@ from typing import Dict, Any, List, Tuple
 from flask import g
 
 from ....parsing.parser import EmailMetadata
-from ..utilities.text_processor import format_list, format_dict, sanitize_text, select_important_patterns, sanitize_content, limit_content_length
+from ..utilities.text_processor import format_list, format_dict, sanitize_text, select_important_patterns
+from ..utilities.token_handler import TokenHandler
 
 
 class PromptCreator:
     """Creates prompts for LLM analysis of emails."""
     
-    def __init__(self):
-        """Initialize the prompt creator."""
+    def __init__(self, token_handler: TokenHandler = None):
+        """Initialize the prompt creator.
+        
+        Args:
+            token_handler: TokenHandler instance for token counting and truncation
+        """
         self.logger = logging.getLogger(__name__)
+        
+        # Import settings utilities here to avoid circular imports
+        from ..utilities.settings_util import get_summary_length, get_custom_categories
+        
+        # Initialize config with default values
+        config_values = {
+            # Default values
+            'CHARACTER_LIMIT': 3000,  # Default character limit for email body
+            'summary_length': 'medium',  # Default to medium summary length
+            'custom_categories': []  # Default empty list for custom categories
+        }
+        
+        # Try to fetch settings, but fall back to defaults if they can't be fetched
+        try:
+            # Fetch settings up front to avoid multiple database calls
+            config_values['summary_length'] = get_summary_length() or config_values['summary_length']
+            config_values['custom_categories'] = get_custom_categories() or config_values['custom_categories']
+        except Exception as e:
+            self.logger.warning(f"Error fetching settings, using defaults: {str(e)}")
+        
+        # Create the config object
+        self.config = type('Config', (), config_values)
+        
+        # Use the provided token handler or create a new one
+        self.token_handler = token_handler or TokenHandler()
         
     def create_prompt(self, email_data: EmailMetadata, nlp_results: Dict) -> str:
         """Create a prompt for the LLM analysis.
@@ -31,9 +61,10 @@ class PromptCreator:
         """
         try:
             # Get sanitized content (subject and body)
-            subject = sanitize_content(email_data.subject)
-            body = limit_content_length(sanitize_content(email_data.body), self.config.CHARACTER_LIMIT)
-            sender = sanitize_content(email_data.sender)
+            subject = sanitize_text(email_data.subject)
+            # Body is already truncated by preprocess_email, just sanitize
+            body = sanitize_text(email_data.body)
+            sender = sanitize_text(email_data.sender)
             
             # Format NLP results for prompt context
             analysis_context = self._format_analysis_context(nlp_results)
@@ -222,6 +253,23 @@ OUTPUT FORMAT
                 'time_references': []
             })
         }
+        
+    def _select_summary_constraints(self, body: str) -> Dict:
+        """Select the appropriate summary constraints based on content length.
+        
+        Uses the pre-fetched summary length setting to determine the appropriate
+        summary constraints.
+        
+        Args:
+            body: The email body content
+            
+        Returns:
+            Dictionary of summary constraints
+        """
+        # Use the summary length that was already fetched during initialization
+        summary_length = self.config.summary_length
+        
+        return self._get_summary_constraints(summary_length)
         
     def _get_summary_constraints(self, summary_length: str) -> Dict:
         """Get summary constraints based on summary length preference.

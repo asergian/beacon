@@ -44,7 +44,7 @@ function initNavButtons() {
     // Scroll to response section
     toResponseBtn.addEventListener('click', function() {
         if (responseSection) {
-            console.log('Scrolling to response section');
+            //console.log('Scrolling to response section');
             responseSection.scrollIntoView({ behavior: 'smooth' });
         }
     });
@@ -52,13 +52,13 @@ function initNavButtons() {
     // Scroll to email meta section
     toTopBtn.addEventListener('click', function() {
         if (emailMeta) {
-            console.log('Scrolling to email meta section');
+            //console.log('Scrolling to email meta section');
             emailMeta.scrollIntoView({ behavior: 'smooth' });
         } else if (emailDetails) {
-            console.log('Email meta not found, scrolling to email details');
+            //console.log('Email meta not found, scrolling to email details');
             emailDetails.scrollIntoView({ behavior: 'smooth' });
         } else {
-            console.log('Neither email meta nor details found, scrolling to top');
+            //console.log('Neither email meta nor details found, scrolling to top');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     });
@@ -138,7 +138,7 @@ function checkScreenSize() {
     }
     
     const isMobile = window.innerWidth <= 768;
-    console.log("Screen width:", window.innerWidth, "Mobile:", isMobile);
+    //console.log("Screen width:", window.innerWidth, "Mobile:", isMobile);
     
     if (isMobile) {
         // Mobile: Start with email list view
@@ -147,10 +147,10 @@ function checkScreenSize() {
         
         // Mobile: Hide all FABs on list view - Make EXTRA sure they're hidden
         toggleBtn.classList.remove('visible');
-        console.log("Mobile view - hiding FABs");
+        //console.log("Mobile view - hiding FABs");
         navFabs.forEach(fab => {
             fab.classList.remove('visible');
-            console.log("Removed visible class from FAB:", fab.id);
+            //console.log("Removed visible class from FAB:", fab.id);
         });
         
         // Mobile: Collapse filters
@@ -166,10 +166,10 @@ function checkScreenSize() {
         emailDetailsColumn.style.display = 'block';
         
         // Desktop: Make sure navigation FABs are visible
-        console.log("Desktop view - showing FABs");
+        //console.log("Desktop view - showing FABs");
         navFabs.forEach(fab => {
             fab.classList.add('visible');
-            console.log("Added visible class to FAB:", fab.id);
+            //console.log("Added visible class to FAB:", fab.id);
         });
         
         // Only hide the mobile toggle button on desktop

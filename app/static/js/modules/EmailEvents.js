@@ -679,40 +679,40 @@ export const EmailEvents = {
         
         // Hide after delay if requested
         if (hideAfterDelay) {
-            console.log('Will hide loading indicators after delay');
+            //console.log('Will hide loading indicators after delay');
             setTimeout(() => {
                 if (loadingBar) {
                     loadingBar.style.width = '0';
-                    console.log('Setting loading bar width to 0');
+                    //console.log('Setting loading bar width to 0');
                     
                     // Use both transition event and timeout as backup
                     const barTimeout = setTimeout(() => {
                         loadingBar.style.display = 'none';
-                        console.log('Hiding loading bar via timeout');
+                        //console.log('Hiding loading bar via timeout');
                     }, 400); // Slightly longer than the transition
                     
                     loadingBar.addEventListener('transitionend', function hideLoader() {
                         clearTimeout(barTimeout);
                         loadingBar.style.display = 'none';
-                        console.log('Hiding loading bar via transition');
+                        //console.log('Hiding loading bar via transition');
                         loadingBar.removeEventListener('transitionend', hideLoader);
                     });
                 }
                 
                 if (loadingText) {
                     loadingText.style.opacity = '0';
-                    console.log('Setting loading text opacity to 0');
+                    //console.log('Setting loading text opacity to 0');
                     
                     // Use both transition event and timeout as backup
                     const textTimeout = setTimeout(() => {
                         loadingText.style.display = 'none';
-                        console.log('Hiding loading text via timeout');
+                        //console.log('Hiding loading text via timeout');
                     }, 400); // Slightly longer than the transition
                     
                     loadingText.addEventListener('transitionend', function hideText() {
                         clearTimeout(textTimeout);
                         loadingText.style.display = 'none';
-                        console.log('Hiding loading text via transition');
+                        //console.log('Hiding loading text via transition');
                         loadingText.removeEventListener('transitionend', hideText);
                     });
                 }

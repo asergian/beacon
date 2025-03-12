@@ -49,7 +49,7 @@ class SemanticAnalyzer(BaseAnalyzer):
         self.model = "gpt-4o-mini"  # Default model - will be overridden by user settings
         self.max_content_tokens = 1000  # Default to medium length - will be overridden by user settings
         self.token_handler = TokenHandler()
-        self.prompt_creator = PromptCreator()
+        self.prompt_creator = PromptCreator(token_handler=self.token_handler)
         self.response_parser = ResponseParser()
         self.batch_processor = BatchProcessor(self.token_handler)
         
