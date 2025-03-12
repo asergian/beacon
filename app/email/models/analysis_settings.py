@@ -52,7 +52,7 @@ class ProcessingConfig:
     # Major factors
     VIP_SCORE_BOOST: int = 30      # VIP sender
     URGENCY_SCORE_BOOST: int = 25  # Email has urgency indicators
-    ACTION_SCORE_BOOST: int = 20   # Action needed
+    ACTION_SCORE_BOOST: int = 25   # Action needed (increased from 20)
     
     # Additional factors
     DEADLINE_BOOST: int = 15       # Has specific deadline

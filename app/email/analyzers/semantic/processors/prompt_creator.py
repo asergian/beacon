@@ -6,7 +6,7 @@ This module handles the creation of prompts for LLM analysis of emails.
 import json
 import logging
 from typing import Dict, Any, List, Tuple
-from flask import g
+from flask import g, current_app
 
 from ....parsing.parser import EmailMetadata
 from ..utilities.text_processor import format_list, format_dict, sanitize_text, select_important_patterns
@@ -24,30 +24,31 @@ class PromptCreator:
         """
         self.logger = logging.getLogger(__name__)
         
-        # Import settings utilities here to avoid circular imports
-        from ..utilities.settings_util import get_summary_length, get_custom_categories
-        
         # Initialize config with default values
-        config_values = {
+        self.config = type('Config', (), {
             # Default values
             'CHARACTER_LIMIT': 3000,  # Default character limit for email body
             'summary_length': 'medium',  # Default to medium summary length
             'custom_categories': []  # Default empty list for custom categories
-        }
-        
-        # Try to fetch settings, but fall back to defaults if they can't be fetched
-        try:
-            # Fetch settings up front to avoid multiple database calls
-            config_values['summary_length'] = get_summary_length() or config_values['summary_length']
-            config_values['custom_categories'] = get_custom_categories() or config_values['custom_categories']
-        except Exception as e:
-            self.logger.warning(f"Error fetching settings, using defaults: {str(e)}")
-        
-        # Create the config object
-        self.config = type('Config', (), config_values)
+        })
         
         # Use the provided token handler or create a new one
         self.token_handler = token_handler or TokenHandler()
+        
+    def _load_settings(self):
+        """
+        Load user settings from the database within a Flask application context.
+        This should only be called when we know we're inside a Flask application context.
+        """
+        # Import settings utilities here to avoid circular imports
+        from ..utilities.settings_util import get_summary_length, get_custom_categories
+        
+        try:
+            # Fetch settings within application context
+            self.config.summary_length = get_summary_length() or self.config.summary_length
+            self.config.custom_categories = get_custom_categories() or self.config.custom_categories
+        except Exception as e:
+            self.logger.warning(f"Error fetching settings, using defaults: {str(e)}")
         
     def create_prompt(self, email_data: EmailMetadata, nlp_results: Dict) -> str:
         """Create a prompt for the LLM analysis.
@@ -60,6 +61,9 @@ class PromptCreator:
             Prompt text for LLM analysis
         """
         try:
+            # Load settings now (within a request context) rather than during initialization
+            self._load_settings()
+            
             # Get sanitized content (subject and body)
             subject = sanitize_text(email_data.subject)
             # Body is already truncated by preprocess_email, just sanitize
@@ -156,15 +160,16 @@ Analyze this email and provide a JSON response with the following fields:
     - Email type: {analysis_context['email_type_raw']}
     
     Higher Priority Contexts (score 60-100):
-    - Emails requiring immediate action with deadlines
-    - Messages from recruiters or job opportunities needing a response
-    - Build/deployment failures needing attention
-    - Work communications that need decisions or actions
-    - VIP contacts or direct supervisor communications
+    - ANY email requiring a meaningful response or action should be at least 60+
+    - Emails requiring immediate action with deadlines should be 75+
+    - Messages from recruiters or job opportunities needing a response should be 70+
+    - Build/deployment failures needing attention should be 80+
+    - Work communications that need decisions or actions should be 65-85
+    - VIP contacts or direct supervisor communications should be 70+
     
     Medium Priority Contexts (score 40-59):
     - General work communications without urgency
-    - Personal messages needing response (not urgent)
+    - Personal messages needing minor response (not urgent)
     - Informational emails related to important projects
     
     Lower Priority Contexts (score 0-39):
