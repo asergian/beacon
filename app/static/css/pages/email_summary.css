@@ -474,6 +474,17 @@ body {
  * ----------------------------------------------------------------------------
  */
 @media (max-width: 768px) {
+  /* Mobile view uses dynamic viewport units */
+  html, body {
+    height: 100dvh;
+  }
+  
+  .main-content {
+    height: 100dvh;
+    max-height: 100dvh;
+    
+  }
+
   /* Header adjustments */
   header {
     padding: 0 10px; /* Reduce header padding */
@@ -582,8 +593,8 @@ body {
   .email-list-column {
     width: 100%;
     min-height: auto; /* Remove min-height to allow dynamic sizing */
-    height: calc(100vh - var(--header-height) - var(--filter-row-visible-height));
-    max-height: calc(100vh - var(--header-height) - var(--filter-row-visible-height));
+    height: calc(100dvh - var(--header-height) - var(--filter-row-visible-height));
+    max-height: calc(100dvh - var(--header-height) - var(--filter-row-visible-height));
     transition: height 0.3s ease, max-height 0.3s ease;
     border-right: none;
     overflow-y: auto;
@@ -591,11 +602,11 @@ body {
 
   .email-details-column {
     width: 100%;
-    min-height: calc(100vh - var(--header-height) - var(--filter-row-visible-height));
+    min-height: calc(100dvh - var(--header-height) - var(--filter-row-visible-height));
     height: auto;
     padding: 10px 0 10px 10px; /* Changed to remove right padding globally and keep left padding */
     overflow-y: auto;
-    max-height: calc(100vh - var(--header-height));
+    max-height: calc(100dvh - var(--header-height));
     -webkit-overflow-scrolling: touch; /* Smoother scrolling on iOS */
   }
 
@@ -669,21 +680,14 @@ body {
   }
   
   .filters-row.collapsed + .content-columns .email-list-column {
-    height: calc(100vh - var(--header-height) - var(--filter-row-hidden-height));
-    max-height: calc(100vh - var(--header-height) - var(--filter-row-hidden-height));
+    height: calc(100dvh - var(--header-height) - var(--filter-row-hidden-height));
+    max-height: calc(100dvh - var(--header-height) - var(--filter-row-hidden-height));
   }
 
   /* Ensure email-list-column doesn't exceed screen height on mobile */
   .email-list-column {
-    max-height: calc(100vh - var(--header-height));
+    max-height: calc(100dvh - var(--header-height));
     overflow-y: auto;
-  }
-
-  /* Main content adjustments for mobile */
-  .main-content {
-    height: 100vh;
-    max-height: 100vh;
-    overflow: hidden;
   }
 }
 

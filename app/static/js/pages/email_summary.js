@@ -85,7 +85,7 @@ function initMobileToggle() {
         emailListColumn.style.display = 'block';
         
         // Reset height constraints to ensure proper fit on mobile
-        emailListColumn.style.maxHeight = 'calc(100vh - var(--header-height))';
+        emailListColumn.style.maxHeight = 'calc(100dvh - var(--header-height))';
         
         // On mobile, hide all FABs when viewing email list
         if (window.innerWidth <= 768) {
@@ -149,7 +149,7 @@ function checkScreenSize() {
         emailDetailsColumn.style.display = 'none';
         
         // Mobile: Set proper height constraints
-        emailListColumn.style.maxHeight = 'calc(100vh - var(--header-height))';
+        emailListColumn.style.maxHeight = 'calc(100dvh - var(--header-height))';
         document.body.style.overflow = 'hidden';
         
         // Mobile: Hide all FABs on list view - Make EXTRA sure they're hidden
@@ -171,6 +171,12 @@ function checkScreenSize() {
         // Desktop: Show both columns
         emailListColumn.style.display = 'block';
         emailDetailsColumn.style.display = 'block';
+        
+        // Desktop: Reset to use standard viewport height units
+        emailListColumn.style.height = '';
+        emailListColumn.style.maxHeight = '';
+        emailDetailsColumn.style.height = '';
+        emailDetailsColumn.style.maxHeight = '';
         
         // Desktop: Make sure navigation FABs are visible
         //console.log("Desktop view - showing FABs");

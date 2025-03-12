@@ -183,16 +183,23 @@ export const EmailUI = {
                 emailListColumn.style.display = 'none';
                 emailDetailsColumn.style.display = 'block';
                 
-                // Ensure heights are reset to prevent overflow
+                // Ensure heights are reset to prevent overflow - use dvh on mobile
                 document.body.style.overflow = 'hidden';
                 emailDetailsColumn.style.height = 'auto';
-                emailDetailsColumn.style.maxHeight = `calc(100vh - var(--header-height))`;
+                emailDetailsColumn.style.maxHeight = `calc(100dvh - var(--header-height))`;
                 
                 // Make all FABs visible on mobile when viewing details
                 toggleBtn.classList.add('visible');
                 navFabs.forEach(fab => {
                     fab.classList.add('visible');
                 });
+            }
+        } else if (!isMobile && isUserClick) {
+            // Desktop: reset to CSS defaults
+            const emailDetailsColumn = document.querySelector('.email-details-column');
+            if (emailDetailsColumn) {
+                emailDetailsColumn.style.height = '';
+                emailDetailsColumn.style.maxHeight = '';
             }
         }
         
