@@ -323,7 +323,7 @@ class PriorityScorer:
             String priority level ("HIGH", "MEDIUM", or "LOW")
         """
 
-        logger.info(f"Priority threshold: {threshold}; score: {score}")
+        logger.debug(f"Priority threshold: {threshold}; score: {score}")
 
         if int(threshold) == 30:  # Low threshold
             if score >= 75:
