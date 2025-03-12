@@ -482,6 +482,7 @@ body {
   .main-content {
     height: 100dvh;
     max-height: 100dvh;
+    padding-top: var(--header-height) !important; /* Add this to prevent content from riding up into header */
   }
 
   /* Header adjustments */

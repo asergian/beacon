@@ -185,8 +185,10 @@ export const EmailUI = {
                 
                 // Ensure heights are reset to prevent overflow - use dvh on mobile
                 document.body.style.overflow = 'hidden';
+                
+                // Don't set explicit heights - let CSS handle positioning correctly
                 emailDetailsColumn.style.height = 'auto';
-                emailDetailsColumn.style.maxHeight = `calc(100dvh - var(--header-height))`;
+                emailDetailsColumn.style.maxHeight = '';
                 
                 // Make all FABs visible on mobile when viewing details
                 toggleBtn.classList.add('visible');

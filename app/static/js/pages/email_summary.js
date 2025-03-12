@@ -85,7 +85,8 @@ function initMobileToggle() {
         emailListColumn.style.display = 'block';
         
         // Reset height constraints to ensure proper fit on mobile
-        emailListColumn.style.maxHeight = 'calc(100dvh - var(--header-height))';
+        // Remove explicit height settings to allow CSS to control it
+        emailListColumn.style.maxHeight = '';
         
         // On mobile, hide all FABs when viewing email list
         if (window.innerWidth <= 768) {
@@ -148,8 +149,10 @@ function checkScreenSize() {
         emailListColumn.style.display = 'block';
         emailDetailsColumn.style.display = 'none';
         
-        // Mobile: Set proper height constraints
-        emailListColumn.style.maxHeight = 'calc(100dvh - var(--header-height))';
+        // Mobile: Let CSS handle height and padding to prevent content riding up into header
+        // Remove inline styles that might override our CSS fix
+        emailListColumn.style.maxHeight = '';
+        emailDetailsColumn.style.maxHeight = '';
         document.body.style.overflow = 'hidden';
         
         // Mobile: Hide all FABs on list view - Make EXTRA sure they're hidden
